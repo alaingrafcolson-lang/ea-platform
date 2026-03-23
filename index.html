@@ -2,153 +2,231 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>SI Governance Suite | Enterprise</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI Governance Platform | Enterprise</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
-        :root { --navy:#0B1829; --blue:#1A6CF5; --violet:#7C5CFC; --rose:#E84568; --teal:#00B49C; --u-color: var(--blue); }
+        :root { 
+            --navy:#0B1829; --blue:#1A6CF5; --white:#FFF; --border:rgba(0,0,0,0.1); 
+            --violet:#7C5CFC; --teal:#00B49C; --amber:#F5A623; --rose:#E84568; --cyan:#00C8D8;
+            --u-color: var(--blue);
+        }
         body { font-family:'Instrument Sans', sans-serif; background:#F4F7FB; margin:0; color:var(--navy); }
+        
+        /* États des écrans */
         .screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; }
         .screen.active { display:flex; }
-        #authScreen { background:var(--navy); color:#fff; text-align:center; }
-        .auth-card { width:400px; padding:40px; background:rgba(255,255,255,0.05); border-radius:30px; backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.1); }
-        .topbar { background:#fff; padding:0 32px; height:70px; display:flex; align-items:center; justify-content:space-between; width:100%; box-sizing:border-box; border-bottom:1px solid rgba(0,0,0,0.1); position:fixed; top:0; z-index:100; }
-        .container { padding:100px 32px 40px; max-width:1400px; width:100%; box-sizing:border-box; }
-        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; }
-        .vp-card { background:#fff; border-radius:16px; padding:24px; border-top:6px solid var(--u-color); box-shadow:0 4px 15px rgba(0,0,0,0.05); }
-        .btn { padding:12px 24px; border-radius:12px; border:none; cursor:pointer; font-weight:700; background:var(--u-color); color:#fff; transition: 0.2s; }
-        input, select { padding:12px; border-radius:10px; border:1px solid #ddd; width:100%; margin-bottom:15px; font-family:inherit; }
+        
+        /* Login & Setup */
+        #authScreen { background:var(--navy); color:#fff; }
+        .auth-card { width:100%; max-width:400px; padding:40px; background:rgba(255,255,255,0.05); border-radius:30px; backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.1); text-align:center; box-sizing:border-box; }
+        
+        /* Navigation */
+        .topbar { background:#fff; padding:0 32px; height:70px; display:flex; align-items:center; justify-content:space-between; width:100%; border-bottom:1px solid var(--border); position:fixed; top:0; z-index:100; box-sizing:border-box; }
+        
+        /* Grille des 24 outils */
+        .container { padding:100px 32px 40px; max-width:1400px; width:100%; box-sizing:border-box; margin:0 auto; }
+        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px; }
+        .vp-card { background:#fff; border-radius:16px; padding:24px; border-top:6px solid var(--u-color); transition:0.3s; box-shadow:0 4px 15px rgba(0,0,0,0.05); position:relative; }
+        .vp-card:hover { transform:translateY(-5px); }
+        
+        /* Boutons et Inputs */
+        .btn { padding:12px 24px; border-radius:12px; border:none; cursor:pointer; font-weight:700; background:var(--u-color); color:#fff; font-family:inherit; }
+        input, select { padding:12px; border-radius:10px; border:1px solid #ddd; width:100%; margin-bottom:15px; font-family:inherit; box-sizing:border-box; }
     </style>
 </head>
 <body>
 
 <div class="screen active" id="authScreen">
     <div class="auth-card">
-        <h2 id="stTitle" style="font-family:'Syne'">Connexion Cloud...</h2>
-        <div id="authActions"></div>
+        <h2 id="stTitle" style="font-family:'Syne'">Initialisation Cloud...</h2>
+        <div id="authActions">
+            <p style="font-size:14px; opacity:0.7;">Vérification de la base Supabase en cours...</p>
+        </div>
     </div>
 </div>
 
 <div class="screen" id="appScreen" style="justify-content:flex-start;">
-    <div class="topbar">
+    <nav class="topbar">
         <div style="display:flex; align-items:center; gap:15px;">
             <div id="uAvatar" style="width:35px; height:35px; border-radius:10px; background:var(--u-color); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;"></div>
             <span style="font-family:'Syne'; font-weight:800; font-size:18px;">SI MANAGER</span>
         </div>
         <div>
-            <button class="btn" style="background:none; color:var(--navy);" onclick="show('diag')">Diagnostic</button>
-            <button class="btn" id="admLink" style="display:none; background:none; color:var(--navy);" onclick="show('admin')">🔑 Admin</button>
+            <button class="btn" style="background:none; color:var(--navy);" onclick="switchTab('diag')">Diagnostic</button>
+            <button class="btn" id="admLink" style="display:none; background:none; color:var(--navy);" onclick="switchTab('admin')">🔑 Admin</button>
             <button class="btn" style="background:var(--rose); font-size:11px;" onclick="location.reload()">Quitter</button>
         </div>
-    </div>
+    </nav>
 
-    <div id="diagSection" class="container">
+    <main id="diagSection" class="container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-            <h1 style="font-family:'Syne'; margin:0;">Dashboard Gouvernance</h1>
-            <button class="btn" onclick="exportPDF()" style="background:var(--navy)">📊 Rapport PDF</button>
+            <h1 style="font-family:'Syne'; margin:0;">Dashboard SI</h1>
+            <button class="btn" onclick="generatePDF()" style="background:var(--navy)">📊 Rapport PDF</button>
         </div>
         <div id="mainContainer" class="views-grid"></div>
-    </div>
+    </main>
 
-    <div id="adminSection" class="container" style="display:none;">
+    <section id="adminSection" class="container" style="display:none;">
         <h1 style="font-family:'Syne'">Administration</h1>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:30px;">
             <div style="background:#fff; padding:30px; border-radius:20px; border:1px solid #eee;">
-                <h3>➕ Créer un profil</h3>
-                <input type="text" id="newN" placeholder="Nom Prénom">
+                <h3>➕ Nouveau Profil</h3>
+                <input type="text" id="newN" placeholder="Nom complet">
                 <select id="newR">
                     <option value="DSI">DSI (Violet)</option>
                     <option value="RSSI">RSSI (Rose)</option>
-                    <option value="DATA">Ingénieur Data (Teal)</option>
+                    <option value="DATA">Data Engineer (Teal)</option>
                     <option value="ADMIN">Super Admin (Blue)</option>
                 </select>
-                <button class="btn" style="width:100%" onclick="addUser()">Enregistrer</button>
-            </div>
-            <div style="background:#fff; padding:30px; border-radius:20px; border:1px solid #eee;">
-                <h3>💾 Backups</h3>
-                <button class="btn" style="background:#444; width:100%" onclick="exportJSON()">JSON</button>
-                <input type="file" accept=".json" onchange="importData(event)" style="margin-top:20px;">
+                <button class="btn" style="width:100%" onclick="addNewUser()">Créer le profil</button>
             </div>
         </div>
-    </div>
+    </section>
 </div>
 
 <script>
-    const URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
-    const KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-    const supabase = window.supabase.createClient(URL, KEY);
+    // 1. CONFIGURATION (Vérifiez ces clés dans votre dashboard Supabase)
+    const SB_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+    const SB_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+    const supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
-    let db = null, user = null;
+    let dbData = null;
+    let currentUser = null;
     const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5' };
 
-    const VIEWS = [
+    // 2. LES 24 OUTILS STRATÉGIQUES
+    const TOOLS = [
         {id:1, t:"Capacités Métier", ico:"🧭"}, {id:2, t:"Transformation IT", ico:"⚡"}, {id:3, t:"Objectifs Strat", ico:"🎯"}, {id:4, t:"Écosystème", ico:"🌐"},
         {id:5, t:"Portefeuille App", ico:"📱"}, {id:6, t:"Flux & Interfaces", ico:"🔗"}, {id:7, t:"Mapping Cap/App", ico:"🗺️"}, {id:8, t:"Obsolescence", ico:"🕰️"},
-        {id:9, t:"Données Métier", ico:"🗄️"}, {id:10, t:"Lineage Data", ico:"📉"}, {id:11, t:"RGPD", ico:"⚖️"}, {id:12, ico:"📊", t:"Analytique"},
-        {id:13, t:"Infrastructure", ico:"🖥️"}, {id:14, t:"Sécurité SI", ico:"🛡️"}, {id:15, t:"Standards", ico:"📜"}, {id:16, ico:"☁️", t:"Cloud Arch"},
-        {id:17, t:"Processus", ico:"🏢"}, {id:18, t:"Parties Prenantes", ico:"👥"}, {id:19, t:"Gouvernance", ico:"⚖️"}, {id:20, ico:"⚠️", t:"Risques"},
-        {id:21, t:"Roadmap SI", ico:"🗓️"}, {id:22, t:"Impact Projets", ico:"💥"}, {id:23, t:"Coût IT", ico:"💰"}, {id:24, ico:"💡", t:"Innovation"}
+        {id:9, t:"Données Métier", ico:"🗄️"}, {id:10, t:"Lineage Data", ico:"📉"}, {id:11, t:"RGPD", ico:"⚖️"}, {id:12, t:"Analytique", ico:"📊"},
+        {id:13, t:"Infrastructure", ico:"🖥️"}, {id:14, t:"Sécurité SI", ico:"🛡️"}, {id:15, t:"Standards", ico:"📜"}, {id:16, t:"Cloud Arch", ico:"☁️"},
+        {id:17, t:"Processus", ico:"🏢"}, {id:18, t:"Parties Prenantes", ico:"👥"}, {id:19, t:"Gouvernance", ico:"⚖️"}, {id:20, t:"Risques SI", ico:"⚠️"},
+        {id:21, t:"Roadmap SI", ico:"🗓️"}, {id:22, t:"Impact Projets", ico:"💥"}, {id:23, t:"Coût IT", ico:"💰"}, {id:24, t:"Innovation", ico:"💡"}
     ];
 
-    async function load() {
-        const { data, error } = await supabase.from('ea_platform_data').select('content').eq('id', 1).single();
-        if (error || !data) return;
-        db = data.content;
+    // 3. LOGIQUE DE CHARGEMENT
+    async function startApp() {
+        try {
+            const { data, error } = await supabase.from('ea_platform_data').select('content').eq('id', 1).single();
+            
+            if (error || !data) {
+                document.getElementById('stTitle').innerText = "Erreur SQL";
+                document.getElementById('authActions').innerHTML = "<p>Table ou Ligne ID=1 introuvable dans Supabase.</p>";
+                return;
+            }
 
-        if (!db.users || db.users.length === 0) {
-            document.getElementById('stTitle').innerText = "Initialisation Admin";
-            document.getElementById('authActions').innerHTML = `
-                <input type="text" id="admN" placeholder="Nom">
-                <input type="text" id="admP" placeholder="Prénom">
-                <input type="email" id="admE" placeholder="Email">
-                <button class="btn" style="width:100%" onclick="setup()">Activer la plateforme</button>`;
-        } else {
-            document.getElementById('stTitle').innerText = "Authentification";
-            document.getElementById('authActions').innerHTML = `
-                <select id="uSel">${db.users.map(u => `<option value="${u.id}">${u.prenom || ''} ${u.name} (${u.role})</option>`).join('')}</select>
-                <button class="btn" style="width:100%" onclick="enter()">Entrer →</button>`;
+            dbData = data.content;
+
+            // Si aucun utilisateur n'existe, on affiche le formulaire Super-Admin
+            if (!dbData.users || dbData.users.length === 0) {
+                renderSetupForm();
+            } else {
+                renderLoginForm();
+            }
+        } catch (e) {
+            document.getElementById('stTitle').innerText = "Erreur Réseau";
         }
     }
 
-    async function setup() {
-        const n = document.getElementById('admN').value, p = document.getElementById('admP').value, e = document.getElementById('admE').value;
-        const init = { users:[{name:n, prenom:p, email:e, role:'ADMIN', id:1}], views:{} };
-        await supabase.from('ea_platform_data').update({ content: init }).eq('id', 1);
-        location.reload();
+    function renderSetupForm() {
+        document.getElementById('stTitle').innerText = "Créer l'Administrateur";
+        document.getElementById('authActions').innerHTML = `
+            <input type="text" id="admN" placeholder="Nom">
+            <input type="text" id="admP" placeholder="Prénom">
+            <input type="email" id="admE" placeholder="Email professionnel">
+            <button class="btn" style="width:100%" onclick="handleInitialSetup()">Lancer la Plateforme</button>`;
     }
 
-    function enter() {
-        user = db.users.find(u => u.id == document.getElementById('uSel').value);
+    function renderLoginForm() {
+        document.getElementById('stTitle').innerText = "Accès SI Governance";
+        document.getElementById('authActions').innerHTML = `
+            <select id="uSel">${dbData.users.map(u => `<option value="${u.id}">${u.prenom || ''} ${u.name} (${u.role})</option>`).join('')}</select>
+            <button class="btn" style="width:100%; margin-top:10px;" onclick="handleLogin()">Se connecter</button>`;
+    }
+
+    async function handleInitialSetup() {
+        const name = document.getElementById('admN').value;
+        const prenom = document.getElementById('admP').value;
+        const email = document.getElementById('admE').value;
+        
+        if(!name || !prenom) return alert("Champs requis");
+
+        const initialContent = { 
+            users: [{ id: Date.now(), name, prenom, email, role: 'ADMIN' }], 
+            viewsStatus: {} 
+        };
+
+        const { error } = await supabase.from('ea_platform_data').update({ content: initialContent }).eq('id', 1);
+        if(!error) location.reload();
+    }
+
+    function handleLogin() {
+        const userId = document.getElementById('uSel').value;
+        currentUser = dbData.users.find(u => u.id == userId);
+        
         document.getElementById('authScreen').classList.remove('active');
         document.getElementById('appScreen').classList.add('active');
-        const theme = COLORS[user.role] || '#1A6CF5';
+        
+        // Appliquer les couleurs du profil
+        const theme = COLORS[currentUser.role] || '#1A6CF5';
         document.documentElement.style.setProperty('--u-color', theme);
-        document.getElementById('uAvatar').innerText = (user.prenom || user.name)[0];
-        if (user.role === 'ADMIN') document.getElementById('admLink').style.display = 'inline';
-        render();
+        document.getElementById('uAvatar').innerText = (currentUser.prenom || currentUser.name)[0];
+        
+        if (currentUser.role === 'ADMIN') document.getElementById('admLink').style.display = 'inline';
+        
+        renderTools();
     }
 
-    function render() {
-        const grid = document.getElementById('mainContainer');
-        grid.innerHTML = VIEWS.map(v => {
-            const s = db.views[v.id] || "Non démarré";
-            return `<div class="vp-card"><span>${v.ico}</span> <b>${v.t}</b><select onchange="up(${v.id}, this.value)" style="margin-top:10px;"><option ${s==='Non démarré'?'selected':''}>Non démarré</option><option ${s==='En cours'?'selected':''}>En cours</option><option ${s==='Réalisé'?'selected':''}>Réalisé</option></select></div>`;
+    function renderTools() {
+        const container = document.getElementById('mainContainer');
+        container.innerHTML = TOOLS.map(tool => {
+            const status = dbData.viewsStatus[tool.id] || "Non démarré";
+            return `
+                <div class="vp-card">
+                    <span style="font-size:24px;">${tool.ico}</span>
+                    <h3 style="margin:10px 0; font-family:'Syne'; font-size:16px;">${tool.t}</h3>
+                    <select onchange="updateToolStatus(${tool.id}, this.value)">
+                        <option ${status === 'Non démarré' ? 'selected' : ''}>Non démarré</option>
+                        <option ${status === 'En cours' ? 'selected' : ''}>En cours</option>
+                        <option ${status === 'Réalisé' ? 'selected' : ''}>Réalisé</option>
+                    </select>
+                </div>`;
         }).join('');
     }
 
-    async function up(id, s) { db.views[id] = s; await supabase.from('ea_platform_data').update({ content: db }).eq('id', 1); }
-    function show(id) { document.getElementById('diagSection').style.display = id==='diag'?'block':'none'; document.getElementById('adminSection').style.display = id==='admin'?'block':'none'; }
-    async function addUser() { 
-        const n = document.getElementById('newN').value, r = document.getElementById('newR').value;
-        db.users.push({name:n, role:r, id:Date.now()}); 
-        await supabase.from('ea_platform_data').update({ content: db }).eq('id', 1); 
-        alert("Enregistré !"); 
+    async function updateToolStatus(id, newStatus) {
+        dbData.viewsStatus[id] = newStatus;
+        await supabase.from('ea_platform_data').update({ content: dbData }).eq('id', 1);
     }
-    function exportPDF() { html2pdf().from(document.getElementById('diagSection')).set({margin:10, filename:'Rapport.pdf', jsPDF:{orientation:'landscape'}}).save(); }
-    function exportJSON() { const a = document.createElement('a'); a.href='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(db)); a.download='Backup.json'; a.click(); }
-    function importData(e) { const r = new FileReader(); r.onload=async (f)=>{ db=JSON.parse(f.target.result); await supabase.from('ea_platform_data').update({ content:db }).eq('id', 1); location.reload(); }; r.readAsText(e.target.files[0]); }
-    load();
+
+    function switchTab(tab) {
+        document.getElementById('diagSection').style.display = tab === 'diag' ? 'block' : 'none';
+        document.getElementById('adminSection').style.display = tab === 'admin' ? 'block' : 'none';
+    }
+
+    async function addNewUser() {
+        const name = document.getElementById('newN').value;
+        const role = document.getElementById('newR').value;
+        dbData.users.push({ id: Date.now(), name, role });
+        await supabase.from('ea_platform_data').update({ content: dbData }).eq('id', 1);
+        alert("Profil créé !");
+    }
+
+    function generatePDF() {
+        const element = document.getElementById('diagSection');
+        html2pdf().from(element).set({ 
+            margin: 10, 
+            filename: 'Diagnostic_SI.pdf', 
+            jsPDF: { orientation: 'landscape' } 
+        }).save();
+    }
+
+    startApp();
 </script>
 </body>
 </html>
