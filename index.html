@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SI Governance Enterprise | 24 Outils</title>
+    <title>SI Governance Enterprise | v3.0</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,42 +12,31 @@
     <style>
         :root { 
             --navy:#0B1829; --blue:#1A6CF5; --white:#FFF; --border:rgba(0,0,0,0.1); 
-            --violet:#7C5CFC; --teal:#00B49C; --amber:#F5A623; --rose:#E84568; --cyan:#00C8D8;
-            --u-color: var(--blue);
+            --violet:#7C5CFC; --teal:#00B49C; --amber:#F5A623; --rose:#E84568; --u-color: var(--blue);
         }
         body { font-family:'Instrument Sans', sans-serif; background:#F4F7FB; margin:0; color:var(--navy); }
-        
-        /* États des écrans */
         .screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; }
         .screen.active { display:flex; }
-        
-        /* Login & Setup */
         #authScreen { background:var(--navy); color:#fff; }
         .auth-card { width:100%; max-width:420px; padding:40px; background:rgba(255,255,255,0.05); border-radius:30px; backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.1); text-align:center; box-sizing:border-box; }
-        
-        /* Navigation & Layout */
         .topbar { background:#fff; padding:0 32px; height:70px; display:flex; align-items:center; justify-content:space-between; width:100%; border-bottom:1px solid var(--border); position:fixed; top:0; z-index:100; box-sizing:border-box; }
         .container { padding:100px 32px 40px; max-width:1400px; width:100%; box-sizing:border-box; margin:0 auto; }
-        
-        /* Grille des outils */
         .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; }
         .vp-card { background:#fff; border-radius:16px; padding:24px; border-top:6px solid var(--u-color); transition:0.3s; box-shadow:0 4px 15px rgba(0,0,0,0.05); }
-        .vp-card:hover { transform:translateY(-5px); }
-        
-        /* Formulaires & Boutons */
         .btn { padding:12px 24px; border-radius:12px; border:none; cursor:pointer; font-weight:700; background:var(--u-color); color:#fff; font-family:inherit; }
         input, select { padding:12px; border-radius:10px; border:1px solid #ddd; width:100%; margin-bottom:15px; font-family:inherit; box-sizing:border-box; }
-        .err-msg { color:#FF8FAD; font-size:12px; margin-top:10px; border:1px solid rgba(255,143,173,0.3); padding:10px; border-radius:8px; }
+        .debug-err { color:#FF8FAD; font-size:11px; margin-top:15px; border:1px solid rgba(255,143,173,0.3); padding:10px; border-radius:8px; display:none; }
     </style>
 </head>
 <body>
 
 <div class="screen active" id="authScreen">
     <div class="auth-card">
-        <h2 id="stTitle" style="font-family:'Syne'">Initialisation Cloud...</h2>
+        <h2 id="stTitle" style="font-family:'Syne'">Connexion Cloud...</h2>
         <div id="authActions">
-            <p style="opacity:0.6; font-size:14px;">Vérification des accès Supabase...</p>
+            <p style="opacity:0.6; font-size:14px;">Tentative de liaison Supabase...</p>
         </div>
+        <div id="debugZone" class="debug-err"></div>
     </div>
 </div>
 
@@ -60,20 +49,20 @@
         <div>
             <button class="btn" style="background:none; color:var(--navy);" onclick="tab('diag')">Diagnostic</button>
             <button class="btn" id="admLink" style="display:none; background:none; color:var(--navy);" onclick="tab('admin')">🔑 Admin</button>
-            <button class="btn" style="background:var(--rose); font-size:11px;" onclick="location.reload()">Quitter</button>
+            <button class="btn" style="background:var(--rose); font-size:11px;" onclick="location.reload()">Déconnexion</button>
         </div>
     </nav>
 
     <main id="diagSection" class="container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-            <h1 style="font-family:'Syne'; margin:0;">Dashboard Gouvernance SI</h1>
+            <h1 style="font-family:'Syne'; margin:0;">Dashboard des 24 Outils</h1>
             <button class="btn" onclick="exportPDF()" style="background:var(--navy)">📊 Rapport PDF</button>
         </div>
         <div id="mainContainer" class="views-grid"></div>
     </main>
 
     <section id="adminSection" class="container" style="display:none;">
-        <h1 style="font-family:'Syne'">Console Administration</h1>
+        <h1 style="font-family:'Syne'">Administration</h1>
         <div style="background:#fff; padding:30px; border-radius:20px; border:1px solid #eee; max-width:500px;">
             <h3>➕ Ajouter un Expert SI</h3>
             <input type="text" id="newN" placeholder="Nom Prénom">
@@ -89,16 +78,13 @@
 </div>
 
 <script>
-    // 1. Configuration & Connexion
     const URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
     const KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
     const supabase = window.supabase.createClient(URL, KEY);
 
-    let db = null;
-    let user = null;
+    let db = null; let user = null;
     const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5' };
 
-    // 2. Liste certifiée des 24 outils stratégiques
     const TOOLS = [
         {id:1, t:"Capacités Métier", ico:"🧭"}, {id:2, t:"Transformation IT", ico:"⚡"}, {id:3, t:"Objectifs Strat", ico:"🎯"}, {id:4, t:"Écosystème", ico:"🌐"},
         {id:5, t:"Portefeuille App", ico:"📱"}, {id:6, t:"Flux & Interfaces", ico:"🔗"}, {id:7, t:"Mapping Cap/App", ico:"🗺️"}, {id:8, t:"Obsolescence", ico:"🕰️"},
@@ -108,36 +94,13 @@
         {id:21, t:"Roadmap SI", ico:"🗓️"}, {id:22, t:"Impact Projets", ico:"💥"}, {id:23, t:"Coût IT", ico:"💰"}, {id:24, t:"Innovation", ico:"💡"}
     ];
 
-    // 3. Logique de démarrage (Auditée contre les blocages)
     async function init() {
         const authActions = document.getElementById('authActions');
-        const stTitle = document.getElementById('stTitle');
+        const debugZone = document.getElementById('debugZone');
 
         try {
             const { data, error } = await supabase.from('ea_platform_data').select('content').eq('id', 1).single();
             
-            if (error) throw error;
-            if (!data) throw new Error("Aucune donnée sur l'ID 1");
-
-            db = data.content;
-
-            // Cas 1 : La plateforme est neuve (aucun utilisateur)
-            if (!db.users || db.users.length === 0) {
-                stTitle.innerText = "Setup Initial";
-                authActions.innerHTML = `
-                    <input type="text" id="admN" placeholder="Nom">
-                    <input type="text" id="admP" placeholder="Prénom">
-                    <input type="email" id="admE" placeholder="Email professionnel">
-                    <button class="btn" style="width:100%" onclick="setupPlatform()">Lancer SI Manager</button>`;
-            } 
-            // Cas 2 : La plateforme est prête (on affiche le login)
-            else {
-                stTitle.innerText = "Accès Plateforme SI";
-                authActions.innerHTML = `
-                    <select id="uSel">${db.users.map(u => `<option value="${u.id}">${u.name} (${u.role})</option>`).join('')}</select>
-                    <button class="btn" style="width:100%; margin-top:10px;" onclick="login()">Se connecter →</button>`;
-            }
-        } catch (err) {
-            stTitle.innerText = "Liaison Interrompue";
-            authActions.innerHTML = `
-                <div class="err-msg">D
+            if (error) {
+                document.getElementById('stTitle').innerText = "Erreur Liaison";
+                debugZone.style.display =
