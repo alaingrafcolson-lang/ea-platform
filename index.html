@@ -6,27 +6,27 @@ const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let db=null, user=null, projects=[], allUsers=[], reports=[], activityLog=[], kpiSnapshots=[];
-let editingProjectId=null, currentPeriod='weekly';
-let chartInstances={};
+let db = null, user = null, projects = [], allUsers = [], reports = [], activityLog = [], kpiSnapshots = [];
+let editingProjectId = null, currentPeriod = 'weekly';
+let chartInstances = {};
 
-const COLORS={ADMIN:'#1A6CF5',DSI:'#7C5CFC',RSSI:'#E84568',DATA:'#00B49C',NET:'#F97316',SYS:'#0EA5E9',AGILE:'#EC4899'};
-const ROLE_LABELS={ADMIN:'Super Admin',DSI:'DSI',RSSI:'RSSI',DATA:'Expert Data',NET:'Admin Réseau',SYS:'Admin Système',AGILE:'Agile/Scrum'};
-const STATUS_CFG={draft:{label:'Brouillon',color:'#888'},active:{label:'En cours',color:'#22C55E'},review:{label:'En révision',color:'#1A6CF5'},done:{label:'Terminé',color:'#00B49C'},paused:{label:'En pause',color:'#F5A623'}};
+const COLORS = { ADMIN: '#1A6CF5', DSI: '#7C5CFC', RSSI: '#E84568', DATA: '#00B49C', NET: '#F97316', SYS: '#0EA5E9', AGILE: '#EC4899' };
+const ROLE_LABELS = { ADMIN: 'Super Admin', DSI: 'DSI', RSSI: 'RSSI', DATA: 'Expert Data', NET: 'Admin Réseau', SYS: 'Admin Système', AGILE: 'Agile/Scrum' };
+const STATUS_CFG = { draft: { label: 'Brouillon', color: '#888' }, active: { label: 'En cours', color: '#22C55E' }, review: { label: 'En révision', color: '#1A6CF5' }, done: { label: 'Terminé', color: '#00B49C' }, paused: { label: 'En pause', color: '#F5A623' } };
 
-const TOOLS=[
-    {id:1,t:"Capacités Métier",ico:"🧭"},{id:2,t:"Transformation IT",ico:"⚡"},
-    {id:3,t:"Objectifs Strat",ico:"🎯"},{id:4,t:"Écosystème",ico:"🌐"},
-    {id:5,t:"Portefeuille App",ico:"📱"},{id:6,t:"Flux & Interfaces",ico:"🔗"},
-    {id:7,t:"Mapping Cap/App",ico:"🗺️"},{id:8,t:"Obsolescence",ico:"🕰️"},
-    {id:9,t:"Données Métier",ico:"🗄️"},{id:10,t:"Lineage Data",ico:"📉"},
-    {id:11,t:"RGPD",ico:"⚖️"},{id:12,t:"Analytique",ico:"📊"},
-    {id:13,t:"Infrastructure",ico:"🖥️"},{id:14,t:"Sécurité SI",ico:"🛡️"},
-    {id:15,t:"Standards",ico:"📜"},{id:16,t:"Cloud Arch",ico:"☁️"},
-    {id:17,t:"Processus",ico:"🏢"},{id:18,t:"Parties Prenantes",ico:"👥"},
-    {id:19,t:"Gouvernance",ico:"🏛️"},{id:20,t:"Risques SI",ico:"⚠️"},
-    {id:21,t:"Roadmap SI",ico:"🗓️"},{id:22,t:"Impact Projets",ico:"💥"},
-    {id:23,t:"Coût IT",ico:"💰"},{id:24,t:"Innovation",ico:"💡"}
+const TOOLS = [
+    { id: 1, t: "Capacités Métier", ico: "🧭" }, { id: 2, t: "Transformation IT", ico: "⚡" },
+    { id: 3, t: "Objectifs Strat", ico: "🎯" }, { id: 4, t: "Écosystème", ico: "🌐" },
+    { id: 5, t: "Portefeuille App", ico: "📱" }, { id: 6, t: "Flux & Interfaces", ico: "🔗" },
+    { id: 7, t: "Mapping Cap/App", ico: "🗺️" }, { id: 8, t: "Obsolescence", ico: "🕰️" },
+    { id: 9, t: "Données Métier", ico: "🗄️" }, { id: 10, t: "Lineage Data", ico: "📉" },
+    { id: 11, t: "RGPD", ico: "⚖️" }, { id: 12, t: "Analytique", ico: "📊" },
+    { id: 13, t: "Infrastructure", ico: "🖥️" }, { id: 14, t: "Sécurité SI", ico: "🛡️" },
+    { id: 15, t: "Standards", ico: "📜" }, { id: 16, t: "Cloud Arch", ico: "☁️" },
+    { id: 17, t: "Processus", ico: "🏢" }, { id: 18, t: "Parties Prenantes", ico: "👥" },
+    { id: 19, t: "Gouvernance", ico: "🏛️" }, { id: 20, t: "Risques SI", ico: "⚠️" },
+    { id: 21, t: "Roadmap SI", ico: "🗓️" }, { id: 22, t: "Impact Projets", ico: "💥" },
+    { id: 23, t: "Coût IT", ico: "💰" }, { id: 24, t: "Innovation", ico: "💡" }
 ];
 
 const DICT=new Set(['le','la','les','un','une','des','et','ou','est','en','de','du','au','aux','par','pour','sur','avec','sans','dans','si','que','qui','quoi','dont','où','mais','donc','or','ni','car','ce','cet','cette','ces','mon','ton','son','notre','votre','leur','leurs','je','tu','il','elle','nous','vous','ils','elles','me','te','se','lui','y','voici','voilà','plus','très','bien','aussi','même','tout','tous','toute','toutes','son','sa','ses','après','avant','lors','puis','enfin','sinon','cela','ici','là','alors','comme','supabase','dashboard','cloud','api','sql','rls','si','rssi','dsi','data','agile','scrum','réseau','infrastructure','sécurité','governance','roadmap','portefeuille','mapping','lineage','analytique','rgpd','obsolescence','écosystème','processus','innovation','coût','impact','projets','projet','objectifs','capacités','métier','transformation','standards','gouvernance','risques','flux','interfaces','parties','prenantes','outil','outils','diagnostic','admin','système','master','expert','réseau','arch','strat','kpi','rapport','activité','snapshot','maturité','score']);
