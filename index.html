@@ -212,11 +212,15 @@
                 <option value="RSSI">RSSI (Rose)</option>
                 <option value="DATA">Expert Data (Teal)</option>
                 <option value="ADMIN">Super Admin (Blue)</option>
+                <option value="SERVICE_MANAGER">Manager de service (Orange)</option>
+                <option value="CEO">PDG / CEO (Or)</option>
+                <option value="NET">Admin Réseaux (Bleu ciel)</option>
+                <option value="SYS">Admin Système (Gris)</option>
             </select>
             <button class="btn" style="width:100%" onclick="addUser()">Créer le profil</button>
         </div>
 
-        <!-- ========== NOUVEAU : FORMULAIRE CRÉATION UTILISATEUR AVEC SÉCURITÉ ========== -->
+        <!-- ========== FORMULAIRE CRÉATION UTILISATEUR AVEC SÉCURITÉ ========== -->
         <div class="admin-card" style="margin-top: 32px;">
             <h3>➕ Créer un nouvel utilisateur (avec sécurité)</h3>
             <form id="createUserForm">
@@ -226,6 +230,10 @@
                     <option value="RSSI">RSSI (Rose)</option>
                     <option value="DSI">DSI (Violet)</option>
                     <option value="DATA">DATA (Teal)</option>
+                    <option value="SERVICE_MANAGER">Manager de service (Orange)</option>
+                    <option value="CEO">PDG / CEO (Or)</option>
+                    <option value="NET">Admin Réseaux (Bleu ciel)</option>
+                    <option value="SYS">Admin Système (Gris)</option>
                 </select>
                 <div id="securityQuestionsContainer" style="margin: 15px 0;"></div>
                 <div id="captchaContainer" style="margin: 15px 0;"></div>
@@ -243,7 +251,7 @@
 
 <script>
 // ══════════════════════════════════════════════════════
-//  CONFIG — BUGFIX #6 : éviter la collision avec URL natif
+//  CONFIG
 // ══════════════════════════════════════════════════════
 const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
@@ -252,9 +260,30 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let db   = null;  // données JSON persistées
 let user = null;  // profil utilisateur courant (depuis ea_users)
 
-const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5' };
+// Couleurs par rôle (avec nouveaux rôles)
+const COLORS = { 
+    DSI:'#7C5CFC', 
+    RSSI:'#E84568', 
+    DATA:'#00B49C', 
+    ADMIN:'#1A6CF5',
+    SERVICE_MANAGER:'#F97316',  // Orange
+    CEO:'#F5A623',              // Or
+    NET:'#0EA5E9',              // Bleu ciel
+    SYS:'#6B7280'               // Gris
+};
 
-// BUGFIX #7 : icône ⚖️ dédoublée — Gouvernance → 🏛️
+// Libellés des rôles
+const ROLE_LABELS = {
+    ADMIN: 'Super Admin',
+    DSI: 'DSI',
+    RSSI: 'RSSI',
+    DATA: 'Expert Data',
+    SERVICE_MANAGER: 'Manager de service',
+    CEO: 'PDG / CEO',
+    NET: 'Admin Réseaux',
+    SYS: 'Admin Système'
+};
+
 const TOOLS = [
     {id:1,  t:"Capacités Métier",   ico:"🧭"}, {id:2,  t:"Transformation IT",    ico:"⚡"},
     {id:3,  t:"Objectifs Strat",    ico:"🎯"}, {id:4,  t:"Écosystème",            ico:"🌐"},
@@ -296,14 +325,11 @@ function setScreen(id) {
 //  INIT — point d'entrée
 // ──────────────────────────────────────────────────────
 async function init() {
-    // Vérifie si une session Supabase Auth existe déjà
     try {
         const { data: { session } } = await sb.auth.getSession();
-
         if (session) {
             await loadUserProfile(session.user.email);
         } else {
-            // Pas de session → afficher le formulaire de login
             showLoginForm('Bienvenue sur SI Governance');
         }
     } catch (err) {
@@ -343,7 +369,6 @@ async function doLogin() {
     }
 }
 
-// BUGFIX #2 : vraie déconnexion Supabase Auth, pas location.reload()
 async function doLogout() {
     await sb.auth.signOut();
     user = null;
@@ -354,7 +379,6 @@ async function doLogout() {
     document.getElementById('loginEmail').value    = '';
     document.getElementById('loginPassword').value = '';
     document.getElementById('debugZone').style.display  = 'none';
-    // BUGFIX #3 : vider l'app avant de masquer (évite exposition DOM)
     document.getElementById('mainContainer').innerHTML = '';
     setScreen('authScreen');
 }
@@ -364,7 +388,6 @@ async function doLogout() {
 // ──────────────────────────────────────────────────────
 async function loadUserProfile(email) {
     try {
-        // Charger le profil depuis ea_users
         const { data: profile, error: pErr } = await sb
             .from('ea_users')
             .select('*')
@@ -372,7 +395,6 @@ async function loadUserProfile(email) {
             .single();
 
         if (pErr || !profile) {
-            // Pas de profil trouvé → peut être un tout premier ADMIN
             await handleFirstLaunch(email);
             return;
         }
@@ -380,7 +402,6 @@ async function loadUserProfile(email) {
         user = profile;
         applyUserTheme();
 
-        // Charger les données persistées
         const { data: row } = await sb
             .from('ea_platform_data')
             .select('content')
@@ -391,7 +412,7 @@ async function loadUserProfile(email) {
 
         renderApp();
 
-        // Si l'utilisateur est Admin, initialiser le formulaire de sécurité
+        // Initialiser le formulaire de sécurité si l'utilisateur est Admin
         if (user.role === 'ADMIN') {
             loadSecurityQuestions();
             generateCaptcha();
@@ -403,14 +424,12 @@ async function loadUserProfile(email) {
     }
 }
 
-// Premier lancement : si aucun utilisateur en base, proposer la création du Super Admin
 async function handleFirstLaunch(email) {
     const { count } = await sb
         .from('ea_users')
         .select('*', { count:'exact', head:true });
 
     if (count === 0) {
-        // Créer automatiquement le Super Admin avec l'email connecté
         const { error } = await sb.from('ea_users').insert({
             email, nom: email.split('@')[0], role: 'ADMIN'
         });
@@ -422,16 +441,12 @@ async function handleFirstLaunch(email) {
             showDebug('Impossible de créer le Super Admin : ' + error.message);
         }
     } else {
-        // L'email n'est pas dans les profils autorisés
         await sb.auth.signOut();
         showLoginForm('Accès non autorisé');
         showDebug('❌ Cet email n\'a pas de profil dans ea_users. Contactez votre administrateur.');
     }
 }
 
-// ──────────────────────────────────────────────────────
-//  THÈME UTILISATEUR
-// ──────────────────────────────────────────────────────
 function applyUserTheme() {
     const color = COLORS[user.role] || COLORS.ADMIN;
     document.documentElement.style.setProperty('--u-color', color);
@@ -440,13 +455,9 @@ function applyUserTheme() {
     av.style.background = color;
     av.textContent = (user.nom || 'U').charAt(0).toUpperCase();
 
-    // Afficher/masquer le lien Admin
     document.getElementById('admLink').style.display = user.role === 'ADMIN' ? 'inline-flex' : 'none';
 }
 
-// ──────────────────────────────────────────────────────
-//  RENDU APP
-// ──────────────────────────────────────────────────────
 function renderApp() {
     setScreen('appScreen');
     tab('diag');
@@ -459,7 +470,7 @@ function tab(which) {
 }
 
 // ──────────────────────────────────────────────────────
-//  OUTILS — rendu et sauvegarde
+//  OUTILS
 // ──────────────────────────────────────────────────────
 function renderTools() {
     const grid = document.getElementById('mainContainer');
@@ -485,7 +496,6 @@ function renderTools() {
         `;
         grid.appendChild(card);
 
-        // Auto-save avec debounce
         const textarea = card.querySelector(`#note_${tool.id}`);
         let debounce;
         textarea.addEventListener('input', () => {
@@ -513,7 +523,7 @@ async function saveNote(toolId, value) {
 }
 
 // ──────────────────────────────────────────────────────
-//  ADMIN — ajout d'utilisateur (fonction existante)
+//  ADMIN — ajout d'utilisateur simple (existant)
 // ──────────────────────────────────────────────────────
 async function addUser() {
     if (!user || user.role !== 'ADMIN') {
@@ -539,7 +549,7 @@ async function addUser() {
     if (error) {
         showToast('❌ Erreur : ' + error.message, 'error');
     } else {
-        showToast(`✅ Profil ${nom} (${role}) créé !`);
+        showToast(`✅ Profil ${nom} (${ROLE_LABELS[role] || role}) créé !`);
         document.getElementById('newEmail').value = '';
         document.getElementById('newN').value     = '';
     }
@@ -548,8 +558,6 @@ async function addUser() {
 // ──────────────────────────────────────────────────────
 //  NOUVELLES FONCTIONS : CRÉATION D'UTILISATEUR AVEC QUESTIONS SÉCURITÉ
 // ──────────────────────────────────────────────────────
-
-// Charger les questions de sécurité depuis l'API
 async function loadSecurityQuestions() {
     try {
         const response = await fetch('/api/security-questions');
@@ -600,7 +608,6 @@ async function loadSecurityQuestions() {
     }
 }
 
-// Générer un captcha mathématique
 let currentCaptchaAnswer = 0;
 function generateCaptcha() {
     const a = Math.floor(Math.random() * 10);
@@ -615,7 +622,6 @@ function generateCaptcha() {
     }
 }
 
-// Attacher l'événement de soumission du formulaire
 const createUserForm = document.getElementById('createUserForm');
 if (createUserForm) {
     createUserForm.addEventListener('submit', async (e) => {
@@ -672,6 +678,8 @@ if (createUserForm) {
                 createUserForm.reset();
                 generateCaptcha();
                 loadSecurityQuestions();
+                // Recharger la liste des utilisateurs si elle existe
+                // (optionnel, selon votre code)
             } else {
                 msgDiv.innerHTML = `<span style="color:red;">❌ Erreur : ${result.error}</span>`;
             }
