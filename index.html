@@ -1129,6 +1129,31 @@ function exportPDF(){
 }
 
 init();
-</script>
+</script><!-- Section Admin - Création d'utilisateur -->
+<div id="adminCreateUserSection" style="display: none;">
+  <h2>Créer un nouvel utilisateur</h2>
+  <form id="createUserForm">
+    <label>Email :</label>
+    <input type="email" id="newUserEmail" required><br>
+
+    <label>Mot de passe :</label>
+    <input type="password" id="newUserPassword" required><br>
+
+    <label>Type d'utilisateur :</label>
+    <select id="newUserType">
+      <option value="RSSI">RSSI (Rose)</option>
+      <option value="DSI">DSI (Violet)</option>
+      <option value="DATA">DATA (Teal)</option>
+    </select><br>
+
+    <label>Questions de sécurité :</label>
+    <div id="securityQuestionsContainer"></div>
+
+    <div id="captchaContainer"></div>
+
+    <button type="submit">Créer l'utilisateur</button>
+  </form>
+  <div id="createUserMessage"></div>
+</div>
 </body>
 </html>
