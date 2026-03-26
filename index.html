@@ -3,355 +3,553 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SI Governance Enterprise | v5.0</title>
+    <title>SI Governance Enterprise | v3.0</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;}
-        body{font-family:'Instrument Sans',sans-serif;background:#F0F4FA;color:#0B1829;}
-        .screen{display:none;min-height:100vh;}
-        .screen.active{display:block;}
-        #authScreen{background:#0B1829;color:#fff;display:flex;align-items:center;justify-content:center;}
-        .auth-card{background:rgba(255,255,255,.06);border-radius:28px;padding:44px 40px;text-align:center;max-width:420px;margin:20px;}
-        .auth-card h2{font-family:'Syne';font-size:26px;}
-        .login-form input{width:100%;padding:13px;margin-bottom:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;}
-        .btn-login{width:100%;padding:14px;background:#1A6CF5;color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;}
-        .topbar{background:#fff;padding:0 28px;height:66px;display:flex;align-items:center;justify-content:space-between;position:fixed;top:0;width:100%;z-index:100;border-bottom:1px solid rgba(0,0,0,.08);}
-        .container{padding:86px 28px 48px;max-width:1440px;margin:0 auto;}
-        .s-hide{display:none!important;}
-        .btn{padding:10px 20px;border-radius:10px;border:none;cursor:pointer;font-weight:700;background:#1A6CF5;color:#fff;}
-        .views-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px;}
-        .vp-card{background:#fff;border-radius:16px;padding:22px;border-top:5px solid #1A6CF5;}
-        .vp-notes{width:100%;border:1px solid #eee;border-radius:9px;padding:10px;min-height:80px;font-family:inherit;}
-        .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:28px;}
-        .kpi-card{background:#fff;border-radius:16px;padding:22px;border:1px solid rgba(0,0,0,.08);}
-        .kpi-value{font-family:'Syne';font-size:32px;font-weight:800;}
-        .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;}
-        .proj-card{background:#fff;border-radius:16px;padding:24px;border:1px solid rgba(0,0,0,.08);}
-        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;}
-        .modal-overlay.open{display:flex;}
-        .modal{background:#fff;border-radius:20px;padding:32px;max-width:640px;width:90%;max-height:90vh;overflow:auto;}
-        #toast{position:fixed;bottom:28px;right:28px;background:#0B1829;color:#fff;padding:12px 20px;border-radius:12px;opacity:0;transition:all .3s;pointer-events:none;}
-        #toast.show{opacity:1;}
+        :root {
+            --navy:#0B1829; --blue:#1A6CF5; --white:#FFF; --border:rgba(0,0,0,0.1);
+            --violet:#7C5CFC; --teal:#00B49C; --amber:#F5A623; --rose:#E84568; --u-color: var(--blue);
+        }
+        * { box-sizing: border-box; }
+        body { font-family:'Instrument Sans', sans-serif; background:#F4F7FB; margin:0; color:var(--navy); }
+
+        /* ── Écrans ── */
+        .screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; }
+        .screen.active { display:flex; }
+        #authScreen { background:var(--navy); color:#fff; }
+
+        /* ── Auth card ── */
+        .auth-card {
+            width:100%; max-width:420px; padding:40px;
+            background:rgba(255,255,255,0.05); border-radius:30px;
+            backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.1);
+            text-align:center;
+        }
+        .auth-card h2 { font-family:'Syne'; margin:0 0 20px; font-size:24px; }
+        .auth-loader { display:flex; align-items:center; justify-content:center; gap:10px; opacity:0.6; font-size:14px; }
+        .spinner {
+            width:18px; height:18px; border:2px solid rgba(255,255,255,0.2);
+            border-top-color:#fff; border-radius:50%;
+            animation:spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* ── Login form (affiché en fallback ou si premier lancement) ── */
+        .login-form { display:none; }
+        .login-form input {
+            padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.15);
+            width:100%; margin-bottom:12px; font-family:inherit; font-size:14px;
+            background:rgba(255,255,255,0.08); color:#fff; outline:none;
+        }
+        .login-form input::placeholder { color:rgba(255,255,255,0.4); }
+        .login-form input:focus { border-color:var(--blue); }
+        .login-form .btn-login {
+            width:100%; padding:14px; border-radius:12px; border:none; cursor:pointer;
+            font-weight:700; background:var(--blue); color:#fff; font-family:inherit;
+            font-size:15px; transition:opacity 0.2s;
+        }
+        .login-form .btn-login:hover { opacity:0.85; }
+        .login-form .btn-login:disabled { opacity:0.5; cursor:not-allowed; }
+
+        /* ── Erreur debug ── */
+        .debug-err {
+            color:#FF8FAD; font-size:11px; margin-top:15px;
+            border:1px solid rgba(255,143,173,0.3); padding:10px;
+            border-radius:8px; display:none; text-align:left; line-height:1.5;
+        }
+
+        /* ── Topbar ── */
+        .topbar {
+            background:#fff; padding:0 32px; height:70px;
+            display:flex; align-items:center; justify-content:space-between;
+            width:100%; border-bottom:1px solid var(--border);
+            position:fixed; top:0; z-index:100;
+        }
+        .topbar-left { display:flex; align-items:center; gap:15px; }
+        #uAvatar {
+            width:35px; height:35px; border-radius:10px;
+            background:var(--u-color); color:#fff;
+            display:flex; align-items:center; justify-content:center; font-weight:800;
+        }
+        .topbar-right { display:flex; align-items:center; gap:8px; }
+
+        /* ── Boutons ── */
+        .btn {
+            padding:10px 20px; border-radius:10px; border:none; cursor:pointer;
+            font-weight:600; background:var(--u-color); color:#fff;
+            font-family:inherit; font-size:14px; transition:opacity 0.2s;
+        }
+        .btn:hover { opacity:0.85; }
+        .btn-ghost { background:none; color:var(--navy); }
+        .btn-ghost:hover { background:rgba(0,0,0,0.05); opacity:1; }
+        .btn-danger { background:var(--rose); }
+
+        /* ── Container ── */
+        .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
+
+        /* ── Dashboard ── */
+        .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
+        .dashboard-header h1 { font-family:'Syne'; margin:0; }
+        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; }
+
+        /* ── Carte outil ── */
+        .vp-card {
+            background:#fff; border-radius:16px; padding:24px;
+            border-top:5px solid var(--u-color);
+            box-shadow:0 4px 15px rgba(0,0,0,0.05);
+            transition:transform 0.2s, box-shadow 0.2s;
+        }
+        .vp-card:hover { transform:translateY(-3px); box-shadow:0 8px 25px rgba(0,0,0,0.1); }
+        .vp-card-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+        .vp-ico { font-size:24px; line-height:1; }
+        .vp-title { font-weight:600; font-size:15px; color:var(--navy); }
+        .vp-id { font-size:11px; color:#999; margin-top:2px; }
+        .vp-notes {
+            width:100%; border:1px solid #eee; border-radius:8px;
+            padding:10px; font-family:inherit; font-size:13px;
+            resize:vertical; min-height:60px; color:var(--navy);
+            transition:border-color 0.2s; outline:none;
+        }
+        .vp-notes:focus { border-color:var(--blue); }
+        .vp-saved { font-size:11px; color:var(--teal); margin-top:6px; display:none; }
+
+        /* ── Section Admin ── */
+        #adminSection { display:none; }
+        .admin-card {
+            background:#fff; padding:30px; border-radius:20px;
+            border:1px solid #eee; max-width:500px;
+        }
+        .admin-card h3 { margin:0 0 20px; font-family:'Syne'; }
+        .admin-card input, .admin-card select {
+            padding:12px; border-radius:10px; border:1px solid #ddd;
+            width:100%; margin-bottom:15px; font-family:inherit; font-size:14px; outline:none;
+        }
+        .admin-card input:focus, .admin-card select:focus { border-color:var(--blue); }
+
+        /* ── Toast ── */
+        #toast {
+            position:fixed; bottom:30px; right:30px; z-index:9999;
+            background:var(--navy); color:#fff; padding:14px 22px;
+            border-radius:12px; font-size:14px; font-weight:600;
+            transform:translateY(80px); opacity:0;
+            transition:transform 0.3s, opacity 0.3s;
+            pointer-events:none; max-width:300px;
+        }
+        #toast.show { transform:translateY(0); opacity:1; }
+        #toast.success { border-left:4px solid var(--teal); }
+        #toast.error { border-left:4px solid var(--rose); }
+
+        /* ── Responsive ── */
+        @media (max-width:600px) {
+            .topbar { padding:0 16px; }
+            .container { padding:90px 16px 30px; }
+            .dashboard-header { flex-direction:column; align-items:flex-start; }
+        }
     </style>
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
+<!-- ══════════════ ÉCRAN AUTH ══════════════ -->
 <div class="screen active" id="authScreen">
     <div class="auth-card">
-        <h2>SI Governance · v5.0</h2>
-        <p style="margin:16px 0;opacity:.7;">Connectez-vous pour accéder à la plateforme</p>
-        <div id="loginForm">
-            <input type="email" id="loginEmail" placeholder="Email professionnel">
-            <input type="password" id="loginPassword" placeholder="Mot de passe">
-            <button class="btn-login" onclick="doLogin()">Se connecter</button>
+        <h2 id="stTitle">Connexion Cloud…</h2>
+
+        <!-- Loader initial -->
+        <div id="authLoader" class="auth-loader">
+            <div class="spinner"></div>
+            <span>Liaison Supabase en cours…</span>
         </div>
-        <div id="debugZone" style="color:#ff8fad;font-size:12px;margin-top:16px;display:none;"></div>
+
+        <!-- Formulaire login (affiché si session expirée ou premier accès) -->
+        <div id="loginForm" class="login-form">
+            <input type="email" id="loginEmail" placeholder="Email professionnel" autocomplete="email">
+            <input type="password" id="loginPassword" placeholder="Mot de passe" autocomplete="current-password">
+            <button class="btn-login" id="loginBtn" onclick="doLogin()">Se connecter</button>
+            <p id="loginHint" style="opacity:0.5; font-size:12px; margin-top:12px;"></p>
+        </div>
+
+        <div id="debugZone" class="debug-err"></div>
     </div>
 </div>
 
-<!-- APP SCREEN -->
-<div class="screen" id="appScreen">
-    <div class="topbar">
-        <div><strong>SI MANAGER</strong></div>
-        <div>
-            <button class="nav-btn" onclick="tab('diag')">📊 Diagnostic</button>
-            <button class="nav-btn" onclick="tab('kpi')">📈 KPI</button>
-            <button class="nav-btn" onclick="tab('projects')">📁 Projets</button>
-            <button class="nav-btn" id="navAdmin" onclick="tab('admin')" style="display:none">🔑 Admin</button>
-            <button onclick="doLogout()" style="margin-left:16px;padding:8px 16px;background:#E84568;color:#fff;border:none;border-radius:8px;">Déconnexion</button>
-        </div>
-    </div>
+<!-- ══════════════ APP ══════════════ -->
+<div class="screen" id="appScreen" style="justify-content:flex-start; align-items:flex-start;">
 
-    <!-- DIAGNOSTIC -->
-    <div id="diagSection" class="container">
-        <h1>Dashboard des 24 Outils</h1>
+    <nav class="topbar">
+        <div class="topbar-left">
+            <div id="uAvatar"></div>
+            <span style="font-family:'Syne'; font-weight:800; font-size:18px;">SI MANAGER</span>
+        </div>
+        <div class="topbar-right">
+            <button class="btn btn-ghost" onclick="tab('diag')">Diagnostic</button>
+            <button class="btn btn-ghost" id="admLink" style="display:none;" onclick="tab('admin')">🔑 Admin</button>
+            <button class="btn btn-danger" style="font-size:12px;" onclick="doLogout()">Déconnexion</button>
+        </div>
+    </nav>
+
+    <!-- Dashboard 24 outils -->
+    <main id="diagSection" class="container">
+        <div class="dashboard-header">
+            <h1>Dashboard des 24 Outils</h1>
+            <button class="btn" onclick="exportPDF()" style="background:var(--navy)">📊 Rapport PDF</button>
+        </div>
         <div id="mainContainer" class="views-grid"></div>
-    </div>
+    </main>
 
-    <!-- KPI -->
-    <div id="kpiSection" class="container s-hide">
-        <h1>KPI & Rapports</h1>
-        <div class="kpi-grid" id="kpiGrid"></div>
-        <div id="reportsList"></div>
-    </div>
-
-    <!-- PROJETS -->
-    <div id="projectsSection" class="container s-hide">
-        <h1>Projets SI</h1>
-        <button class="btn" onclick="openNewProject()">➕ Nouveau projet</button>
-        <div id="projectsGrid" class="projects-grid" style="margin-top:24px;"></div>
-    </div>
-
-    <!-- ADMIN -->
-    <div id="adminSection" class="container s-hide">
-        <h1>Administration</h1>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
-            <div style="background:#fff;padding:24px;border-radius:16px;">
-                <h3>➕ Ajouter un Expert SI</h3>
-                <input type="email" id="newEmail" placeholder="Email" style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ddd;">
-                <input type="text" id="newName" placeholder="Nom" style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ddd;">
-                <select id="newRole" style="width:100%;padding:12px;margin:8px 0;border-radius:8px;">
-                    <option value="ADMIN">Super Admin</option><option value="DSI">DSI</option><option value="RSSI">RSSI</option><option value="DATA">Expert Data</option>
-                </select>
-                <button class="btn" onclick="addUser()" style="width:100%">Créer</button>
-            </div>
-            <div style="background:#fff;padding:24px;border-radius:16px;">
-                <h3>👥 Équipe SI</h3>
-                <div id="usersList">Chargement...</div>
-            </div>
+    <!-- Section Admin -->
+    <section id="adminSection" class="container">
+        <h1 style="font-family:'Syne'; margin-bottom:24px;">Administration</h1>
+        <div class="admin-card">
+            <h3>➕ Ajouter un Expert SI</h3>
+            <input type="email" id="newEmail" placeholder="Email (ex: prenom.nom@entreprise.fr)">
+            <input type="text"  id="newN"     placeholder="Nom Prénom">
+            <select id="newR">
+                <option value="DSI">DSI (Violet)</option>
+                <option value="RSSI">RSSI (Rose)</option>
+                <option value="DATA">Expert Data (Teal)</option>
+                <option value="ADMIN">Super Admin (Blue)</option>
+            </select>
+            <button class="btn" style="width:100%" onclick="addUser()">Créer le profil</button>
         </div>
-        
-        <!-- Formulaire création utilisateur avec questions sécurité -->
-        <div id="adminCreateUserSection" style="display:none; margin-top:32px; background:#fff; padding:24px; border-radius:16px;">
-            <h3>Créer un nouvel utilisateur (avec questions sécurité)</h3>
+
+        <!-- ========== NOUVEAU : FORMULAIRE CRÉATION UTILISATEUR AVEC SÉCURITÉ ========== -->
+        <div class="admin-card" style="margin-top: 32px;">
+            <h3>➕ Créer un nouvel utilisateur (avec sécurité)</h3>
             <form id="createUserForm">
-                <input type="email" id="newUserEmail" placeholder="Email" required style="width:100%;padding:10px;margin:8px 0;"><br>
-                <input type="password" id="newUserPassword" placeholder="Mot de passe" required style="width:100%;padding:10px;margin:8px 0;"><br>
-                <select id="newUserType" style="width:100%;padding:10px;margin:8px 0;">
-                    <option value="RSSI">RSSI (Rose)</option><option value="DSI">DSI (Violet)</option><option value="DATA">DATA (Teal)</option>
-                </select><br>
-                <div id="securityQuestionsContainer"></div>
-                <div id="captchaContainer"></div>
-                <button type="submit" class="btn" style="margin-top:16px;">Créer l'utilisateur</button>
+                <input type="email" id="newUserEmail" placeholder="Email" required>
+                <input type="password" id="newUserPassword" placeholder="Mot de passe" required>
+                <select id="newUserType">
+                    <option value="RSSI">RSSI (Rose)</option>
+                    <option value="DSI">DSI (Violet)</option>
+                    <option value="DATA">DATA (Teal)</option>
+                </select>
+                <div id="securityQuestionsContainer" style="margin: 15px 0;"></div>
+                <div id="captchaContainer" style="margin: 15px 0;"></div>
+                <button type="submit" class="btn" style="width:100%; margin-top:10px;">Créer l'utilisateur</button>
             </form>
-            <div id="createUserMessage"></div>
+            <div id="createUserMessage" style="margin-top: 12px; font-size: 13px;"></div>
         </div>
-    </div>
+        <!-- ========== FIN NOUVEAU ========== -->
+    </section>
+
 </div>
 
-<!-- MODAL PROJET -->
-<div class="modal-overlay" id="projectModal">
-    <div class="modal">
-        <h3 id="modalTitle">Nouveau projet</h3>
-        <input type="text" id="pTitle" placeholder="Titre" style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ddd;">
-        <select id="pStatus" style="width:100%;padding:12px;margin:8px 0;">
-            <option value="draft">Brouillon</option><option value="active">En cours</option><option value="done">Terminé</option>
-        </select>
-        <textarea id="pContent" placeholder="Description" style="width:100%;padding:12px;margin:8px 0;min-height:120px;"></textarea>
-        <div style="display:flex;gap:12px;justify-content:flex-end;">
-            <button onclick="closeModal()" class="btn" style="background:#ccc;">Annuler</button>
-            <button onclick="saveProject()" class="btn">Enregistrer</button>
-        </div>
-    </div>
-</div>
-
+<!-- Toast notification -->
 <div id="toast"></div>
 
 <script>
-// CONFIGURATION
+// ══════════════════════════════════════════════════════
+//  CONFIG — BUGFIX #6 : éviter la collision avec URL natif
+// ══════════════════════════════════════════════════════
 const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let user = null, projects = [], allUsers = [], db = {};
-let editingProjectId = null;
+let db   = null;  // données JSON persistées
+let user = null;  // profil utilisateur courant (depuis ea_users)
 
-// UTILS
-function showToast(msg) {
+const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5' };
+
+// BUGFIX #7 : icône ⚖️ dédoublée — Gouvernance → 🏛️
+const TOOLS = [
+    {id:1,  t:"Capacités Métier",   ico:"🧭"}, {id:2,  t:"Transformation IT",    ico:"⚡"},
+    {id:3,  t:"Objectifs Strat",    ico:"🎯"}, {id:4,  t:"Écosystème",            ico:"🌐"},
+    {id:5,  t:"Portefeuille App",   ico:"📱"}, {id:6,  t:"Flux & Interfaces",     ico:"🔗"},
+    {id:7,  t:"Mapping Cap/App",    ico:"🗺️"}, {id:8,  t:"Obsolescence",          ico:"🕰️"},
+    {id:9,  t:"Données Métier",     ico:"🗄️"}, {id:10, t:"Lineage Data",          ico:"📉"},
+    {id:11, t:"RGPD",               ico:"⚖️"}, {id:12, t:"Analytique",            ico:"📊"},
+    {id:13, t:"Infrastructure",     ico:"🖥️"}, {id:14, t:"Sécurité SI",           ico:"🛡️"},
+    {id:15, t:"Standards",          ico:"📜"}, {id:16, t:"Cloud Arch",            ico:"☁️"},
+    {id:17, t:"Processus",          ico:"🏢"}, {id:18, t:"Parties Prenantes",     ico:"👥"},
+    {id:19, t:"Gouvernance",        ico:"🏛️"}, {id:20, t:"Risques SI",            ico:"⚠️"},
+    {id:21, t:"Roadmap SI",         ico:"🗓️"}, {id:22, t:"Impact Projets",        ico:"💥"},
+    {id:23, t:"Coût IT",            ico:"💰"}, {id:24, t:"Innovation",            ico:"💡"}
+];
+
+// ──────────────────────────────────────────────────────
+//  UTILITAIRES
+// ──────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
+    t.className   = `show ${type}`;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.className = '', 3000);
 }
+
+function showDebug(msg) {
+    const z = document.getElementById('debugZone');
+    z.style.display = 'block';
+    z.textContent   = msg;
+}
+
 function setScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
 }
-function tab(which) {
-    ['diag', 'kpi', 'projects', 'admin'].forEach(s => {
-        document.getElementById(s + 'Section').classList.toggle('s-hide', s !== which);
-    });
-    if (which === 'kpi') renderKPI();
-    if (which === 'admin') loadAllUsers();
-}
-function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-// AUTH
-async function doLogin() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const pwd = document.getElementById('loginPassword').value;
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
-    if (error) {
-        document.getElementById('debugZone').style.display = 'block';
-        document.getElementById('debugZone').textContent = error.message;
-        return;
+// ──────────────────────────────────────────────────────
+//  INIT — point d'entrée
+// ──────────────────────────────────────────────────────
+async function init() {
+    // Vérifie si une session Supabase Auth existe déjà
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+
+        if (session) {
+            await loadUserProfile(session.user.email);
+        } else {
+            // Pas de session → afficher le formulaire de login
+            showLoginForm('Bienvenue sur SI Governance');
+        }
+    } catch (err) {
+        showLoginForm('Connexion impossible');
+        showDebug('Erreur init : ' + err.message);
     }
-    await loadUserProfile(data.user.email);
 }
+
+// ──────────────────────────────────────────────────────
+//  AUTH — login / logout
+// ──────────────────────────────────────────────────────
+function showLoginForm(title) {
+    document.getElementById('stTitle').textContent = title;
+    document.getElementById('authLoader').style.display = 'none';
+    document.getElementById('loginForm').style.display  = 'block';
+}
+
+async function doLogin() {
+    const email    = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn      = document.getElementById('loginBtn');
+
+    if (!email || !password) { showDebug('Email et mot de passe requis.'); return; }
+
+    btn.disabled   = true;
+    btn.textContent = 'Connexion…';
+    document.getElementById('debugZone').style.display = 'none';
+
+    try {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        await loadUserProfile(data.user.email);
+    } catch (err) {
+        btn.disabled   = false;
+        btn.textContent = 'Se connecter';
+        showDebug('❌ ' + err.message);
+    }
+}
+
+// BUGFIX #2 : vraie déconnexion Supabase Auth, pas location.reload()
 async function doLogout() {
     await sb.auth.signOut();
     user = null;
+    db   = null;
+    document.getElementById('stTitle').textContent = 'Bienvenue sur SI Governance';
+    document.getElementById('authLoader').style.display = 'none';
+    document.getElementById('loginForm').style.display  = 'block';
+    document.getElementById('loginEmail').value    = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('debugZone').style.display  = 'none';
+    // BUGFIX #3 : vider l'app avant de masquer (évite exposition DOM)
+    document.getElementById('mainContainer').innerHTML = '';
     setScreen('authScreen');
 }
+
+// ──────────────────────────────────────────────────────
+//  CHARGEMENT PROFIL & DONNÉES
+// ──────────────────────────────────────────────────────
 async function loadUserProfile(email) {
-    const { data: profile } = await sb.from('ea_users').select('*').eq('email', email).single();
-    if (!profile) {
-        const { count } = await sb.from('ea_users').select('*', { count: 'exact', head: true });
-        if (count === 0) {
-            await sb.from('ea_users').insert({ email, nom: email.split('@')[0], role: 'ADMIN' });
-            return loadUserProfile(email);
+    try {
+        // Charger le profil depuis ea_users
+        const { data: profile, error: pErr } = await sb
+            .from('ea_users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (pErr || !profile) {
+            // Pas de profil trouvé → peut être un tout premier ADMIN
+            await handleFirstLaunch(email);
+            return;
         }
-        await sb.auth.signOut();
-        setScreen('authScreen');
-        return;
+
+        user = profile;
+        applyUserTheme();
+
+        // Charger les données persistées
+        const { data: row } = await sb
+            .from('ea_platform_data')
+            .select('content')
+            .eq('id', 1)
+            .single();
+
+        db = (row && row.content) ? row.content : {};
+
+        renderApp();
+
+        // Si l'utilisateur est Admin, initialiser le formulaire de sécurité
+        if (user.role === 'ADMIN') {
+            loadSecurityQuestions();
+            generateCaptcha();
+        }
+
+    } catch (err) {
+        showLoginForm('Erreur de chargement');
+        showDebug('Erreur profil : ' + err.message);
     }
-    user = profile;
-    document.getElementById('navAdmin').style.display = user.role === 'ADMIN' ? 'inline-block' : 'none';
-    const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
-    db = row?.content || {};
-    const { data: projs } = await sb.from('ea_projects').select('*').order('created_at', { ascending: false });
-    projects = projs || [];
-    const { data: users } = await sb.from('ea_users').select('*');
-    allUsers = users || [];
+}
+
+// Premier lancement : si aucun utilisateur en base, proposer la création du Super Admin
+async function handleFirstLaunch(email) {
+    const { count } = await sb
+        .from('ea_users')
+        .select('*', { count:'exact', head:true });
+
+    if (count === 0) {
+        // Créer automatiquement le Super Admin avec l'email connecté
+        const { error } = await sb.from('ea_users').insert({
+            email, nom: email.split('@')[0], role: 'ADMIN'
+        });
+        if (!error) {
+            showToast('✅ Super Admin créé automatiquement');
+            await loadUserProfile(email);
+        } else {
+            showLoginForm('Erreur initialisation');
+            showDebug('Impossible de créer le Super Admin : ' + error.message);
+        }
+    } else {
+        // L'email n'est pas dans les profils autorisés
+        await sb.auth.signOut();
+        showLoginForm('Accès non autorisé');
+        showDebug('❌ Cet email n\'a pas de profil dans ea_users. Contactez votre administrateur.');
+    }
+}
+
+// ──────────────────────────────────────────────────────
+//  THÈME UTILISATEUR
+// ──────────────────────────────────────────────────────
+function applyUserTheme() {
+    const color = COLORS[user.role] || COLORS.ADMIN;
+    document.documentElement.style.setProperty('--u-color', color);
+
+    const av = document.getElementById('uAvatar');
+    av.style.background = color;
+    av.textContent = (user.nom || 'U').charAt(0).toUpperCase();
+
+    // Afficher/masquer le lien Admin
+    document.getElementById('admLink').style.display = user.role === 'ADMIN' ? 'inline-flex' : 'none';
+}
+
+// ──────────────────────────────────────────────────────
+//  RENDU APP
+// ──────────────────────────────────────────────────────
+function renderApp() {
     setScreen('appScreen');
     tab('diag');
     renderTools();
-    renderProjects();
-    
-    // Afficher la section création utilisateur si Super Admin
-    if (user.role === 'ADMIN') {
-        document.getElementById('adminCreateUserSection').style.display = 'block';
-        loadSecurityQuestions();
-        generateCaptcha();
-    }
 }
 
-// TOOLS
-const TOOLS = [
-    { id: 1, t: "Capacités Métier" }, { id: 2, t: "Transformation IT" }, { id: 3, t: "Objectifs Strat" },
-    { id: 4, t: "Écosystème" }, { id: 5, t: "Portefeuille App" }, { id: 6, t: "Flux & Interfaces" },
-    { id: 7, t: "Mapping Cap/App" }, { id: 8, t: "Obsolescence" }, { id: 9, t: "Données Métier" },
-    { id: 10, t: "Lineage Data" }, { id: 11, t: "RGPD" }, { id: 12, t: "Analytique" },
-    { id: 13, t: "Infrastructure" }, { id: 14, t: "Sécurité SI" }, { id: 15, t: "Standards" },
-    { id: 16, t: "Cloud Arch" }, { id: 17, t: "Processus" }, { id: 18, t: "Parties Prenantes" },
-    { id: 19, t: "Gouvernance" }, { id: 20, t: "Risques SI" }, { id: 21, t: "Roadmap SI" },
-    { id: 22, t: "Impact Projets" }, { id: 23, t: "Coût IT" }, { id: 24, t: "Innovation" }
-];
+function tab(which) {
+    document.getElementById('diagSection').style.display  = which === 'diag'  ? 'block' : 'none';
+    document.getElementById('adminSection').style.display = which === 'admin' ? 'block' : 'none';
+}
+
+// ──────────────────────────────────────────────────────
+//  OUTILS — rendu et sauvegarde
+// ──────────────────────────────────────────────────────
 function renderTools() {
     const grid = document.getElementById('mainContainer');
     grid.innerHTML = '';
+
     TOOLS.forEach(tool => {
-        const val = db[`tool_${tool.id}`] || '';
+        const noteKey  = `tool_${tool.id}`;
+        const savedVal = (db && db[noteKey]) ? db[noteKey] : '';
+
         const card = document.createElement('div');
-        card.className = 'vp-card';
+        card.className   = 'vp-card';
+        card.style.borderTopColor = COLORS[user.role] || COLORS.ADMIN;
         card.innerHTML = `
-            <div><strong>${tool.t}</strong></div>
-            <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes...">${val}</textarea>
-            <div id="saved_${tool.id}" style="font-size:11px;color:#00B49C;display:none;">✓ Sauvegardé</div>
+            <div class="vp-card-header">
+                <span class="vp-ico">${tool.ico}</span>
+                <div>
+                    <div class="vp-title">${tool.t}</div>
+                    <div class="vp-id">Outil #${String(tool.id).padStart(2,'0')}</div>
+                </div>
+            </div>
+            <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes, statut, observations…">${savedVal}</textarea>
+            <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>
         `;
         grid.appendChild(card);
-        const ta = card.querySelector(`#note_${tool.id}`);
-        let deb;
-        ta.addEventListener('input', () => {
-            clearTimeout(deb);
-            deb = setTimeout(() => saveNote(tool.id, ta.value), 700);
+
+        // Auto-save avec debounce
+        const textarea = card.querySelector(`#note_${tool.id}`);
+        let debounce;
+        textarea.addEventListener('input', () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => saveNote(tool.id, textarea.value), 800);
         });
     });
 }
-async function saveNote(id, value) {
-    db[`tool_${id}`] = value;
-    await sb.from('ea_platform_data').upsert({ id: 1, content: db }, { onConflict: 'id' });
-    const el = document.getElementById(`saved_${id}`);
-    el.style.display = 'block';
-    setTimeout(() => el.style.display = 'none', 2000);
-}
 
-// KPI
-function computeKPI() {
-    const filled = TOOLS.filter(t => db[`tool_${t.id}`] && db[`tool_${t.id}`].trim().length > 0).length;
-    const toolsCompletion = Math.round((filled / 24) * 100);
-    const pTotal = projects.length;
-    const pActive = projects.filter(p => p.status === 'active').length;
-    const pDone = projects.filter(p => p.status === 'done').length;
-    const maturity = Math.round(toolsCompletion * 0.6 + (pActive / (pTotal || 1)) * 40);
-    return { filled, toolsCompletion, pTotal, pActive, pDone, maturity };
-}
-function renderKPI() {
-    const kpi = computeKPI();
-    const grid = document.getElementById('kpiGrid');
-    grid.innerHTML = `
-        <div class="kpi-card"><div class="kpi-label">Outils complétés</div><div class="kpi-value">${kpi.filled}/24</div><div>${kpi.toolsCompletion}%</div></div>
-        <div class="kpi-card"><div class="kpi-label">Score maturité</div><div class="kpi-value">${kpi.maturity}</div><div>/100</div></div>
-        <div class="kpi-card"><div class="kpi-label">Projets actifs</div><div class="kpi-value">${kpi.pActive}</div><div>sur ${kpi.pTotal}</div></div>
-        <div class="kpi-card"><div class="kpi-label">Projets terminés</div><div class="kpi-value">${kpi.pDone}</div><div>terminés</div></div>
-    `;
-}
+async function saveNote(toolId, value) {
+    if (!db) db = {};
+    db[`tool_${toolId}`] = value;
 
-// PROJETS
-function renderProjects() {
-    const grid = document.getElementById('projectsGrid');
-    if (!projects.length) { grid.innerHTML = '<p>Aucun projet</p>'; return; }
-    grid.innerHTML = projects.map(p => `
-        <div class="proj-card">
-            <h3>${esc(p.title)}</h3>
-            <p>${esc((p.content || '').substring(0, 100))}</p>
-            <button class="btn" style="margin-top:12px;" onclick="editProject('${p.id}')">Modifier</button>
-        </div>
-    `).join('');
-}
-function openNewProject() {
-    editingProjectId = null;
-    document.getElementById('pTitle').value = '';
-    document.getElementById('pStatus').value = 'draft';
-    document.getElementById('pContent').value = '';
-    document.getElementById('projectModal').classList.add('open');
-}
-function editProject(id) {
-    const p = projects.find(x => x.id === id);
-    if (!p) return;
-    editingProjectId = id;
-    document.getElementById('pTitle').value = p.title || '';
-    document.getElementById('pStatus').value = p.status || 'draft';
-    document.getElementById('pContent').value = p.content || '';
-    document.getElementById('projectModal').classList.add('open');
-}
-function closeModal() {
-    document.getElementById('projectModal').classList.remove('open');
-    editingProjectId = null;
-}
-async function saveProject() {
-    const title = document.getElementById('pTitle').value.trim();
-    const status = document.getElementById('pStatus').value;
-    const content = document.getElementById('pContent').value.trim();
-    if (!title) { showToast('Titre requis'); return; }
-    const payload = { title, status, content, owner_email: user.email, owner_name: user.nom, owner_role: user.role, updated_at: new Date().toISOString() };
-    if (editingProjectId) {
-        await sb.from('ea_projects').update(payload).eq('id', editingProjectId);
-        const idx = projects.findIndex(p => p.id === editingProjectId);
-        if (idx >= 0) projects[idx] = { ...projects[idx], ...payload };
+    const { error } = await sb
+        .from('ea_platform_data')
+        .upsert({ id:1, content: db }, { onConflict:'id' });
+
+    const savedEl = document.getElementById(`saved_${toolId}`);
+    if (!error) {
+        savedEl.style.display = 'block';
+        setTimeout(() => savedEl.style.display = 'none', 2000);
     } else {
-        const { data } = await sb.from('ea_projects').insert(payload).select().single();
-        if (data) projects.unshift(data);
+        showToast('❌ Erreur sauvegarde : ' + error.message, 'error');
     }
-    closeModal();
-    renderProjects();
-    showToast('Projet enregistré');
 }
 
-// ADMIN USERS
-async function loadAllUsers() {
-    const { data } = await sb.from('ea_users').select('*');
-    allUsers = data || [];
-    const list = document.getElementById('usersList');
-    if (!allUsers.length) { list.innerHTML = '<p>Aucun utilisateur</p>'; return; }
-    list.innerHTML = allUsers.map(u => `<div style="padding:8px;border-bottom:1px solid #eee;"><strong>${esc(u.nom)}</strong> (${u.role})<br><small>${esc(u.email)}</small></div>`).join('');
-}
+// ──────────────────────────────────────────────────────
+//  ADMIN — ajout d'utilisateur (fonction existante)
+// ──────────────────────────────────────────────────────
 async function addUser() {
+    if (!user || user.role !== 'ADMIN') {
+        showToast('❌ Accès refusé', 'error');
+        return;
+    }
+
     const email = document.getElementById('newEmail').value.trim();
-    const nom = document.getElementById('newName').value.trim();
-    const role = document.getElementById('newRole').value;
-    if (!email || !nom) { showToast('Email et nom requis'); return; }
+    const nom   = document.getElementById('newN').value.trim();
+    const role  = document.getElementById('newR').value;
+
+    if (!email || !nom) {
+        showToast('⚠️ Email et nom obligatoires', 'error');
+        return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast('⚠️ Format email invalide', 'error');
+        return;
+    }
+
     const { error } = await sb.from('ea_users').insert({ email, nom, role });
-    if (error) showToast('Erreur: ' + error.message);
-    else { showToast('Utilisateur créé'); document.getElementById('newEmail').value = ''; document.getElementById('newName').value = ''; loadAllUsers(); }
+
+    if (error) {
+        showToast('❌ Erreur : ' + error.message, 'error');
+    } else {
+        showToast(`✅ Profil ${nom} (${role}) créé !`);
+        document.getElementById('newEmail').value = '';
+        document.getElementById('newN').value     = '';
+    }
 }
 
-// NOUVELLES FONCTIONS POUR CRÉATION AVEC QUESTIONS SÉCURITÉ
+// ──────────────────────────────────────────────────────
+//  NOUVELLES FONCTIONS : CRÉATION D'UTILISATEUR AVEC QUESTIONS SÉCURITÉ
+// ──────────────────────────────────────────────────────
+
+// Charger les questions de sécurité depuis l'API
 async function loadSecurityQuestions() {
     try {
         const response = await fetch('/api/security-questions');
@@ -360,18 +558,24 @@ async function loadSecurityQuestions() {
         const container = document.getElementById('securityQuestionsContainer');
         if (!container) return;
         container.innerHTML = '';
+
         for (let i = 0; i < 2; i++) {
             const select = document.createElement('select');
             select.id = `question_${i}`;
             select.style.width = '100%';
             select.style.padding = '10px';
             select.style.margin = '8px 0';
+            select.style.borderRadius = '10px';
+            select.style.border = '1px solid #ddd';
+            select.required = true;
+            
             questions.forEach(q => {
                 const opt = document.createElement('option');
                 opt.value = q.id;
                 opt.textContent = q.question_text;
                 select.appendChild(opt);
             });
+            
             const input = document.createElement('input');
             input.type = 'text';
             input.placeholder = 'Votre réponse';
@@ -379,16 +583,24 @@ async function loadSecurityQuestions() {
             input.style.width = '100%';
             input.style.padding = '10px';
             input.style.margin = '8px 0';
+            input.style.borderRadius = '10px';
+            input.style.border = '1px solid #ddd';
+            input.required = true;
+
             container.appendChild(document.createTextNode(`Question ${i+1} :`));
             container.appendChild(select);
             container.appendChild(input);
         }
     } catch (error) {
         console.error('Erreur chargement questions:', error);
-        document.getElementById('securityQuestionsContainer').innerHTML = '<p style="color:red;">⚠️ Questions non disponibles</p>';
+        const container = document.getElementById('securityQuestionsContainer');
+        if (container) {
+            container.innerHTML = '<p style="color:red;">⚠️ Questions de sécurité non disponibles</p>';
+        }
     }
 }
 
+// Générer un captcha mathématique
 let currentCaptchaAnswer = 0;
 function generateCaptcha() {
     const a = Math.floor(Math.random() * 10);
@@ -397,50 +609,69 @@ function generateCaptcha() {
     const container = document.getElementById('captchaContainer');
     if (container) {
         container.innerHTML = `
-            <label>Vérification anti-spam : ${a} + ${b} = ?</label>
-            <input type="number" id="captchaInput" style="width:100%;padding:10px;margin:8px 0;" required>
+            <label style="display:block; margin-bottom:8px;">Vérification anti-spam : ${a} + ${b} = ?</label>
+            <input type="number" id="captchaInput" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;" required>
         `;
     }
 }
 
-// Soumission formulaire
-const form = document.getElementById('createUserForm');
-if (form) {
-    form.addEventListener('submit', async (e) => {
+// Attacher l'événement de soumission du formulaire
+const createUserForm = document.getElementById('createUserForm');
+if (createUserForm) {
+    createUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
         const captchaInput = document.getElementById('captchaInput');
         if (!captchaInput || parseInt(captchaInput.value) !== currentCaptchaAnswer) {
-            document.getElementById('createUserMessage').innerHTML = '<span style="color:red;">Réponse anti-spam incorrecte</span>';
+            document.getElementById('createUserMessage').innerHTML = '<span style="color:red;">❌ Réponse anti-spam incorrecte</span>';
             generateCaptcha();
             return;
         }
+
         const securityAnswers = [];
         for (let i = 0; i < 2; i++) {
             const questionId = document.getElementById(`question_${i}`).value;
             const answer = document.getElementById(`answer_${i}`).value;
-            securityAnswers.push({ questionId: parseInt(questionId), answer });
+            if (!answer.trim()) {
+                document.getElementById('createUserMessage').innerHTML = '<span style="color:red;">❌ Veuillez répondre aux deux questions de sécurité</span>';
+                return;
+            }
+            securityAnswers.push({ questionId: parseInt(questionId), answer: answer.trim() });
         }
+
         const userData = {
-            email: document.getElementById('newUserEmail').value,
+            email: document.getElementById('newUserEmail').value.trim(),
             password: document.getElementById('newUserPassword').value,
             userType: document.getElementById('newUserType').value,
             securityAnswers
         };
+
+        if (!userData.email || !userData.password) {
+            document.getElementById('createUserMessage').innerHTML = '<span style="color:red;">❌ Email et mot de passe requis</span>';
+            return;
+        }
+
         try {
             const { data: { session } } = await sb.auth.getSession();
             const token = session?.access_token;
+            
             const response = await fetch('/api/create-user', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(userData)
             });
+            
             const result = await response.json();
             const msgDiv = document.getElementById('createUserMessage');
+            
             if (response.ok) {
                 msgDiv.innerHTML = '<span style="color:green;">✅ Utilisateur créé avec succès !</span>';
-                form.reset();
+                createUserForm.reset();
                 generateCaptcha();
-                loadAllUsers();
+                loadSecurityQuestions();
             } else {
                 msgDiv.innerHTML = `<span style="color:red;">❌ Erreur : ${result.error}</span>`;
             }
@@ -450,12 +681,28 @@ if (form) {
     });
 }
 
-// INIT
-function init() {
-    // Rien de spécial, tout est géré par loadUserProfile après connexion
+// ──────────────────────────────────────────────────────
+//  EXPORT PDF
+// ──────────────────────────────────────────────────────
+function exportPDF() {
+    const el = document.getElementById('diagSection');
+    const opt = {
+        margin:       [10, 10, 10, 10],
+        filename:     `SI_Governance_Rapport_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type:'jpeg', quality:0.95 },
+        html2canvas:  { scale:2, useCORS:true },
+        jsPDF:        { unit:'mm', format:'a4', orientation:'landscape' }
+    };
+    showToast('📊 Génération du PDF…');
+    html2pdf().set(opt).from(el).save()
+        .then(() => showToast('✅ PDF exporté !'))
+        .catch(() => showToast('❌ Erreur PDF', 'error'));
 }
+
+// ──────────────────────────────────────────────────────
+//  DÉMARRAGE
+// ──────────────────────────────────────────────────────
 init();
 </script>
-
 </body>
 </html>
