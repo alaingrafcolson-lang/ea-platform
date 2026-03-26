@@ -206,21 +206,6 @@
             border-radius: 8px;
             border: 1px solid #ddd;
         }
-        .iframe-container {
-            position: relative;
-            padding-bottom: 56.25%;
-            height: 0;
-            overflow: hidden;
-            border-radius: 12px;
-        }
-        .iframe-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
         .message-item, .product-item, .problem-item {
             border: 1px solid #eee;
             border-radius: 12px;
@@ -313,20 +298,42 @@
         </div>
         <div style="margin-bottom: 32px;">
             <h2 style="font-family:'Syne'; margin-bottom: 20px;">📊 Feuille de calcul des coûts</h2>
-            <div class="cost-card"><div class="form-inline"><input type="month" id="costMonth"><select id="costRoleSelect"></select><input type="number" id="costHours" placeholder="Heures" step="0.5"><input type="text" id="costProject" placeholder="Projet"><button class="btn btn-success" onclick="addCostEntry()">Ajouter</button></div><div style="overflow-x: auto; margin-top: 20px;"><table class="cost-table"><thead><tr><th>Mois</th><th>Rôle</th><th>Heures</th><th>Coût (€)</th><th>Projet</th><th>Actions</th></tr></thead><tbody id="costSheetBody"></tbody></table></div><div style="margin-top: 16px; text-align: right; font-weight: bold;" id="costTotal"></div></div>
+            <div class="cost-card"><div class="form-inline"><input type="month" id="costMonth"><select id="costRoleSelect"></select><input type="number" id="costHours" placeholder="Heures" step="0.5"><input type="text" id="costProject" placeholder="Projet"><button class="btn btn-success" onclick="addCostEntry()">Ajouter</button></div><div style="overflow-x: auto; margin-top: 20px;"><table class="cost-table"><thead> <th>Mois</th><th>Rôle</th><th>Heures</th><th>Coût (€)</th><th>Projet</th><th>Actions</th> </thead><tbody id="costSheetBody"></tbody></table></div><div style="margin-top: 16px; text-align: right; font-weight: bold;" id="costTotal"></div></div>
         </div>
         <div style="margin-bottom: 32px;">
             <h2 style="font-family:'Syne'; margin-bottom: 20px;">🧾 Factures</h2>
-            <div class="cost-card"><div class="form-inline"><input type="text" id="invoiceSupplier" placeholder="Fournisseur"><input type="number" id="invoiceAmount" placeholder="Montant (€)" step="0.01"><input type="date" id="invoiceDate"><input type="text" id="invoiceProject" placeholder="Projet"><button class="btn btn-success" onclick="addInvoice()">Ajouter facture</button></div><div style="overflow-x: auto; margin-top: 20px;"><table class="cost-table"><thead><tr><th>Fournisseur</th><th>Montant</th><th>Date</th><th>Projet</th><th>Actions</th></tr></thead><tbody id="invoicesBody"></tbody></table></div><div style="margin-top: 16px; text-align: right; font-weight: bold;" id="invoicesTotal"></div></div>
+            <div class="cost-card"><div class="form-inline"><input type="text" id="invoiceSupplier" placeholder="Fournisseur"><input type="number" id="invoiceAmount" placeholder="Montant (€)" step="0.01"><input type="date" id="invoiceDate"><input type="text" id="invoiceProject" placeholder="Projet"><button class="btn btn-success" onclick="addInvoice()">Ajouter facture</button></div><div style="overflow-x: auto; margin-top: 20px;"><table class="cost-table"><thead> <th>Fournisseur</th><th>Montant</th><th>Date</th><th>Projet</th><th>Actions</th> </thead><tbody id="invoicesBody"></tbody></table></div><div style="margin-top: 16px; text-align: right; font-weight: bold;" id="invoicesTotal"></div></div>
         </div>
     </section>
 
     <!-- CYBER THREAT INTELLIGENCE -->
     <section id="cyberSection" class="container s-hide">
         <div class="dashboard-header"><h1>Cyber Threat Intelligence</h1></div>
-        <div style="margin-bottom: 32px;"><h2 style="font-family:'Syne'; margin-bottom: 20px;">🌍 Carte des attaques en temps réel</h2><div class="cyber-card"><div class="iframe-container"><iframe src="https://threatmap.checkpoint.com" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p style="font-size: 11px; color: #888; margin-top: 12px;">Source: Check Point ThreatMap</p></div></div>
-        <div style="margin-bottom: 32px;"><h2 style="font-family:'Syne'; margin-bottom: 20px;">🎯 MITRE ATT&CK Framework</h2><div class="cyber-card"><div id="mitreMatrix" style="max-height: 500px; overflow-y: auto;"><p>Chargement...</p></div></div></div>
-        <div style="margin-bottom: 32px;"><h2 style="font-family:'Syne'; margin-bottom: 20px;">📰 Actualité cyber</h2><div class="cyber-card"><div id="cyberNews" style="max-height: 500px; overflow-y: auto;"><p>Chargement...</p></div></div></div>
+        <div style="margin-bottom: 32px;">
+            <h2 style="font-family:'Syne'; margin-bottom: 20px;">🌍 Carte des attaques en temps réel</h2>
+            <div class="cyber-card">
+                <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 12px;">
+                    <p style="margin-bottom: 16px;">La carte interactive des cyberattaques est disponible sur le site de Check Point.</p>
+                    <a href="https://threatmap.checkpoint.com" target="_blank" rel="noopener noreferrer" 
+                       style="display: inline-block; background: var(--blue); color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        🌍 Voir la carte des attaques en direct
+                    </a>
+                    <p style="font-size: 11px; color: #888; margin-top: 16px;">Source: Check Point ThreatMap – visualisation en temps réel des cyberattaques dans le monde</p>
+                </div>
+            </div>
+        </div>
+        <div style="margin-bottom: 32px;">
+            <h2 style="font-family:'Syne'; margin-bottom: 20px;">🎯 MITRE ATT&CK Framework</h2>
+            <div class="cyber-card">
+                <div id="mitreMatrix" style="max-height: 500px; overflow-y: auto;"><p>Chargement...</p></div>
+            </div>
+        </div>
+        <div style="margin-bottom: 32px;">
+            <h2 style="font-family:'Syne'; margin-bottom: 20px;">📰 Actualité cyber</h2>
+            <div class="cyber-card">
+                <div id="cyberNews" style="max-height: 500px; overflow-y: auto;"><p>Chargement...</p></div>
+            </div>
+        </div>
     </section>
 
     <!-- COMMUNICATION & SUIVI -->
@@ -440,4 +447,400 @@ function spellCheck(text) {
     words.forEach(w => { const clean = w.replace(/[^a-zàâäéèêëîïôùûüç]/g, ''); if (clean.length > 3 && !TECH_DICT.has(clean)) unknown.push(w); });
     return [...new Set(unknown)].slice(0,6);
 }
-function updateSpell(id,
+function updateSpell(id, text) {
+    const bar = document.getElementById(`spell_${id}`);
+    if (!bar || !text.trim()) { if(bar) bar.innerHTML = ''; return; }
+    bar.innerHTML = spellCheck(text).map(w => `<span class="spell-word" onclick="this.remove()">⚠️ ${esc(w)}</span>`).join('');
+}
+
+// AUTH
+async function init() {
+    try { const { data: { session } } = await sb.auth.getSession();
+        if (session) await loadUserProfile(session.user.email);
+        else { document.getElementById('authLoader').style.display='none'; document.getElementById('loginForm').style.display='block'; document.getElementById('stTitle').textContent='Bienvenue sur SI Governance'; document.getElementById('authSub').textContent='Connectez-vous pour accéder à la plateforme'; }
+    } catch(err) { showDebug('Erreur init : '+err.message); }
+}
+async function doLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pwd = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('loginBtn');
+    if (!email || !pwd) { showDebug('Email et mot de passe requis.'); return; }
+    btn.disabled = true; btn.textContent = 'Connexion…';
+    document.getElementById('debugZone').style.display = 'none';
+    try {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+        if (error) throw error;
+        await loadUserProfile(data.user.email);
+    } catch(err) { btn.disabled = false; btn.textContent = 'Se connecter'; showDebug('❌ '+err.message); }
+}
+async function doLogout() {
+    await sb.auth.signOut(); user = null; db = null;
+    document.getElementById('mainContainer').innerHTML = '';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtn').textContent = 'Se connecter';
+    document.getElementById('debugZone').style.display = 'none';
+    document.getElementById('authLoader').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('stTitle').textContent = 'Bienvenue sur SI Governance';
+    document.getElementById('authSub').textContent = 'Connectez-vous pour accéder à la plateforme';
+    setScreen('authScreen');
+}
+async function loadUserProfile(email) {
+    try {
+        const { data: profile, error: pErr } = await sb.from('ea_users').select('*').eq('email', email).single();
+        if (pErr || !profile) {
+            const { count } = await sb.from('ea_users').select('*', { count:'exact', head:true });
+            if (count === 0) { await sb.from('ea_users').insert({ email, nom: email.split('@')[0], role: 'ADMIN' }); showToast('✅ Super Admin créé'); return loadUserProfile(email); }
+            else { await sb.auth.signOut(); showDebug('❌ Email non autorisé'); setScreen('authScreen'); return; }
+        }
+        user = profile;
+        const color = COLORS[user.role] || COLORS.ADMIN;
+        document.documentElement.style.setProperty('--u-color', color);
+        const av = document.getElementById('uAvatar'); av.style.background = color; av.textContent = (user.nom || 'U').charAt(0).toUpperCase();
+        document.getElementById('admLink').style.display = user.role === 'ADMIN' ? 'inline-block' : 'none';
+        const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
+        db = (row && row.content) ? row.content : {};
+        setScreen('appScreen'); tab('diag'); renderTools(); updateKPI(); renderCharts();
+        if (user.role === 'ADMIN') { loadSecurityQuestions(); generateCaptcha(); }
+        loadComplianceData();
+        loadHourlyRates();
+        loadCostEntries();
+        loadInvoices();
+        loadMessages();
+        loadProducts();
+        loadProblems();
+        loadUsersForMessaging();
+        loadUsersForProducts();
+        loadUsersForProblems();
+        loadMitreMatrix();
+        loadCyberNews();
+    } catch(err) { showDebug('Erreur profil : '+err.message); setScreen('authScreen'); }
+}
+function tab(which) {
+    document.getElementById('diagSection').style.display = which === 'diag' ? 'block' : 'none';
+    document.getElementById('kpiSection').style.display = which === 'kpi' ? 'block' : 'none';
+    document.getElementById('complianceSection').style.display = which === 'compliance' ? 'block' : 'none';
+    document.getElementById('cyberSection').style.display = which === 'cyber' ? 'block' : 'none';
+    document.getElementById('communicationSection').style.display = which === 'communication' ? 'block' : 'none';
+    document.getElementById('adminSection').style.display = which === 'admin' ? 'block' : 'none';
+    if (which === 'kpi') { updateKPI(); renderCharts(); }
+    if (which === 'compliance') { loadComplianceData(); loadHourlyRates(); loadCostEntries(); loadInvoices(); }
+    if (which === 'cyber') { loadMitreMatrix(); loadCyberNews(); }
+    if (which === 'communication') { loadMessages(); loadProducts(); loadProblems(); loadUsersForMessaging(); loadUsersForProducts(); loadUsersForProblems(); }
+}
+
+// OUTILS
+function renderTools() {
+    const grid = document.getElementById('mainContainer'); grid.innerHTML = '';
+    TOOLS.forEach(tool => {
+        const val = db && db[`tool_${tool.id}`] ? db[`tool_${tool.id}`] : '';
+        const card = document.createElement('div'); card.className = 'vp-card';
+        card.style.borderTopColor = COLORS[user.role] || COLORS.ADMIN;
+        
+        if (tool.id === 25) {
+            const normesData = complianceData.map(n => {
+                const ref = normesReferences[n.norme] || {};
+                return `
+                    <div style="margin-bottom: 24px; border-left: 3px solid #1A6CF5; padding-left: 16px;">
+                        <h4 style="font-family:'Syne'; margin-bottom: 8px;">${n.norme}</h4>
+                        <p style="font-size: 13px; color: #555;">${esc(ref.description || 'Description non disponible')}</p>
+                        <div style="margin-top: 8px;"><a href="${ref.lien_officiel || '#'}" target="_blank" style="font-size: 12px;">📖 Documentation officielle</a></div>
+                        <details style="margin-top: 8px;"><summary style="font-size: 12px; font-weight: 600; cursor: pointer;">📋 Obligations / bonnes pratiques</summary><ul style="margin-top: 8px; padding-left: 20px; font-size: 12px;">${(ref.references_pratiques || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul></details>
+                        <details style="margin-top: 8px;"><summary style="font-size: 12px; font-weight: 600; cursor: pointer;">✅ Checklist associée</summary><ul style="margin-top: 8px; padding-left: 20px; font-size: 12px;">${(ref.checklist || []).map(item => `<li>${esc(item)}</li>`).join('')}</ul></details>
+                        <div style="margin-top: 8px; font-size: 11px; color: #888;">Niveau de maturité actuel : ${n.niveau_maturite}% – ${n.statut}</div>
+                    </div>
+                `;
+            }).join('');
+            card.innerHTML = `<div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #25 – Référentiels officiels</div></div></div><div style="max-height: 500px; overflow-y: auto; padding-right: 8px;">${normesData || '<p>Aucune donnée de conformité disponible.</p>'}</div><textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes personnelles sur la conformité…" style="margin-top: 16px;">${esc(val)}</textarea><div class="spell-bar" id="spell_${tool.id}"></div><div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>`;
+            grid.appendChild(card);
+            const ta = card.querySelector(`#note_${tool.id}`);
+            if (val) updateSpell(tool.id, val);
+            let deb; ta.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700); });
+            return;
+        }
+        
+        card.innerHTML = `<div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #${tool.id}</div></div></div><textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes, statut, observations…">${esc(val)}</textarea><div class="spell-bar" id="spell_${tool.id}"></div><div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>`;
+        grid.appendChild(card);
+        const ta = card.querySelector(`#note_${tool.id}`);
+        if (val) updateSpell(tool.id, val);
+        let deb; ta.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700); });
+    });
+}
+async function saveNote(toolId, value) {
+    if (!db) db = {}; db[`tool_${toolId}`] = value;
+    await sb.from('ea_platform_data').upsert({ id:1, content: db }, { onConflict:'id' });
+    const el = document.getElementById(`saved_${toolId}`); if(el){ el.style.display='block'; setTimeout(()=>el.style.display='none',2000); }
+    updateKPI(); renderCharts();
+}
+
+// KPI
+function computeKPI() {
+    const filled = TOOLS.filter(t => db && db[`tool_${t.id}`] && db[`tool_${t.id}`].trim().length > 0).length;
+    return { filled, completion: Math.round((filled/25)*100) };
+}
+function updateKPI() {
+    const k = computeKPI();
+    const grid = document.getElementById('kpiGrid'); if(grid) grid.innerHTML = `
+        <div class="kpi-card" style="--kpi-color:var(--blue)"><div class="kpi-value">${k.filled}/25</div><div class="kpi-label">Outils complétés</div></div>
+        <div class="kpi-card" style="--kpi-color:var(--teal)"><div class="kpi-value">${k.completion}%</div><div class="kpi-label">Taux de complétion</div></div>
+        <div class="kpi-card" style="--kpi-color:var(--amber)"><div class="kpi-value">${user ? (ROLE_LABELS[user.role] || user.role) : '—'}</div><div class="kpi-label">Votre rôle</div></div>`;
+}
+function renderCharts() {
+    const k = computeKPI();
+    if (chartMaturity) chartMaturity.destroy();
+    if (chartTools) chartTools.destroy();
+    const ctxM = document.getElementById('maturityChart');
+    if(ctxM) chartMaturity = new Chart(ctxM.getContext('2d'), { type:'line', data:{ labels:['Jan','Fév','Mar','Avr','Mai','Juin'], datasets:[{ label:'Maturité (%)', data:[30,42,55,63,71,k.completion], borderColor:'#1A6CF5', tension:0.3 }] }, options:{ responsive:true, maintainAspectRatio:false } });
+    const ctxT = document.getElementById('toolsChart');
+    if(ctxT) chartTools = new Chart(ctxT.getContext('2d'), { type:'doughnut', data:{ labels:['Complétés','À renseigner'], datasets:[{ data:[k.filled,25-k.filled], backgroundColor:['#00B49C','#E5E7EB'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
+}
+
+// IMPORT TABLEUR
+function handleSpreadsheetDrop(e) { e.preventDefault(); const file = e.dataTransfer.files[0]; if(file) processSpreadsheet(file); }
+function importSpreadsheet(e) { const file = e.target.files[0]; if(file) processSpreadsheet(file); e.target.value=''; }
+function processSpreadsheet(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type:'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header:1 });
+        let imported = 0;
+        rows.forEach(row => { if(row[0] && row[1]){ const tool = TOOLS.find(t => t.t.toLowerCase().includes(String(row[0]).toLowerCase())); if(tool){ saveNote(tool.id, String(row[1])); imported++; } } });
+        showToast(`✅ ${imported} outils mis à jour`);
+        updateKPI(); renderCharts();
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// ADMIN SIMPLE
+async function addUser() {
+    if(!user || user.role!=='ADMIN'){ showToast('❌ Accès refusé', 'error'); return; }
+    const email = document.getElementById('newEmail').value.trim(), nom = document.getElementById('newN').value.trim(), role = document.getElementById('newR').value;
+    if(!email || !nom){ showToast('⚠️ Email et nom requis', 'error'); return; }
+    const { error } = await sb.from('ea_users').insert({ email, nom, role });
+    if(error) showToast('❌ '+error.message, 'error'); else { showToast(`✅ ${nom} créé`); document.getElementById('newEmail').value=''; document.getElementById('newN').value=''; }
+}
+
+// CRÉATION SÉCURISÉE
+async function loadSecurityQuestions() {
+    const questions = [
+        { id: 1, question_text: "Quel est le nom de votre premier animal de compagnie ?" },
+        { id: 2, question_text: "Quelle est votre ville de naissance ?" },
+        { id: 3, question_text: "Quel est le modèle de votre première voiture ?" },
+        { id: 4, question_text: "Quel est le nom de votre meilleur ami d'enfance ?" },
+        { id: 5, question_text: "Quelle est votre couleur préférée ?" }
+    ];
+    const container = document.getElementById('securityQuestionsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < 2; i++) {
+        const select = document.createElement('select');
+        select.id = `question_${i}`;
+        select.style.width = '100%'; select.style.padding = '10px'; select.style.margin = '8px 0'; select.style.borderRadius = '10px'; select.style.border = '1px solid #ddd';
+        select.required = true;
+        questions.forEach(q => { const opt = document.createElement('option'); opt.value = q.id; opt.textContent = q.question_text; select.appendChild(opt); });
+        const input = document.createElement('input');
+        input.type = 'text'; input.placeholder = 'Votre réponse'; input.id = `answer_${i}`;
+        input.style.width = '100%'; input.style.padding = '10px'; input.style.margin = '8px 0'; input.style.borderRadius = '10px'; input.style.border = '1px solid #ddd';
+        input.required = true;
+        container.appendChild(document.createTextNode(`Question ${i+1} :`));
+        container.appendChild(select);
+        container.appendChild(input);
+        container.appendChild(document.createElement('br'));
+    }
+}
+let captchaAnswer = 0;
+function generateCaptcha() {
+    const a = Math.floor(Math.random()*10), b = Math.floor(Math.random()*10);
+    captchaAnswer = a+b;
+    const c = document.getElementById('captchaContainer'); if(c) c.innerHTML = `<label style="display:block;margin-bottom:8px;">Vérification anti-spam : ${a} + ${b} = ?</label><input type="number" id="captchaInput" style="width:100%;padding:10px;border-radius:10px;border:1px solid #ddd;" required>`;
+}
+document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const captchaVal = document.getElementById('captchaInput')?.value;
+    if(parseInt(captchaVal) !== captchaAnswer){ document.getElementById('createUserMessage').innerHTML='<span style="color:red;">❌ Réponse anti-spam incorrecte</span>'; generateCaptcha(); return; }
+    const answers = [];
+    for(let i=0;i<2;i++){ answers.push({ questionId: parseInt(document.getElementById(`question_${i}`).value), answer: document.getElementById(`answer_${i}`).value.trim() }); }
+    const data = { email: document.getElementById('newUserEmail').value.trim(), password: document.getElementById('newUserPassword').value, userType: document.getElementById('newUserType').value, securityAnswers: answers };
+    if(!data.email || !data.password){ document.getElementById('createUserMessage').innerHTML='<span style="color:red;">❌ Email et mot de passe requis</span>'; return; }
+    try {
+        const { data:{session} } = await sb.auth.getSession();
+        const res = await fetch('/api/create-user', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${session?.access_token}` }, body:JSON.stringify(data) });
+        const result = await res.json();
+        if(res.ok) { document.getElementById('createUserMessage').innerHTML='<span style="color:green;">✅ Utilisateur créé !</span>'; e.target.reset(); generateCaptcha(); loadSecurityQuestions(); }
+        else { document.getElementById('createUserMessage').innerHTML=`<span style="color:red;">❌ ${result.error}</span>`; }
+    } catch(err){ document.getElementById('createUserMessage').innerHTML=`<span style="color:red;">❌ ${err.message}</span>`; }
+});
+
+// ============================================================
+// CONFORMITÉ
+// ============================================================
+async function loadComplianceData() {
+    const { data: norms, error: normsError } = await sb.from('normes_compliance').select('*');
+    if (normsError) { console.error(normsError); return; }
+    complianceData = norms;
+    const { data: refs, error: refsError } = await sb.from('normes_references').select('*');
+    if (!refsError && refs) { refs.forEach(ref => { normesReferences[ref.norme] = ref; }); }
+    renderComplianceGrid();
+}
+function saveChecklistItem(norme, index, isChecked) { localStorage.setItem(`checklist_${norme}_${index}`, isChecked); showToast(`Checklist mise à jour pour ${norme}`); }
+function renderComplianceGrid() {
+    const grid = document.getElementById('complianceGrid');
+    if (!grid) return;
+    grid.innerHTML = complianceData.map(n => {
+        const ref = normesReferences[n.norme] || {};
+        const checklistItems = ref.checklist || [];
+        return `<div class="compliance-card"><h3>${esc(n.norme)}${ref.lien_officiel ? `<a href="${ref.lien_officiel}" target="_blank" style="font-size:12px;">📖 Doc officielle</a>` : ''}</h3><div style="margin-bottom: 16px;">${esc(ref.description || '')}</div>${ref.references_pratiques ? `<div><strong>📚 Références pratiques :</strong><div>${ref.references_pratiques.map(r => `<span class="ref-tag">${esc(r)}</span>`).join('')}</div></div>` : ''}<div><strong>✅ Checklist :</strong><div>${checklistItems.map((item, idx) => `<div class="checklist-item"><input type="checkbox" id="check_${n.norme}_${idx}" onchange="saveChecklistItem('${n.norme}', ${idx}, this.checked)" ${localStorage.getItem(`checklist_${n.norme}_${idx}`) === 'true' ? 'checked' : ''}><label>${esc(item)}</label></div>`).join('')}</div></div><div><span class="status-badge status-${n.statut.replace(/ /g, '-')}">${n.statut}</span><span>Niveau: ${n.niveau_maturite}%</span><input type="range" min="0" max="100" value="${n.niveau_maturite}" onchange="updateComplianceMaturity(${n.id}, this.value)" ${user?.role !== 'ADMIN' ? 'disabled' : ''}></div><div><textarea rows="2" placeholder="Actions recommandées" onblur="updateComplianceActions(${n.id}, this.value)" ${user?.role !== 'ADMIN' ? 'disabled' : ''}>${esc(n.actions || '')}</textarea></div></div>`;
+    }).join('');
+}
+async function updateComplianceMaturity(id, value) { if (user?.role !== 'ADMIN') return; await sb.from('normes_compliance').update({ niveau_maturite: parseInt(value) }).eq('id', id); let statut = value >= 80 ? 'conforme' : (value >= 50 ? 'partiel' : 'non conforme'); await sb.from('normes_compliance').update({ statut }).eq('id', id); showToast('Maturité mise à jour'); loadComplianceData(); }
+async function updateComplianceActions(id, value) { if (user?.role !== 'ADMIN') return; await sb.from('normes_compliance').update({ actions: value }).eq('id', id); showToast('Actions sauvegardées'); }
+
+// GESTION DES COÛTS
+async function loadHourlyRates() {
+    const { data, error } = await sb.from('costs_hourly_rates').select('*');
+    if (error) { console.error(error); return; }
+    hourlyRates = data;
+    const listDiv = document.getElementById('hourlyRatesList');
+    if (listDiv) { listDiv.innerHTML = `<table class="cost-table"><thead><th>Rôle</th><th>Taux horaire (€)</th><th>Actions</th></thead><tbody>${hourlyRates.map(r => `<tr><td>${esc(r.role)}</td><td><input type="number" step="0.01" value="${r.taux_horaire}" id="rate_${r.id}" style="width:100px;"></td><td><button class="btn btn-sm" style="background:var(--teal);" onclick="updateHourlyRate(${r.id})">💾</button></td></tr>`).join('')}</tbody></table>`; }
+    const roleSelect = document.getElementById('costRoleSelect');
+    if (roleSelect) { roleSelect.innerHTML = hourlyRates.map(r => `<option value="${esc(r.role)}">${esc(r.role)} (${r.taux_horaire}€/h)</option>`).join(''); }
+}
+async function updateHourlyRate(id) { if (user?.role !== 'ADMIN') return; const newRate = document.getElementById(`rate_${id}`).value; await sb.from('costs_hourly_rates').update({ taux_horaire: parseFloat(newRate) }).eq('id', id); showToast('Taux horaire mis à jour'); loadHourlyRates(); }
+async function addHourlyRate() { if (user?.role !== 'ADMIN') return; const role = document.getElementById('newRateRole').value.trim(); const rate = parseFloat(document.getElementById('newRateValue').value); if (!role || isNaN(rate)) { showToast('Rôle et taux requis', 'error'); return; } await sb.from('costs_hourly_rates').insert({ role, taux_horaire: rate }); document.getElementById('newRateRole').value = ''; document.getElementById('newRateValue').value = ''; showToast('Taux ajouté'); loadHourlyRates(); }
+async function loadCostEntries() { const { data, error } = await sb.from('costs_sheet').select('*').order('mois', { ascending: false }); if (error) { console.error(error); return; } costEntries = data; renderCostSheet(); }
+function renderCostSheet() { const body = document.getElementById('costSheetBody'); if (!body) return; let total = 0; body.innerHTML = costEntries.map(entry => { const rate = hourlyRates.find(r => r.role === entry.role)?.taux_horaire || 0; const cost = entry.heures * rate; total += cost; return `<tr><td>${entry.mois}</td><td>${esc(entry.role)}</td><td>${entry.heures}</td><td>${cost.toFixed(2)} €</td><td>${esc(entry.projet || '-')}</td><td><button class="btn btn-sm btn-danger" onclick="deleteCostEntry(${entry.id})">🗑️</button></td></tr>`; }).join(''); document.getElementById('costTotal').innerHTML = `Total coûts: ${total.toFixed(2)} €`; }
+async function addCostEntry() { if (user?.role !== 'ADMIN') return; const mois = document.getElementById('costMonth').value; const role = document.getElementById('costRoleSelect').value; const heures = parseFloat(document.getElementById('costHours').value); const projet = document.getElementById('costProject').value.trim(); if (!mois || !role || isNaN(heures)) { showToast('Mois, rôle et heures requis', 'error'); return; } await sb.from('costs_sheet').insert({ mois, role, heures, projet, created_by: user.email }); document.getElementById('costMonth').value = ''; document.getElementById('costHours').value = ''; document.getElementById('costProject').value = ''; showToast('Coût ajouté'); loadCostEntries(); }
+async function deleteCostEntry(id) { if (user?.role !== 'ADMIN') return; await sb.from('costs_sheet').delete().eq('id', id); showToast('Entrée supprimée'); loadCostEntries(); }
+async function loadInvoices() { const { data, error } = await sb.from('costs_invoices').select('*').order('date_facture', { ascending: false }); if (error) { console.error(error); return; } invoices = data; renderInvoices(); }
+function renderInvoices() { const body = document.getElementById('invoicesBody'); if (!body) return; let total = 0; body.innerHTML = invoices.map(inv => { total += inv.montant; return `<tr><td>${esc(inv.fournisseur)}</td><td>${inv.montant.toFixed(2)} €</td><td>${inv.date_facture}</td><td>${esc(inv.projet || '-')}</td><td><button class="btn btn-sm btn-danger" onclick="deleteInvoice(${inv.id})">🗑️</button></td></tr>`; }).join(''); document.getElementById('invoicesTotal').innerHTML = `Total factures: ${total.toFixed(2)} €`; }
+async function addInvoice() { if (user?.role !== 'ADMIN') return; const fournisseur = document.getElementById('invoiceSupplier').value.trim(); const montant = parseFloat(document.getElementById('invoiceAmount').value); const date_facture = document.getElementById('invoiceDate').value; const projet = document.getElementById('invoiceProject').value.trim(); if (!fournisseur || isNaN(montant) || !date_facture) { showToast('Fournisseur, montant et date requis', 'error'); return; } await sb.from('costs_invoices').insert({ fournisseur, montant, date_facture, projet, created_by: user.email }); document.getElementById('invoiceSupplier').value = ''; document.getElementById('invoiceAmount').value = ''; document.getElementById('invoiceDate').value = ''; document.getElementById('invoiceProject').value = ''; showToast('Facture ajoutée'); loadInvoices(); }
+async function deleteInvoice(id) { if (user?.role !== 'ADMIN') return; await sb.from('costs_invoices').delete().eq('id', id); showToast('Facture supprimée'); loadInvoices(); }
+
+// MITRE ATT&CK
+async function loadMitreMatrix() {
+    const tactics = [
+        { name: "Reconnaissance", id: "TA0043", techniques: ["Active Scanning", "Phishing for Information"] },
+        { name: "Initial Access", id: "TA0001", techniques: ["Phishing", "Exploit Public-Facing Application", "Valid Accounts"] },
+        { name: "Execution", id: "TA0002", techniques: ["Command and Scripting Interpreter", "User Execution"] },
+        { name: "Persistence", id: "TA0003", techniques: ["Account Manipulation", "Scheduled Task/Job"] },
+        { name: "Privilege Escalation", id: "TA0004", techniques: ["Abuse Elevation Control Mechanism", "Access Token Manipulation"] },
+        { name: "Defense Evasion", id: "TA0005", techniques: ["Obfuscated Files", "Impair Defenses"] },
+        { name: "Credential Access", id: "TA0006", techniques: ["OS Credential Dumping", "Brute Force"] },
+        { name: "Discovery", id: "TA0007", techniques: ["Account Discovery", "System Information Discovery"] },
+        { name: "Lateral Movement", id: "TA0008", techniques: ["Remote Services", "Remote Desktop Protocol"] },
+        { name: "Collection", id: "TA0009", techniques: ["Data from Local System", "Automated Collection"] },
+        { name: "Command & Control", id: "TA0011", techniques: ["Application Layer Protocol", "Encrypted Channel"] },
+        { name: "Exfiltration", id: "TA0010", techniques: ["Exfiltration Over C2 Channel", "Automated Exfiltration"] },
+        { name: "Impact", id: "TA0040", techniques: ["Data Destruction", "Data Encrypted for Impact"] }
+    ];
+    const container = document.getElementById('mitreMatrix');
+    if (container) {
+        container.innerHTML = tactics.map(t => `<details style="margin-bottom: 8px;"><summary style="font-weight: 600; cursor: pointer;">${t.name} (${t.id}) <a href="https://attack.mitre.org/tactics/${t.id}/" target="_blank" style="font-size: 10px;">📖</a></summary><ul style="margin-top: 4px; padding-left: 20px;">${t.techniques.map(tech => `<li>${tech}</li>`).join('')}</ul></details>`).join('');
+    }
+}
+async function loadCyberNews() {
+    try {
+        const response = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.cybersecurity-insiders.com/rss/');
+        const data = await response.json();
+        const container = document.getElementById('cyberNews');
+        if (container && data.items) {
+            container.innerHTML = data.items.slice(0, 10).map(item => `<div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee;"><a href="${item.link}" target="_blank" style="font-weight: 600; text-decoration: none; color: var(--blue);">${item.title}</a><div style="font-size: 11px; color: #888; margin-top: 4px;">${new Date(item.pubDate).toLocaleDateString('fr-FR')}</div><div style="font-size: 12px; margin-top: 4px;">${item.description.substring(0, 150)}...</div></div>`).join('');
+        } else if (container) { container.innerHTML = '<p>Aucune actualité disponible.</p>'; }
+    } catch (error) { console.error(error); document.getElementById('cyberNews').innerHTML = '<p>Actualités temporairement indisponibles</p>'; }
+}
+
+// MESSAGERIE INTERNE
+async function loadUsersForMessaging() {
+    const { data: users } = await sb.from('ea_users').select('email, nom');
+    const select = document.getElementById('msgDestinataires');
+    if (select && users) { select.innerHTML = users.filter(u => u.email !== user?.email).map(u => `<option value="${u.email}">${u.nom} (${u.email})</option>`).join(''); }
+}
+async function sendMessage() {
+    const sujet = document.getElementById('msgSujet').value.trim();
+    const contenu = document.getElementById('msgContenu').value.trim();
+    const destinataires = Array.from(document.getElementById('msgDestinataires').selectedOptions).map(opt => opt.value);
+    if (!sujet || !contenu || destinataires.length === 0) { showToast('Sujet, contenu et destinataires requis', 'error'); return; }
+    const { data: msg, error: msgError } = await sb.from('internal_messages').insert({ sujet, contenu, expediteur_email: user.email, expediteur_nom: user.nom }).select().single();
+    if (msgError) { showToast('Erreur: ' + msgError.message, 'error'); return; }
+    const recipients = destinataires.map(email => ({ message_id: msg.id, destinataire_email: email, destinataire_nom: email.split('@')[0] }));
+    await sb.from('message_recipients').insert(recipients);
+    showToast('Message envoyé'); document.getElementById('msgSujet').value = ''; document.getElementById('msgContenu').value = ''; loadMessages();
+}
+async function loadMessages() {
+    const { data: messages } = await sb.from('internal_messages').select('*, message_recipients(*)').order('created_at', { ascending: false });
+    const container = document.getElementById('messageList');
+    if (!container) return;
+    if (!messages || messages.length === 0) { container.innerHTML = '<p>Aucun message</p>'; return; }
+    container.innerHTML = messages.map(msg => {
+        const myRecipient = msg.message_recipients?.find(r => r.destinataire_email === user.email);
+        const isRecipient = !!myRecipient;
+        return `<div class="message-item ${isRecipient && !myRecipient.lu ? 'message-unread' : 'message-read'}"><div><strong>${esc(msg.sujet)}</strong> <span style="font-size:11px;">${new Date(msg.created_at).toLocaleString()}</span></div><div>De: ${esc(msg.expediteur_nom || msg.expediteur_email)}</div><div>${esc(msg.contenu)}</div><div>${isRecipient && !myRecipient.lu ? `<button class="btn btn-sm" style="background:var(--blue);" onclick="markMessageRead(${msg.id}, ${myRecipient.id})">📩 Marquer lu & accuser</button>` : ''}${myRecipient?.lu ? `<span style="color:var(--teal);">✅ Lu le ${new Date(myRecipient.lu_at).toLocaleString()}</span>` : ''}</div></div>`;
+    }).join('');
+}
+async function markMessageRead(messageId, recipientId) {
+    await sb.from('message_recipients').update({ lu: true, lu_at: new Date().toISOString(), accuse_reception_envoye: true }).eq('id', recipientId);
+    showToast('Message marqué comme lu, accusé envoyé'); loadMessages();
+}
+
+// FICHES PRODUIT
+async function loadUsersForProducts() {
+    const { data: users } = await sb.from('ea_users').select('email, nom');
+    const select = document.getElementById('prodOwnerSelect');
+    if (select && users) { select.innerHTML = users.map(u => `<option value="${u.email}">${u.nom} (${u.email})</option>`).join(''); }
+}
+async function createProductSheet() {
+    const nom = document.getElementById('prodNom').value.trim();
+    const desc = document.getElementById('prodDesc').value.trim();
+    const ownerEmail = document.getElementById('prodOwnerSelect').value;
+    if (!nom || !ownerEmail) { showToast('Nom et Product Owner requis', 'error'); return; }
+    const { error } = await sb.from('product_sheets').insert({ nom_produit: nom, description: desc, product_owner_email: ownerEmail, product_owner_nom: ownerEmail.split('@')[0] });
+    if (error) { showToast('Erreur: ' + error.message, 'error'); return; }
+    showToast('Fiche produit créée'); document.getElementById('prodNom').value = ''; document.getElementById('prodDesc').value = ''; loadProducts();
+}
+async function loadProducts() {
+    const { data: products } = await sb.from('product_sheets').select('*').order('created_at', { ascending: false });
+    const container = document.getElementById('productList');
+    if (!container) return;
+    if (!products || products.length === 0) { container.innerHTML = '<p>Aucun produit</p>'; return; }
+    container.innerHTML = products.map(p => `<div class="product-item"><div><strong>${esc(p.nom_produit)}</strong> <span>v${p.version}</span></div><div>${esc(p.description || '')}</div><div>Product Owner: ${esc(p.product_owner_nom)} (${p.product_owner_email})</div>${user.email === p.product_owner_email ? `<button class="btn btn-sm" style="background:var(--blue);" onclick="editProductSheet(${p.id})">✏️ Modifier</button>` : ''}</div>`).join('');
+}
+async function editProductSheet(id) { const newDesc = prompt("Nouvelle description (seul le Product Owner peut modifier)"); if (newDesc) { const { error } = await sb.from('product_sheets').update({ description: newDesc }).eq('id', id); if (error) showToast('Erreur: ' + error.message, 'error'); else { showToast('Fiche mise à jour'); loadProducts(); } } }
+
+// SUIVI DES PROBLÈMES
+async function loadUsersForProblems() {
+    const { data: users } = await sb.from('ea_users').select('email, nom');
+    const select = document.getElementById('probResponsableSelect');
+    if (select && users) { select.innerHTML = users.map(u => `<option value="${u.email}">${u.nom} (${u.email})</option>`).join(''); }
+}
+async function createProblem() {
+    const titre = document.getElementById('probTitre').value.trim();
+    const desc = document.getElementById('probDesc').value.trim();
+    const responsableEmail = document.getElementById('probResponsableSelect').value;
+    const priorite = document.getElementById('probPriorite').value;
+    const echeance = document.getElementById('probEcheance').value;
+    if (!titre || !responsableEmail) { showToast('Titre et responsable requis', 'error'); return; }
+    const { error } = await sb.from('problems').insert({ titre, description: desc, responsable_email: responsableEmail, responsable_nom: responsableEmail.split('@')[0], priorite, date_echeance: echeance || null });
+    if (error) { showToast('Erreur: ' + error.message, 'error'); return; }
+    showToast('Problème créé'); document.getElementById('probTitre').value = ''; document.getElementById('probDesc').value = ''; document.getElementById('probEcheance').value = ''; loadProblems();
+}
+async function loadProblems() {
+    const { data: problems } = await sb.from('problems').select('*').order('created_at', { ascending: false });
+    const container = document.getElementById('problemList');
+    if (!container) return;
+    if (!problems || problems.length === 0) { container.innerHTML = '<p>Aucun problème</p>'; return; }
+    container.innerHTML = problems.map(p => `<div class="problem-item"><div><strong>${esc(p.titre)}</strong> <span style="font-size:11px; background:#${p.priorite === 'critique' ? 'E8456820' : 'F5A62320'}; padding:2px 8px; border-radius:12px;">${p.priorite}</span></div><div>${esc(p.description || '')}</div><div>Responsable: ${esc(p.responsable_nom)} | Statut: ${p.statut} | Progression: ${p.niveau_progression}%${p.date_echeance ? ` | Échéance: ${p.date_echeance}` : ''}</div>${p.responsable_email === user.email && p.statut !== 'clos' ? `<div><input type="range" min="0" max="100" value="${p.niveau_progression}" onchange="updateProblemProgress(${p.id}, this.value)"><button class="btn btn-sm" style="background:var(--blue);" onclick="closeProblem(${p.id})">✅ Clore</button></div>` : ''}${p.statut === 'clos' ? `<span style="color:var(--teal);">✅ Résolu le ${new Date(p.closed_at).toLocaleDateString()}</span>` : ''}</div>`).join('');
+}
+async function updateProblemProgress(id, newValue) { await sb.from('problems').update({ niveau_progression: parseInt(newValue) }).eq('id', id); await sb.from('problem_progress').insert({ problem_id: id, ancien_niveau: 0, nouveau_niveau: parseInt(newValue), modifie_par_email: user.email }); showToast('Progression mise à jour'); loadProblems(); }
+async function closeProblem(id) { await sb.from('problems').update({ statut: 'clos', closed_at: new Date().toISOString(), niveau_progression: 100 }).eq('id', id); showToast('Problème clos'); loadProblems(); }
+
+// EXPORT PDF
+function exportPDF() { const el = document.getElementById('diagSection'); html2pdf().set({margin:[10,10,10,10],filename:`SI_Rapport_${new Date().toISOString().slice(0,10)}.pdf`,image:{type:'jpeg',quality:.95},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(el).save().then(()=>showToast('✅ PDF exporté')).catch(()=>showToast('❌ Erreur PDF','error')); }
+
+init();
+</script>
+</body>
+</html>
