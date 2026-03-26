@@ -88,7 +88,7 @@
         .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
         .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
         .dashboard-header h1 { font-family:'Syne'; margin:0; }
-        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; }
+        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:20px; }
 
         .vp-card {
             background:#fff; border-radius:16px; padding:24px;
@@ -130,7 +130,6 @@
         .admin-card input, .admin-card select { padding:12px; border-radius:10px; border:1px solid #ddd; width:100%; margin-bottom:15px; font-family:inherit; font-size:14px; outline:none; }
         .admin-card input:focus, .admin-card select:focus { border-color:var(--blue); }
 
-        /* Styles pour la section Conformité & Coûts */
         .compliance-grid, .costs-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
@@ -255,7 +254,7 @@
     <!-- DIAGNOSTIC -->
     <main id="diagSection" class="container">
         <div class="dashboard-header">
-            <h1>Dashboard des 24 Outils</h1>
+            <h1>Dashboard des 25 Outils</h1>
             <button class="btn" onclick="exportPDF()" style="background:var(--navy)">📊 Rapport PDF</button>
         </div>
         <div id="mainContainer" class="views-grid"></div>
@@ -314,7 +313,7 @@
                 </div>
                 <div style="overflow-x: auto; margin-top: 20px;">
                     <table class="cost-table" id="costSheetTable">
-                        <thead><tr><th>Mois</th><th>Rôle</th><th>Heures</th><th>Coût (€)</th><th>Projet</th><th>Actions</th> </thead>
+                        <thead> <tr><th>Mois</th><th>Rôle</th><th>Heures</th><th>Coût (€)</th><th>Projet</th><th>Actions</th></tr> </thead>
                         <tbody id="costSheetBody"></tbody>
                     </table>
                 </div>
@@ -335,7 +334,7 @@
                 </div>
                 <div style="overflow-x: auto; margin-top: 20px;">
                     <table class="cost-table" id="invoicesTable">
-                        <thead><tr><th>Fournisseur</th><th>Montant</th><th>Date</th><th>Projet</th><th>Actions</th></tr></thead>
+                        <thead> <tr><th>Fournisseur</th><th>Montant</th><th>Date</th><th>Projet</th><th>Actions</th></tr> </thead>
                         <tbody id="invoicesBody"></tbody>
                     </table>
                 </div>
@@ -412,7 +411,8 @@ const TOOLS = [
     {id:13, t:"Infrastructure",ico:"🖥️"},{id:14, t:"Sécurité SI",ico:"🛡️"},{id:15, t:"Standards",ico:"📜"},
     {id:16, t:"Cloud Arch",ico:"☁️"},{id:17, t:"Processus",ico:"🏢"},{id:18, t:"Parties Prenantes",ico:"👥"},
     {id:19, t:"Gouvernance",ico:"🏛️"},{id:20, t:"Risques SI",ico:"⚠️"},{id:21, t:"Roadmap SI",ico:"🗓️"},
-    {id:22, t:"Impact Projets",ico:"💥"},{id:23, t:"Coût IT",ico:"💰"},{id:24, t:"Innovation",ico:"💡"}
+    {id:22, t:"Impact Projets",ico:"💥"},{id:23, t:"Coût IT",ico:"💰"},{id:24, t:"Innovation",ico:"💡"},
+    {id:25, t:"Référentiels de conformité", ico:"📋"}
 ];
 
 // UTILITAIRES
@@ -505,18 +505,71 @@ function tab(which) {
 // OUTILS
 function renderTools() {
     const grid = document.getElementById('mainContainer'); grid.innerHTML = '';
+    
     TOOLS.forEach(tool => {
         const val = db && db[`tool_${tool.id}`] ? db[`tool_${tool.id}`] : '';
         const card = document.createElement('div'); card.className = 'vp-card';
         card.style.borderTopColor = COLORS[user.role] || COLORS.ADMIN;
+        
+        // Outil spécial 25 : Référentiels de conformité
+        if (tool.id === 25) {
+            const normesData = complianceData.map(n => {
+                const ref = normesReferences[n.norme] || {};
+                return `
+                    <div style="margin-bottom: 24px; border-left: 3px solid #1A6CF5; padding-left: 16px;">
+                        <h4 style="font-family:'Syne'; margin-bottom: 8px;">${n.norme}</h4>
+                        <p style="font-size: 13px; color: #555;">${esc(ref.description || 'Description non disponible')}</p>
+                        <div style="margin-top: 8px;">
+                            <a href="${ref.lien_officiel || '#'}" target="_blank" style="font-size: 12px;">📖 Documentation officielle</a>
+                        </div>
+                        <details style="margin-top: 8px;">
+                            <summary style="font-size: 12px; font-weight: 600; cursor: pointer;">📋 Obligations / bonnes pratiques</summary>
+                            <ul style="margin-top: 8px; padding-left: 20px; font-size: 12px;">
+                                ${(ref.references_pratiques || []).map(r => `<li>${esc(r)}</li>`).join('')}
+                            </ul>
+                        </details>
+                        <details style="margin-top: 8px;">
+                            <summary style="font-size: 12px; font-weight: 600; cursor: pointer;">✅ Checklist associée</summary>
+                            <ul style="margin-top: 8px; padding-left: 20px; font-size: 12px;">
+                                ${(ref.checklist || []).map(item => `<li>${esc(item)}</li>`).join('')}
+                            </ul>
+                        </details>
+                        <div style="margin-top: 8px; font-size: 11px; color: #888;">
+                            Niveau de maturité actuel : ${n.niveau_maturite}% – ${n.statut}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            card.innerHTML = `
+                <div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #25 – Référentiels officiels (NIS2, ITIL, ISO 27001/5)</div></div></div>
+                <div style="max-height: 500px; overflow-y: auto; padding-right: 8px;">
+                    ${normesData || '<p>Aucune donnée de conformité disponible.</p>'}
+                </div>
+                <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes personnelles sur la conformité…" style="margin-top: 16px;">${esc(val)}</textarea>
+                <div class="spell-bar" id="spell_${tool.id}"></div>
+                <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>
+            `;
+            grid.appendChild(card);
+            
+            const ta = card.querySelector(`#note_${tool.id}`);
+            if (val) updateSpell(tool.id, val);
+            let deb;
+            ta.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700); });
+            return;
+        }
+        
+        // Cartes standard pour les outils 1 à 24
         card.innerHTML = `<div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #${tool.id}</div></div></div>
             <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes, statut, observations…">${esc(val)}</textarea>
             <div class="spell-bar" id="spell_${tool.id}"></div>
             <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>`;
         grid.appendChild(card);
+        
         const ta = card.querySelector(`#note_${tool.id}`);
         if (val) updateSpell(tool.id, val);
-        let deb; ta.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700); });
+        let deb;
+        ta.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700); });
     });
 }
 async function saveNote(toolId, value) {
@@ -529,12 +582,12 @@ async function saveNote(toolId, value) {
 // KPI
 function computeKPI() {
     const filled = TOOLS.filter(t => db && db[`tool_${t.id}`] && db[`tool_${t.id}`].trim().length > 0).length;
-    return { filled, completion: Math.round((filled/24)*100) };
+    return { filled, completion: Math.round((filled/25)*100) };
 }
 function updateKPI() {
     const k = computeKPI();
     const grid = document.getElementById('kpiGrid'); if(grid) grid.innerHTML = `
-        <div class="kpi-card" style="--kpi-color:var(--blue)"><div class="kpi-value">${k.filled}/24</div><div class="kpi-label">Outils complétés</div></div>
+        <div class="kpi-card" style="--kpi-color:var(--blue)"><div class="kpi-value">${k.filled}/25</div><div class="kpi-label">Outils complétés</div></div>
         <div class="kpi-card" style="--kpi-color:var(--teal)"><div class="kpi-value">${k.completion}%</div><div class="kpi-label">Taux de complétion</div></div>
         <div class="kpi-card" style="--kpi-color:var(--amber)"><div class="kpi-value">${user ? (ROLE_LABELS[user.role] || user.role) : '—'}</div><div class="kpi-label">Votre rôle</div></div>`;
 }
@@ -545,7 +598,7 @@ function renderCharts() {
     const ctxM = document.getElementById('maturityChart');
     if(ctxM) chartMaturity = new Chart(ctxM.getContext('2d'), { type:'line', data:{ labels:['Jan','Fév','Mar','Avr','Mai','Juin'], datasets:[{ label:'Maturité (%)', data:[30,42,55,63,71,k.completion], borderColor:'#1A6CF5', tension:0.3 }] }, options:{ responsive:true, maintainAspectRatio:false } });
     const ctxT = document.getElementById('toolsChart');
-    if(ctxT) chartTools = new Chart(ctxT.getContext('2d'), { type:'doughnut', data:{ labels:['Complétés','À renseigner'], datasets:[{ data:[k.filled,24-k.filled], backgroundColor:['#00B49C','#E5E7EB'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
+    if(ctxT) chartTools = new Chart(ctxT.getContext('2d'), { type:'doughnut', data:{ labels:['Complétés','À renseigner'], datasets:[{ data:[k.filled,25-k.filled], backgroundColor:['#00B49C','#E5E7EB'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
 }
 
 // IMPORT TABLEUR
@@ -727,7 +780,7 @@ async function updateComplianceActions(id, value) {
     showToast('Actions sauvegardées');
 }
 
-// GESTION DES COÛTS (inchangée)
+// GESTION DES COÛTS
 async function loadHourlyRates() {
     const { data, error } = await sb.from('costs_hourly_rates').select('*');
     if (error) { console.error(error); return; }
@@ -736,17 +789,17 @@ async function loadHourlyRates() {
     if (listDiv) {
         listDiv.innerHTML = `
             <table class="cost-table">
-                <thead><tr><th>Rôle</th><th>Taux horaire (€)</th><th>Actions</th></tr></thead>
+                <thead>  <th>Rôle</th><th>Taux horaire (€)</th><th>Actions</th> </thead>
                 <tbody>
                     ${hourlyRates.map(r => `
-                        <tr>
-                            <td>${esc(r.role)}</td>
-                            <td><input type="number" step="0.01" value="${r.taux_horaire}" id="rate_${r.id}" style="width:100px; padding:4px;" ${user?.role !== 'ADMIN' ? 'disabled' : ''}></td>
-                            <td><button class="btn btn-sm" style="background:var(--teal);" onclick="updateHourlyRate(${r.id})" ${user?.role !== 'ADMIN' ? 'disabled' : ''}>💾</button></td>
-                        </tr>
+                         <tr>
+                             <td>${esc(r.role)}</td>
+                             <td><input type="number" step="0.01" value="${r.taux_horaire}" id="rate_${r.id}" style="width:100px; padding:4px;" ${user?.role !== 'ADMIN' ? 'disabled' : ''}></td>
+                             <td><button class="btn btn-sm" style="background:var(--teal);" onclick="updateHourlyRate(${r.id})" ${user?.role !== 'ADMIN' ? 'disabled' : ''}>💾</button></td>
+                         </tr>
                     `).join('')}
                 </tbody>
-            </table>
+             </table>
         `;
     }
     const roleSelect = document.getElementById('costRoleSelect');
@@ -791,14 +844,14 @@ function renderCostSheet() {
         const cost = entry.heures * rate;
         total += cost;
         return `
-            <tr>
-                <td>${entry.mois}</td>
-                <td>${esc(entry.role)}</td>
-                <td>${entry.heures}</td>
-                <td>${cost.toFixed(2)} €</td>
-                <td>${esc(entry.projet || '-')}</td>
-                <td><button class="btn btn-sm btn-danger" onclick="deleteCostEntry(${entry.id})" ${user?.role !== 'ADMIN' ? 'disabled' : ''}>🗑️</button></td>
-            </tr>
+             <tr>
+                 <td>${entry.mois}</td>
+                 <td>${esc(entry.role)}</td>
+                 <td>${entry.heures}</td>
+                 <td>${cost.toFixed(2)} €</td>
+                 <td>${esc(entry.projet || '-')}</td>
+                 <td><button class="btn btn-sm btn-danger" onclick="deleteCostEntry(${entry.id})" ${user?.role !== 'ADMIN' ? 'disabled' : ''}>🗑️</button></td>
+             </tr>
         `;
     }).join('');
     document.getElementById('costTotal').innerHTML = `Total coûts: ${total.toFixed(2)} €`;
@@ -840,13 +893,13 @@ function renderInvoices() {
     body.innerHTML = invoices.map(inv => {
         total += inv.montant;
         return `
-            <tr>
-                <td>${esc(inv.fournisseur)}</td>
-                <td>${inv.montant.toFixed(2)} €</td>
-                <td>${inv.date_facture}</td>
-                <td>${esc(inv.projet || '-')}</td>
-                <td><button class="btn btn-sm btn-danger" onclick="deleteInvoice(${inv.id})" ${user?.role !== 'ADMIN' ? 'disabled' : ''}>🗑️</button></td>
-            </tr>
+             <tr>
+                 <td>${esc(inv.fournisseur)}</td>
+                 <td>${inv.montant.toFixed(2)} €</td>
+                 <td>${inv.date_facture}</td>
+                 <td>${esc(inv.projet || '-')}</td>
+                 <td><button class="btn btn-sm btn-danger" onclick="deleteInvoice(${inv.id})" ${user?.role !== 'ADMIN' ? 'disabled' : ''}>🗑️</button></td>
+             </tr>
         `;
     }).join('');
     document.getElementById('invoicesTotal').innerHTML = `Total factures: ${total.toFixed(2)} €`;
