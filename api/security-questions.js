@@ -6,19 +6,26 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+  // Autoriser uniquement les requêtes GET
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Méthode non autorisée' });
   }
 
-  const { data, error } = await supabase
-    .from('security_questions')
-    .select('id, question_text')
-    .order('id');
+  try {
+    const { data, error } = await supabase
+      .from('security_questions')
+      .select('id, question_text')
+      .order('id');
 
-  if (error) {
-    console.error('Erreur fetch questions:', error);
-    return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error('Erreur Supabase:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    // Retourner la liste des questions
+    res.status(200).json(data);
+  } catch (err) {
+    console.error('Erreur serveur:', err);
+    res.status(500).json({ error: 'Erreur interne du serveur' });
   }
-
-  res.status(200).json(data);
 }
