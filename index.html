@@ -130,82 +130,28 @@
         .admin-card input, .admin-card select { padding:12px; border-radius:10px; border:1px solid #ddd; width:100%; margin-bottom:15px; font-family:inherit; font-size:14px; outline:none; }
         .admin-card input:focus, .admin-card select:focus { border-color:var(--blue); }
 
-        .compliance-grid, .costs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-        .compliance-card, .cost-card, .cyber-card, .comm-card {
+        .card-link {
             background: #fff;
             border-radius: 16px;
-            padding: 24px;
+            padding: 60px 40px;
+            text-align: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border: 1px solid var(--border);
         }
-        .compliance-card h3, .cost-card h3, .cyber-card h3, .comm-card h3 {
+        .card-link h2 {
             font-family: 'Syne';
             margin-bottom: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
         }
-        .status-badge {
+        .card-link .btn {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .status-conforme { background: #00B49C20; color: #00B49C; }
-        .status-partiel { background: #F5A62320; color: #F5A623; }
-        .status-non-conforme { background: #E8456820; color: #E84568; }
-        .maturity-slider {
-            width: 100%;
-            margin: 12px 0;
-        }
-        .ref-tag {
-            background: #eef2ff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            display: inline-block;
-            margin: 4px 4px 0 0;
-        }
-        .checklist-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-        .cost-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .cost-table th, .cost-table td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        .cost-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-        .form-inline {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-            flex-wrap: wrap;
-        }
-        .form-inline input, .form-inline select {
-            flex: 1;
-            padding: 10px;
+            background: var(--blue);
+            color: #fff;
+            padding: 12px 24px;
+            text-decoration: none;
             border-radius: 8px;
-            border: 1px solid #ddd;
+            font-weight: 600;
         }
+
         .message-item, .product-item, .problem-item {
             border: 1px solid #eee;
             border-radius: 12px;
@@ -224,7 +170,6 @@
             .topbar { padding:0 16px; }
             .container { padding:90px 16px 30px; }
             .dashboard-header { flex-direction:column; align-items:flex-start; }
-            .compliance-grid { grid-template-columns:1fr; }
         }
     </style>
 </head>
@@ -285,24 +230,20 @@
         <div class="chart-container"><h3>📊 Complétion des outils</h3><div class="chart-wrap"><canvas id="toolsChart"></canvas></div></div>
     </section>
 
-    <!-- CONFORMITÉ & COÛTS -->
+    <!-- CONFORMITÉ & GESTION DES COÛTS (version allégée) -->
     <section id="complianceSection" class="container s-hide">
-        <div class="dashboard-header"><h1>Conformité & Gestion des Coûts</h1></div>
-        <div style="margin-bottom: 32px;">
-            <h2 style="font-family:'Syne'; margin-bottom: 20px;">📜 Normes de conformité</h2>
-            <div class="compliance-grid" id="complianceGrid"></div>
+        <div class="dashboard-header">
+            <h1>Conformité & Gestion des Coûts</h1>
         </div>
-        <div style="margin-bottom: 32px;">
-            <h2 style="font-family:'Syne'; margin-bottom: 20px;">💰 Taux horaires</h2>
-            <div class="cost-card" id="hourlyRatesCard"><div id="hourlyRatesList"></div><div class="form-inline"><input type="text" id="newRateRole" placeholder="Rôle"><input type="number" id="newRateValue" placeholder="Taux horaire (€)" step="0.01"><button class="btn btn-success" onclick="addHourlyRate()">Ajouter</button></div></div>
-        </div>
-        <div style="margin-bottom: 32px;">
-            <h2 style="font-family:'Syne'; margin-bottom: 20px;">📊 Feuille de calcul des coûts</h2>
-            <div class="cost-card"><div class="form-inline"><input type="month" id="costMonth"><select id="costRoleSelect"></select><input type="number" id="costHours" placeholder="Heures" step="0.5"><input type="text" id="costProject" placeholder="Projet"><button class="btn btn-success" onclick="addCostEntry()">Ajouter</button></div><div style="overflow-x: auto; margin-top: 20px;"><table class="cost-table"><thead> <th>Mois</th><th>Rôle</th><th>Heures</th><th>Coût (€)</th><th>Projet</th><th>Actions</th> </thead><tbody id="costSheetBody"></tbody> </table></div><div style="margin-top: 16px; text-align: right; font-weight: bold;" id="costTotal"></div></div>
-        </div>
-        <div style="margin-bottom: 32px;">
-            <h2 style="font-family:'Syne'; margin-bottom: 20px;">🧾 Factures</h2>
-            <div class="cost-card"><div class="form-inline"><input type="text" id="invoiceSupplier" placeholder="Fournisseur"><input type="number" id="invoiceAmount" placeholder="Montant (€)" step="0.01"><input type="date" id="invoiceDate"><input type="text" id="invoiceProject" placeholder="Projet"><button class="btn btn-success" onclick="addInvoice()">Ajouter facture</button></div><div style="overflow-x: auto; margin-top: 20px;"><table class="cost-table"><thead> <th>Fournisseur</th><th>Montant</th><th>Date</th><th>Projet</th><th>Actions</th> </thead><tbody id="invoicesBody"></tbody> </table></div><div style="margin-top: 16px; text-align: right; font-weight: bold;" id="invoicesTotal"></div></div>
+        <div class="card-link">
+            <div style="font-size: 48px; margin-bottom: 20px;">⚖️</div>
+            <h2>Gestion des normes et des coûts</h2>
+            <p style="margin-bottom: 24px; color: #555;">Accédez à la page dédiée contenant :<br>
+            - Les normes NIS2, ITIL, ISO 27001/5 avec checklist et suivi de maturité<br>
+            - La gestion des taux horaires (techniciens, opérateurs)<br>
+            - La feuille de calcul des coûts et le suivi des factures</p>
+            <a href="/compliance-costs.html" target="_blank" class="btn">🔗 Ouvrir la page Conformité & Coûts</a>
+            <p style="margin-top: 24px; font-size: 12px; color: #888;">La page s'ouvre dans un nouvel onglet pour ne pas surcharger l'interface principale</p>
         </div>
     </section>
 
@@ -311,16 +252,14 @@
         <div class="dashboard-header">
             <h1>Cyber Threat Intelligence</h1>
         </div>
-        <div class="cyber-card" style="text-align: center; padding: 60px 40px;">
+        <div class="card-link">
             <div style="font-size: 48px; margin-bottom: 20px;">🌍</div>
-            <h2 style="font-family:'Syne'; margin-bottom: 16px;">Informations détaillées sur la cyber menace</h2>
+            <h2>Informations détaillées sur la cyber menace</h2>
             <p style="margin-bottom: 24px; color: #555;">Accédez à la page dédiée contenant :<br>
             - Les services AI de Check Point (ThreatCloud, Copilot)<br>
             - Le framework MITRE ATT&CK complet<br>
             - L'actualité cyber en temps réel</p>
-            <a href="/cyber-threat-intel.html" target="_blank" class="btn" style="background: var(--blue); color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                🔗 Ouvrir la page Cyber Threat Intelligence
-            </a>
+            <a href="/cyber-threat-intel.html" target="_blank" class="btn">🔗 Ouvrir la page Cyber Threat Intelligence</a>
             <p style="margin-top: 24px; font-size: 12px; color: #888;">La page s'ouvre dans un nouvel onglet pour ne pas surcharger l'interface principale</p>
         </div>
     </section>
@@ -332,7 +271,7 @@
         <!-- Messagerie interne -->
         <div style="margin-bottom: 32px;">
             <h2 style="font-family:'Syne'; margin-bottom: 20px;">📨 Messagerie interne</h2>
-            <div class="comm-card">
+            <div class="card-link" style="padding: 24px; text-align: left;">
                 <div style="margin-bottom: 20px;">
                     <h3>Nouveau message</h3>
                     <input type="text" id="msgSujet" placeholder="Sujet" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
@@ -347,7 +286,7 @@
         <!-- Fiches produit -->
         <div style="margin-bottom: 32px;">
             <h2 style="font-family:'Syne'; margin-bottom: 20px;">📦 Fiches produit</h2>
-            <div class="comm-card">
+            <div class="card-link" style="padding: 24px; text-align: left;">
                 <div style="margin-bottom: 20px;">
                     <h3>Nouvelle fiche produit</h3>
                     <input type="text" id="prodNom" placeholder="Nom du produit" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
@@ -362,7 +301,7 @@
         <!-- Suivi des problèmes -->
         <div style="margin-bottom: 32px;">
             <h2 style="font-family:'Syne'; margin-bottom: 20px;">🐛 Suivi des problèmes</h2>
-            <div class="comm-card">
+            <div class="card-link" style="padding: 24px; text-align: left;">
                 <div style="margin-bottom: 20px;">
                     <h3>Nouveau problème</h3>
                     <input type="text" id="probTitre" placeholder="Titre" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
@@ -395,8 +334,6 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let db = null, user = null;
 let chartMaturity = null, chartTools = null;
-let complianceData = [], hourlyRates = [], costEntries = [], invoices = [];
-let normesReferences = {};
 
 const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5',
     SERVICE_MANAGER:'#F97316', CEO:'#F5A623', NET:'#0EA5E9', SYS:'#6B7280' };
@@ -493,10 +430,6 @@ async function loadUserProfile(email) {
         db = (row && row.content) ? row.content : {};
         setScreen('appScreen'); tab('diag'); renderTools(); updateKPI(); renderCharts();
         if (user.role === 'ADMIN') { loadSecurityQuestions(); generateCaptcha(); }
-        loadComplianceData();
-        loadHourlyRates();
-        loadCostEntries();
-        loadInvoices();
         loadMessages();
         loadProducts();
         loadProblems();
@@ -513,7 +446,6 @@ function tab(which) {
     document.getElementById('communicationSection').style.display = which === 'communication' ? 'block' : 'none';
     document.getElementById('adminSection').style.display = which === 'admin' ? 'block' : 'none';
     if (which === 'kpi') { updateKPI(); renderCharts(); }
-    if (which === 'compliance') { loadComplianceData(); loadHourlyRates(); loadCostEntries(); loadInvoices(); }
     if (which === 'communication') { loadMessages(); loadProducts(); loadProblems(); loadUsersForMessaging(); loadUsersForProducts(); loadUsersForProblems(); }
 }
 
@@ -526,20 +458,13 @@ function renderTools() {
         card.style.borderTopColor = COLORS[user.role] || COLORS.ADMIN;
         
         if (tool.id === 25) {
-            const normesData = complianceData.map(n => {
-                const ref = normesReferences[n.norme] || {};
-                return `
-                    <div style="margin-bottom: 24px; border-left: 3px solid #1A6CF5; padding-left: 16px;">
-                        <h4 style="font-family:'Syne'; margin-bottom: 8px;">${n.norme}</h4>
-                        <p style="font-size: 13px; color: #555;">${esc(ref.description || 'Description non disponible')}</p>
-                        <div style="margin-top: 8px;"><a href="${ref.lien_officiel || '#'}" target="_blank" style="font-size: 12px;">📖 Documentation officielle</a></div>
-                        <details style="margin-top: 8px;"><summary style="font-size: 12px; font-weight: 600; cursor: pointer;">📋 Obligations / bonnes pratiques</summary><ul style="margin-top: 8px; padding-left: 20px; font-size: 12px;">${(ref.references_pratiques || []).map(r => `<li>${esc(r)}</li>`).join('')}</ul></details>
-                        <details style="margin-top: 8px;"><summary style="font-size: 12px; font-weight: 600; cursor: pointer;">✅ Checklist associée</summary><ul style="margin-top: 8px; padding-left: 20px; font-size: 12px;">${(ref.checklist || []).map(item => `<li>${esc(item)}</li>`).join('')}</ul></details>
-                        <div style="margin-top: 8px; font-size: 11px; color: #888;">Niveau de maturité actuel : ${n.niveau_maturite}% – ${n.statut}</div>
-                    </div>
-                `;
-            }).join('');
-            card.innerHTML = `<div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #25 – Référentiels officiels</div></div></div><div style="max-height: 500px; overflow-y: auto; padding-right: 8px;">${normesData || '<p>Aucune donnée de conformité disponible.</p>'}</div><textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes personnelles sur la conformité…" style="margin-top: 16px;">${esc(val)}</textarea><div class="spell-bar" id="spell_${tool.id}"></div><div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>`;
+            // L'outil 25 reste dans l'index car il fait partie du diagnostic
+            card.innerHTML = `<div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #25 – Référentiels officiels</div></div></div>
+                <p style="color:#666; font-size:13px; margin-bottom:12px;">Les référentiels de conformité (NIS2, ITIL, ISO 27001/5) sont maintenant disponibles dans la page dédiée.</p>
+                <a href="/compliance-costs.html" target="_blank" class="btn" style="display:inline-block; background:var(--blue); color:#fff; padding:8px 16px; text-decoration:none; border-radius:8px;">📋 Accéder aux référentiels</a>
+                <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes personnelles sur la conformité…" style="margin-top: 16px;">${esc(val)}</textarea>
+                <div class="spell-bar" id="spell_${tool.id}"></div>
+                <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>`;
             grid.appendChild(card);
             const ta = card.querySelector(`#note_${tool.id}`);
             if (val) updateSpell(tool.id, val);
@@ -547,7 +472,10 @@ function renderTools() {
             return;
         }
         
-        card.innerHTML = `<div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #${tool.id}</div></div></div><textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes, statut, observations…">${esc(val)}</textarea><div class="spell-bar" id="spell_${tool.id}"></div><div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>`;
+        card.innerHTML = `<div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #${tool.id}</div></div></div>
+            <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes, statut, observations…">${esc(val)}</textarea>
+            <div class="spell-bar" id="spell_${tool.id}"></div>
+            <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>`;
         grid.appendChild(card);
         const ta = card.querySelector(`#note_${tool.id}`);
         if (val) updateSpell(tool.id, val);
@@ -660,51 +588,6 @@ document.getElementById('createUserForm')?.addEventListener('submit', async (e) 
         else { document.getElementById('createUserMessage').innerHTML=`<span style="color:red;">❌ ${result.error}</span>`; }
     } catch(err){ document.getElementById('createUserMessage').innerHTML=`<span style="color:red;">❌ ${err.message}</span>`; }
 });
-
-// ============================================================
-// CONFORMITÉ
-// ============================================================
-async function loadComplianceData() {
-    const { data: norms, error: normsError } = await sb.from('normes_compliance').select('*');
-    if (normsError) { console.error(normsError); return; }
-    complianceData = norms;
-    const { data: refs, error: refsError } = await sb.from('normes_references').select('*');
-    if (!refsError && refs) { refs.forEach(ref => { normesReferences[ref.norme] = ref; }); }
-    renderComplianceGrid();
-}
-function saveChecklistItem(norme, index, isChecked) { localStorage.setItem(`checklist_${norme}_${index}`, isChecked); showToast(`Checklist mise à jour pour ${norme}`); }
-function renderComplianceGrid() {
-    const grid = document.getElementById('complianceGrid');
-    if (!grid) return;
-    grid.innerHTML = complianceData.map(n => {
-        const ref = normesReferences[n.norme] || {};
-        const checklistItems = ref.checklist || [];
-        return `<div class="compliance-card"><h3>${esc(n.norme)}${ref.lien_officiel ? `<a href="${ref.lien_officiel}" target="_blank" style="font-size:12px;">📖 Doc officielle</a>` : ''}</h3><div style="margin-bottom: 16px;">${esc(ref.description || '')}</div>${ref.references_pratiques ? `<div><strong>📚 Références pratiques :</strong><div>${ref.references_pratiques.map(r => `<span class="ref-tag">${esc(r)}</span>`).join('')}</div></div>` : ''}<div><strong>✅ Checklist :</strong><div>${checklistItems.map((item, idx) => `<div class="checklist-item"><input type="checkbox" id="check_${n.norme}_${idx}" onchange="saveChecklistItem('${n.norme}', ${idx}, this.checked)" ${localStorage.getItem(`checklist_${n.norme}_${idx}`) === 'true' ? 'checked' : ''}><label>${esc(item)}</label></div>`).join('')}</div></div><div><span class="status-badge status-${n.statut.replace(/ /g, '-')}">${n.statut}</span><span>Niveau: ${n.niveau_maturite}%</span><input type="range" min="0" max="100" value="${n.niveau_maturite}" onchange="updateComplianceMaturity(${n.id}, this.value)" ${user?.role !== 'ADMIN' ? 'disabled' : ''}></div><div><textarea rows="2" placeholder="Actions recommandées" onblur="updateComplianceActions(${n.id}, this.value)" ${user?.role !== 'ADMIN' ? 'disabled' : ''}>${esc(n.actions || '')}</textarea></div></div>`;
-    }).join('');
-}
-async function updateComplianceMaturity(id, value) { if (user?.role !== 'ADMIN') return; await sb.from('normes_compliance').update({ niveau_maturite: parseInt(value) }).eq('id', id); let statut = value >= 80 ? 'conforme' : (value >= 50 ? 'partiel' : 'non conforme'); await sb.from('normes_compliance').update({ statut }).eq('id', id); showToast('Maturité mise à jour'); loadComplianceData(); }
-async function updateComplianceActions(id, value) { if (user?.role !== 'ADMIN') return; await sb.from('normes_compliance').update({ actions: value }).eq('id', id); showToast('Actions sauvegardées'); }
-
-// GESTION DES COÛTS
-async function loadHourlyRates() {
-    const { data, error } = await sb.from('costs_hourly_rates').select('*');
-    if (error) { console.error(error); return; }
-    hourlyRates = data;
-    const listDiv = document.getElementById('hourlyRatesList');
-    if (listDiv) { listDiv.innerHTML = `<table class="cost-table"><thead><th>Rôle</th><th>Taux horaire (€)</th><th>Actions</th></thead><tbody>${hourlyRates.map(r => `<tr><td>${esc(r.role)}</td><td><input type="number" step="0.01" value="${r.taux_horaire}" id="rate_${r.id}" style="width:100px;"></td><td><button class="btn btn-sm" style="background:var(--teal);" onclick="updateHourlyRate(${r.id})">💾</button></td></tr>`).join('')}</tbody></table>`; }
-    const roleSelect = document.getElementById('costRoleSelect');
-    if (roleSelect) { roleSelect.innerHTML = hourlyRates.map(r => `<option value="${esc(r.role)}">${esc(r.role)} (${r.taux_horaire}€/h)</option>`).join(''); }
-}
-async function updateHourlyRate(id) { if (user?.role !== 'ADMIN') return; const newRate = document.getElementById(`rate_${id}`).value; await sb.from('costs_hourly_rates').update({ taux_horaire: parseFloat(newRate) }).eq('id', id); showToast('Taux horaire mis à jour'); loadHourlyRates(); }
-async function addHourlyRate() { if (user?.role !== 'ADMIN') return; const role = document.getElementById('newRateRole').value.trim(); const rate = parseFloat(document.getElementById('newRateValue').value); if (!role || isNaN(rate)) { showToast('Rôle et taux requis', 'error'); return; } await sb.from('costs_hourly_rates').insert({ role, taux_horaire: rate }); document.getElementById('newRateRole').value = ''; document.getElementById('newRateValue').value = ''; showToast('Taux ajouté'); loadHourlyRates(); }
-async function loadCostEntries() { const { data, error } = await sb.from('costs_sheet').select('*').order('mois', { ascending: false }); if (error) { console.error(error); return; } costEntries = data; renderCostSheet(); }
-function renderCostSheet() { const body = document.getElementById('costSheetBody'); if (!body) return; let total = 0; body.innerHTML = costEntries.map(entry => { const rate = hourlyRates.find(r => r.role === entry.role)?.taux_horaire || 0; const cost = entry.heures * rate; total += cost; return `<tr><td>${entry.mois}</td><td>${esc(entry.role)}</td><td>${entry.heures}</td><td>${cost.toFixed(2)} €</td><td>${esc(entry.projet || '-')}</td><td><button class="btn btn-sm btn-danger" onclick="deleteCostEntry(${entry.id})">🗑️</button></td></tr>`; }).join(''); document.getElementById('costTotal').innerHTML = `Total coûts: ${total.toFixed(2)} €`; }
-async function addCostEntry() { if (user?.role !== 'ADMIN') return; const mois = document.getElementById('costMonth').value; const role = document.getElementById('costRoleSelect').value; const heures = parseFloat(document.getElementById('costHours').value); const projet = document.getElementById('costProject').value.trim(); if (!mois || !role || isNaN(heures)) { showToast('Mois, rôle et heures requis', 'error'); return; } await sb.from('costs_sheet').insert({ mois, role, heures, projet, created_by: user.email }); document.getElementById('costMonth').value = ''; document.getElementById('costHours').value = ''; document.getElementById('costProject').value = ''; showToast('Coût ajouté'); loadCostEntries(); }
-async function deleteCostEntry(id) { if (user?.role !== 'ADMIN') return; await sb.from('costs_sheet').delete().eq('id', id); showToast('Entrée supprimée'); loadCostEntries(); }
-async function loadInvoices() { const { data, error } = await sb.from('costs_invoices').select('*').order('date_facture', { ascending: false }); if (error) { console.error(error); return; } invoices = data; renderInvoices(); }
-function renderInvoices() { const body = document.getElementById('invoicesBody'); if (!body) return; let total = 0; body.innerHTML = invoices.map(inv => { total += inv.montant; return `<tr><td>${esc(inv.fournisseur)}</td><td>${inv.montant.toFixed(2)} €</td><td>${inv.date_facture}</td><td>${esc(inv.projet || '-')}</td><td><button class="btn btn-sm btn-danger" onclick="deleteInvoice(${inv.id})">🗑️</button></td></tr>`; }).join(''); document.getElementById('invoicesTotal').innerHTML = `Total factures: ${total.toFixed(2)} €`; }
-async function addInvoice() { if (user?.role !== 'ADMIN') return; const fournisseur = document.getElementById('invoiceSupplier').value.trim(); const montant = parseFloat(document.getElementById('invoiceAmount').value); const date_facture = document.getElementById('invoiceDate').value; const projet = document.getElementById('invoiceProject').value.trim(); if (!fournisseur || isNaN(montant) || !date_facture) { showToast('Fournisseur, montant et date requis', 'error'); return; } await sb.from('costs_invoices').insert({ fournisseur, montant, date_facture, projet, created_by: user.email }); document.getElementById('invoiceSupplier').value = ''; document.getElementById('invoiceAmount').value = ''; document.getElementById('invoiceDate').value = ''; document.getElementById('invoiceProject').value = ''; showToast('Facture ajoutée'); loadInvoices(); }
-async function deleteInvoice(id) { if (user?.role !== 'ADMIN') return; await sb.from('costs_invoices').delete().eq('id', id); showToast('Facture supprimée'); loadInvoices(); }
 
 // MESSAGERIE INTERNE
 async function loadUsersForMessaging() {
