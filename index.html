@@ -382,6 +382,42 @@
             return !error && data;
         }
 
+        // Fonction pour créer le profil dans ea_users si inexistant
+        async function ensureUserProfile(email, userId, userName = '') {
+            const { data: existing, error } = await sb
+                .from('ea_users')
+                .select('*')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (existing) return existing;
+
+            // Vérifier si c'est le premier utilisateur de la table
+            const { count, error: countError } = await sb
+                .from('ea_users')
+                .select('*', { count: 'exact', head: true });
+
+            const role = (count === 0) ? 'ADMIN' : 'DATA';
+
+            const { data: newUser, error: insertError } = await sb
+                .from('ea_users')
+                .insert({
+                    id: userId,
+                    email: email,
+                    nom: userName || email.split('@')[0],
+                    role: role,
+                    consent_rgpd: true
+                })
+                .select()
+                .single();
+
+            if (insertError) {
+                console.error('Erreur création profil:', insertError);
+                return null;
+            }
+            return newUser;
+        }
+
         async function doLogin() {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
@@ -404,8 +440,14 @@
             loader.style.display = 'flex';
 
             try {
+                // 1. Tenter la connexion
                 const { data, error } = await sb.auth.signInWithPassword({ email, password });
                 if (error) throw error;
+
+                // 2. S'assurer que le profil existe dans ea_users
+                const userProfile = await ensureUserProfile(email, data.user.id, data.user.user_metadata?.full_name);
+                if (!userProfile) throw new Error('Impossible de créer votre profil');
+
                 showSuccess('Connexion réussie ! Redirection...');
                 setTimeout(() => {
                     window.location.href = '/dashboard.html';
