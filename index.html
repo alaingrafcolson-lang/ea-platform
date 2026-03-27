@@ -88,7 +88,7 @@
         .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
         .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
         .dashboard-header h1 { font-family:'Syne'; margin:0; }
-        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(480px, 1fr)); gap:20px; }
+        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(520px, 1fr)); gap:20px; }
 
         .vp-card {
             background:#fff; border-radius:16px; padding:20px;
@@ -409,8 +409,7 @@ let db = null, user = null;
 let chartMaturity = null, chartTools = null, chartNormeMaturity = null, chartIntegrationCosts = null, chartMaturityByTool = null;
 let toolStatuses = {};
 let toolCharts = {};
-let toolDictSelections = {};
-let toolMaturityScores = {};
+let dictionaryTerms = [];
 
 const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5',
     SERVICE_MANAGER:'#F97316', CEO:'#F5A623', NET:'#0EA5E9', SYS:'#6B7280' };
@@ -459,8 +458,6 @@ function updateSpell(id, text) {
 // ============================================================
 // DICTIONNAIRE PROFESSIONNEL ET SCORE DE MATURITÉ
 // ============================================================
-let dictionaryTerms = [];
-
 async function loadDictionaryTerms() {
     const { data, error } = await sb
         .from('professional_dict')
@@ -469,6 +466,7 @@ async function loadDictionaryTerms() {
         .order('terme');
     if (error) {
         console.error('Erreur chargement dictionnaire:', error);
+        dictionaryTerms = [];
         return [];
     }
     dictionaryTerms = data || [];
@@ -483,7 +481,7 @@ async function loadToolDictSelections(toolId) {
         .eq('user_email', user.email);
     if (error) return {};
     const selections = {};
-    data.forEach(item => { selections[item.terme_id] = true; });
+    if (data) data.forEach(item => { selections[item.terme_id] = true; });
     return selections;
 }
 
@@ -538,14 +536,16 @@ async function loadToolStatuses() {
         return;
     }
     toolStatuses = {};
-    data.forEach(item => {
-        if (!toolStatuses[item.tool_id]) toolStatuses[item.tool_id] = {};
-        toolStatuses[item.tool_id][item.statut] = {
-            date: item.date_statut,
-            commentaire: item.commentaire || '',
-            id: item.id
-        };
-    });
+    if (data) {
+        data.forEach(item => {
+            if (!toolStatuses[item.tool_id]) toolStatuses[item.tool_id] = {};
+            toolStatuses[item.tool_id][item.statut] = {
+                date: item.date_statut,
+                commentaire: item.commentaire || '',
+                id: item.id
+            };
+        });
+    }
 }
 
 async function saveToolStatus(toolId, statut, date, commentaire = '') {
@@ -663,33 +663,47 @@ async function renderTools() {
                     <td>
                         <input type="text" class="status-comment-input" data-tool="${tool.id}" data-statut="${statut}" value="${esc(commentValue)}" placeholder="Commentaire" style="width: 100%; padding: 4px; font-size: 10px; border-radius: 6px; border: 1px solid #ddd;">
                     </td>
-                 </tr>
+                </tr>
             `;
         }
         
-        // Tags dictionnaire
+        // Tags du dictionnaire professionnel
         let dictHtml = '';
-        if (dictionaryTerms.length) {
+        if (dictionaryTerms && dictionaryTerms.length > 0) {
             dictHtml = `
-                <div style="margin-top: 12px;">
-                    <strong style="font-size: 11px;">📚 Dictionnaire métier (${ROLE_LABELS[user.role] || user.role})</strong>
-                    <div class="dict-tags-container" data-tool="${tool.id}" style="margin-top: 6px;">
+                <div style="margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px;">
+                    <strong style="font-size: 11px; display: block; margin-bottom: 8px;">📚 Dictionnaire métier (${ROLE_LABELS[user.role] || user.role})</strong>
+                    <div class="dict-tags-container" data-tool="${tool.id}" style="display: flex; flex-wrap: wrap; gap: 6px;">
                         ${dictionaryTerms.map(term => `
-                            <span class="dict-tag ${dictSelections[term.id] ? 'selected' : ''}" data-term-id="${term.id}" data-term="${term.terme}">${term.terme}</span>
+                            <span class="dict-tag ${dictSelections[term.id] ? 'selected' : ''}" 
+                                  data-term-id="${term.id}" 
+                                  data-term="${term.terme}"
+                                  style="cursor: pointer; background: ${dictSelections[term.id] ? 'var(--blue)' : '#eef2ff'}; color: ${dictSelections[term.id] ? 'white' : '#1E40AF'}; padding: 4px 12px; border-radius: 20px; font-size: 11px; transition: all 0.2s;">
+                                ${term.terme}
+                            </span>
                         `).join('')}
                     </div>
+                    <div style="font-size: 10px; color: #888; margin-top: 6px;">Cliquez sur un terme pour l'associer à cet outil</div>
+                </div>
+            `;
+        } else {
+            dictHtml = `
+                <div style="margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px;">
+                    <strong style="font-size: 11px;">📚 Dictionnaire métier</strong>
+                    <div style="font-size: 11px; color: #888; margin-top: 4px;">Aucun terme disponible pour votre métier (${ROLE_LABELS[user.role] || user.role})</div>
                 </div>
             `;
         }
         
         // Score de maturité
         const maturityHtml = `
-            <div style="margin-top: 12px;">
-                <strong style="font-size: 11px;">📊 Score de maturité (1-10)</strong>
-                <div>
-                    <input type="range" class="maturity-slider" min="1" max="10" step="1" value="${maturityScore}" data-tool="${tool.id}">
-                    <span class="maturity-value" id="maturity_val_${tool.id}">${maturityScore}</span>
+            <div style="margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px;">
+                <strong style="font-size: 11px; display: block; margin-bottom: 6px;">📊 Score de maturité (1-10)</strong>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <input type="range" class="maturity-slider" min="1" max="10" step="1" value="${maturityScore}" data-tool="${tool.id}" style="flex: 1; accent-color: var(--blue);">
+                    <span class="maturity-value" id="maturity_val_${tool.id}" style="font-weight: bold; min-width: 30px;">${maturityScore}</span>
                 </div>
+                <div style="font-size: 10px; color: #888; margin-top: 4px;">Évaluez la maturité de cet outil (1 = débutant, 10 = expert)</div>
             </div>
         `;
         
@@ -703,7 +717,7 @@ async function renderTools() {
             </div>
             <div class="progress-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <strong style="font-size: 12px;">📊 Progression</strong>
+                    <strong style="font-size: 12px;">📊 Progression des statuts</strong>
                     <span style="font-size: 10px; color: #666;">Statuts atteints: ${completedCount}/5</span>
                 </div>
                 <div style="height: 90px;">
@@ -712,8 +726,12 @@ async function renderTools() {
             </div>
             <div class="status-table-container" style="margin-top: 8px;">
                 <table class="status-table">
-                    <thead><tr><th>Statut</th><th>Date</th><th>Commentaire</th></tr></thead>
-                    <tbody>${tableRows}</tbody>
+                    <thead>
+                        <tr><th>Statut</th><th>Date</th><th>Commentaire</th></tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
                 </table>
             </div>
             ${dictHtml}
@@ -735,6 +753,8 @@ async function renderTools() {
                 const comment = commentInput ? commentInput.value : '';
                 if (date) {
                     await saveToolStatus(toolId, statut, date, comment);
+                } else if (comment && !date) {
+                    showToast('Veuillez renseigner une date', 'error');
                 }
             });
         });
@@ -746,9 +766,13 @@ async function renderTools() {
                 const isSelected = tag.classList.contains('selected');
                 if (isSelected) {
                     tag.classList.remove('selected');
+                    tag.style.background = '#eef2ff';
+                    tag.style.color = '#1E40AF';
                     await saveDictSelection(tool.id, termId, false);
                 } else {
                     tag.classList.add('selected');
+                    tag.style.background = 'var(--blue)';
+                    tag.style.color = 'white';
                     await saveDictSelection(tool.id, termId, true);
                 }
             });
@@ -926,7 +950,7 @@ async function renderMaturityByToolChart() {
         .eq('user_email', user.email);
     if (!scores) return;
     const toolScores = {};
-    scores.forEach(s => { toolScores[s.tool_id] = s.score; });
+    if (scores) scores.forEach(s => { toolScores[s.tool_id] = s.score; });
     const labels = TOOLS.map(t => t.t.substring(0, 20));
     const data = TOOLS.map(t => toolScores[t.id] || 5);
     const ctx = document.getElementById('maturityByToolChart');
