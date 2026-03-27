@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -122,9 +121,6 @@
             background:var(--blue);
             color:#fff;
         }
-        .btn-primary:hover {
-            background:#1558cc;
-        }
         .btn-success {
             background:var(--teal);
             color:#fff;
@@ -157,8 +153,6 @@
         .data-table th {
             background:#f8f9fa;
             font-weight:600;
-            position:sticky;
-            top:0;
         }
         .data-table input, .data-table select, .data-table textarea {
             width:100%;
@@ -254,7 +248,7 @@
                     <table class="data-table">
                         <thead> <th>Code</th><th>Libellé</th><th>Nature</th><th>Description</th><th>Responsable</th><th>Actions</th> </thead>
                         <tbody id="valeurs_metier_body"></tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
             <div class="card">
@@ -272,7 +266,7 @@
                     <table class="data-table">
                         <thead> <th>Type</th><th>Référentiel</th><th>État</th><th>Actions</th> </thead>
                         <tbody id="socle_securite_body"></tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
         </div>
@@ -288,7 +282,7 @@
                     <table class="data-table">
                         <thead> <th>Code</th><th>Libellé</th><th>Social</th><th>Financier</th><th>Juridique</th><th>Réputation</th><th>Vie privée</th><th>Actions</th> </thead>
                         <tbody id="evenements_body"></tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
         </div>
@@ -304,7 +298,7 @@
                     <table class="data-table">
                         <thead> <th>Code</th><th>Libellé</th><th>Description</th><th>Motivation</th><th>Retenu</th><th>Actions</th> </thead>
                         <tbody id="sources_body"></tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
             <div class="card">
@@ -316,7 +310,7 @@
                     <table class="data-table">
                         <thead> <th>Code</th><th>Partie prenante</th><th>Dépendance</th><th>Pénétration</th><th>Maturité</th><th>Confiance</th><th>Niveau</th><th>Actions</th> </thead>
                         <tbody id="parties_body"></tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
         </div>
@@ -332,7 +326,7 @@
                     <table class="data-table">
                         <thead> <th>Code</th><th>Libellé</th><th>Vraisemblance</th><th>Actions</th> </thead>
                         <tbody id="scenarios_body"></tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
         </div>
@@ -348,7 +342,7 @@
                     <table class="data-table">
                         <thead> <th>Code</th><th>Libellé</th><th>Niveau</th><th>Gravité</th><th>Vraisemblance</th><th>Traitement</th><th>Actions</th> </thead>
                         <tbody id="risques_body"></tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
         </div>
@@ -364,7 +358,7 @@
                     <table class="data-table">
                         <thead> <th>Code</th><th>Mesure</th><th>Risques</th><th>Coût</th><th>Complexité</th><th>Gain</th><th>Statut</th><th>Actions</th> </thead>
                         <tbody id="mesures_body"></tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
         </div>
@@ -385,7 +379,6 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // Configuration Supabase (sans Realtime pour éviter les erreurs WebSocket)
         const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -436,11 +429,12 @@
                     <td><input type="text" value="${escapeHtml(row.code || '')}" data-id="${row.id}" data-field="code" onblur="saveField('valeurs_metier', ${row.id}, 'code', this.value)"></td>
                     <td><input type="text" value="${escapeHtml(row.libelle || '')}" data-id="${row.id}" data-field="libelle" onblur="saveField('valeurs_metier', ${row.id}, 'libelle', this.value)"></td>
                     <td><select data-id="${row.id}" data-field="nature" onchange="saveField('valeurs_metier', ${row.id}, 'nature', this.value)">
-                        <option value="">--</option><option value="Information" ${row.nature === 'Information' ? 'selected' : ''}>Information</option>
+                        <option value="">--</option>
+                        <option value="Information" ${row.nature === 'Information' ? 'selected' : ''}>Information</option>
                         <option value="Processus" ${row.nature === 'Processus' ? 'selected' : ''}>Processus</option>
                         <option value="Service" ${row.nature === 'Service' ? 'selected' : ''}>Service</option>
                     </select></td>
-                    <td><textarea data-id="${row.id}" data-field="description" onblur="saveFieldDebounced('valeurs_metier', ${row.id}, 'description', this.value)">${escapeHtml(row.description || '')}</textarea></td>
+                    <td><textarea rows="2" data-id="${row.id}" data-field="description" onblur="saveFieldDebounced('valeurs_metier', ${row.id}, 'description', this.value)">${escapeHtml(row.description || '')}</textarea></td>
                     <td><input type="text" value="${escapeHtml(row.responsable || '')}" data-id="${row.id}" data-field="responsable" onblur="saveField('valeurs_metier', ${row.id}, 'responsable', this.value)"></td>
                     <td><button class="btn btn-danger btn-sm" onclick="deleteRow('valeurs_metier', ${row.id})">🗑️</button></td>
                 </tr>
@@ -582,137 +576,4 @@
         }
 
         async function loadMesures() {
-            const { data } = await sb.from('mesures_securite').select('*').order('code');
-            const tbody = document.getElementById('mesures_body');
-            if (!tbody) return;
-            tbody.innerHTML = (data || []).map(row => `
-                <tr>
-                    <td><input type="text" value="${escapeHtml(row.code || '')}" style="width:70px" data-id="${row.id}" data-field="code" onblur="saveField('mesures_securite', ${row.id}, 'code', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(row.libelle || '')}" style="min-width:200px" data-id="${row.id}" data-field="libelle" onblur="saveField('mesures_securite', ${row.id}, 'libelle', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(row.risques_associes || '')}" style="width:100px" data-id="${row.id}" data-field="risques_associes" onblur="saveField('mesures_securite', ${row.id}, 'risques_associes', this.value)"></td>
-                    <td><input type="number" value="${row.cout || 1}" style="width:50px" data-id="${row.id}" data-field="cout" onblur="saveField('mesures_securite', ${row.id}, 'cout', this.value)"></td>
-                    <td><input type="number" value="${row.complexite || 1}" style="width:50px" data-id="${row.id}" data-field="complexite" onblur="saveField('mesures_securite', ${row.id}, 'complexite', this.value)"></td>
-                    <td><input type="number" value="${row.gain || 1}" style="width:50px" data-id="${row.id}" data-field="gain" onblur="saveField('mesures_securite', ${row.id}, 'gain', this.value)"></td>
-                    <td><select data-id="${row.id}" data-field="statut" onchange="saveField('mesures_securite', ${row.id}, 'statut', this.value)">
-                        <option value="A lancer" ${row.statut === 'A lancer' ? 'selected' : ''}>A lancer</option>
-                        <option value="En cours" ${row.statut === 'En cours' ? 'selected' : ''}>En cours</option>
-                        <option value="Terminé" ${row.statut === 'Terminé' ? 'selected' : ''}>Terminé</option>
-                    </select></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteRow('mesures_securite', ${row.id})">🗑️</button></td>
-                 </tr>
-            `).join('');
-        }
-
-        async function loadCartographie() {
-            const { data } = await sb.from('cartographie_risques').select('*');
-            if (!data) return;
-            
-            const initial = data.filter(c => !c.est_residuel);
-            const residuel = data.filter(c => c.est_residuel);
-            
-            const renderMatrix = (risks, containerId) => {
-                const matrix = [[],[],[],[]];
-                risks.forEach(c => {
-                    if (c.gravite >= 1 && c.gravite <= 4 && c.vraisemblance >= 1 && c.vraisemblance <= 4) {
-                        if (!matrix[4-c.gravite][c.vraisemblance-1]) matrix[4-c.gravite][c.vraisemblance-1] = [];
-                        matrix[4-c.gravite][c.vraisemblance-1].push(c.risque_id?.toUpperCase() || '');
-                    }
-                });
-                const container = document.getElementById(containerId);
-                if (!container) return;
-                container.innerHTML = `
-                    <div class="risk-matrix">
-                        <div class="risk-cell" style="background:#f0f0f0;"><strong>G/V</strong></div>
-                        <div class="risk-cell" style="background:#f0f0f0;"><strong>1</strong></div>
-                        <div class="risk-cell" style="background:#f0f0f0;"><strong>2</strong></div>
-                        <div class="risk-cell" style="background:#f0f0f0;"><strong>3</strong></div>
-                        <div class="risk-cell" style="background:#f0f0f0;"><strong>4</strong></div>
-                        ${matrix.map((row, i) => `
-                            <div class="risk-cell" style="background:#f0f0f0;"><strong>${4-i}</strong></div>
-                            ${row.map(cell => `
-                                <div class="risk-cell ${cell && cell.length ? (4-i >= 3 ? 'high' : (4-i >= 2 ? 'medium' : 'low')) : ''}">
-                                    ${cell && cell.length ? cell.join('<br>') : '-'}
-                                </div>
-                            `).join('')}
-                        `).join('')}
-                    </div>
-                `;
-            };
-            
-            renderMatrix(initial, 'carto_init');
-            renderMatrix(residuel, 'carto_residuel');
-        }
-
-        async function saveField(table, id, field, value) {
-            const { error } = await sb.from(table).update({ [field]: value }).eq('id', id);
-            if (error) showToast(`Erreur: ${error.message}`, 'error');
-            else showToast(`✅ ${table} mis à jour`);
-        }
-
-        function saveFieldDebounced(table, id, field, value) {
-            const key = `${table}_${id}_${field}`;
-            if (saveTimeouts[key]) clearTimeout(saveTimeouts[key]);
-            saveTimeouts[key] = setTimeout(() => saveField(table, id, field, value), 800);
-        }
-
-        async function addRow(table) {
-            const { error } = await sb.from(table).insert({}).select();
-            if (error) showToast(`Erreur: ${error.message}`, 'error');
-            else { showToast(`✅ Nouvelle ligne ajoutée`); loadAllData(); }
-        }
-
-        async function deleteRow(table, id) {
-            if (!confirm('Supprimer définitivement cette ligne ?')) return;
-            const { error } = await sb.from(table).delete().eq('id', id);
-            if (error) showToast(`Erreur: ${error.message}`, 'error');
-            else { showToast(`✅ Ligne supprimée`); loadAllData(); }
-        }
-
-        function refreshData() {
-            loadAllData();
-            showToast('🔄 Données rafraîchies');
-        }
-
-        function exportData() {
-            const tables = ['valeurs_metier', 'impact_echelles', 'socle_securite', 'événements_redoutes', 'sources_de_risque', 'parties_prenantes', 'scénarios_opérationnels', 'risques', 'mesures_securite', 'cartographie_risques'];
-            Promise.all(tables.map(async t => {
-                const { data } = await sb.from(t).select('*');
-                return { [t]: data };
-            })).then(results => {
-                const exportData = Object.assign({}, ...results);
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ebios_export_${new Date().toISOString().slice(0,19)}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                showToast('✅ Export JSON réussi');
-            });
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-
-        // Onglets
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(btn.dataset.tab).classList.add('active');
-                if (btn.dataset.tab === 'cartographie') loadCartographie();
-            });
-        });
-
-        checkAuth();
-    </script>
-</body>
-</html>
+            const { data } = await sb.from('mesures_securite').select('*
