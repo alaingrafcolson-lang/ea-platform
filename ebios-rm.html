@@ -24,11 +24,20 @@
             color:#fff;
             padding:24px 32px;
             border-bottom:1px solid rgba(255,255,255,0.1);
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            gap:16px;
         }
         .header h1 {
             font-family:'Syne';
             font-size:24px;
-            margin-bottom:8px;
+            margin-bottom:4px;
+        }
+        .header-actions {
+            display:flex;
+            gap:12px;
         }
         .container {
             max-width:1400px;
@@ -86,16 +95,92 @@
             box-shadow:0 2px 8px rgba(0,0,0,0.05);
             border:1px solid var(--border);
         }
+        .card-header {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:16px;
+            flex-wrap:wrap;
+            gap:12px;
+        }
         .card h2 {
             font-family:'Syne';
-            margin-bottom:16px;
             font-size:20px;
+            margin:0;
         }
-        .card h3 {
-            font-family:'Syne';
-            margin:16px 0 12px 0;
-            font-size:16px;
+        .btn {
+            padding:8px 16px;
+            border-radius:8px;
+            border:none;
+            cursor:pointer;
+            font-weight:600;
+            font-size:12px;
+            transition:all 0.2s;
         }
+        .btn-primary {
+            background:var(--blue);
+            color:#fff;
+        }
+        .btn-primary:hover {
+            background:#1558cc;
+        }
+        .btn-success {
+            background:var(--teal);
+            color:#fff;
+        }
+        .btn-success:hover {
+            background:#008c6e;
+        }
+        .btn-danger {
+            background:var(--rose);
+            color:#fff;
+        }
+        .btn-danger:hover {
+            background:#c73b5e;
+        }
+        .btn-sm {
+            padding:4px 10px;
+            font-size:11px;
+        }
+        .data-table {
+            width:100%;
+            border-collapse:collapse;
+            font-size:13px;
+        }
+        .data-table th, .data-table td {
+            padding:10px 8px;
+            text-align:left;
+            border-bottom:1px solid #eee;
+            vertical-align:middle;
+        }
+        .data-table th {
+            background:#f8f9fa;
+            font-weight:600;
+            position:sticky;
+            top:0;
+        }
+        .data-table input, .data-table select, .data-table textarea {
+            width:100%;
+            padding:6px 8px;
+            border:1px solid #ddd;
+            border-radius:6px;
+            font-family:inherit;
+            font-size:12px;
+        }
+        .data-table input:focus, .data-table select:focus, .data-table textarea:focus {
+            outline:none;
+            border-color:var(--blue);
+        }
+        .badge {
+            display:inline-block;
+            padding:4px 12px;
+            border-radius:20px;
+            font-size:11px;
+            font-weight:600;
+        }
+        .badge-eleve { background:#E8456820; color:#E84568; }
+        .badge-moyen { background:#F5A62320; color:#F5A623; }
+        .badge-faible { background:#00B49C20; color:#00B49C; }
         .risk-matrix {
             display:grid;
             grid-template-columns:repeat(5, 1fr);
@@ -110,64 +195,45 @@
             font-size:12px;
             border:1px solid #eee;
         }
-        .risk-cell.high {
-            background:#E8456820;
-            border-color:#E84568;
+        .risk-cell.high { background:#E8456820; border-color:#E84568; }
+        .risk-cell.medium { background:#F5A62320; border-color:#F5A623; }
+        .risk-cell.low { background:#00B49C20; border-color:#00B49C; }
+        .toast {
+            position:fixed;
+            bottom:30px;
+            right:30px;
+            background:var(--navy);
+            color:#fff;
+            padding:12px 20px;
+            border-radius:12px;
+            opacity:0;
+            transition:opacity 0.3s;
+            pointer-events:none;
+            z-index:1000;
         }
-        .risk-cell.medium {
-            background:#F5A62320;
-            border-color:#F5A623;
-        }
-        .risk-cell.low {
-            background:#00B49C20;
-            border-color:#00B49C;
-        }
-        .badge {
-            display:inline-block;
-            padding:4px 12px;
-            border-radius:20px;
-            font-size:11px;
-            font-weight:600;
-        }
-        .badge-eleve { background:#E8456820; color:#E84568; }
-        .badge-moyen { background:#F5A62320; color:#F5A623; }
-        .badge-faible { background:#00B49C20; color:#00B49C; }
-        .data-table {
-            width:100%;
-            border-collapse:collapse;
-            font-size:13px;
-        }
-        .data-table th, .data-table td {
-            padding:12px;
-            text-align:left;
-            border-bottom:1px solid #eee;
-        }
-        .data-table th {
-            background:#f8f9fa;
-            font-weight:600;
-        }
-        .progress-bar {
-            height:8px;
-            background:#e5e7eb;
-            border-radius:4px;
-            overflow:hidden;
-            margin-top:8px;
-        }
-        .progress-fill {
-            height:100%;
-            border-radius:4px;
-            background:var(--blue);
+        .toast.show { opacity:1; }
+        .loader {
+            text-align:center;
+            padding:40px;
+            color:#666;
         }
         @media (max-width:768px) {
             .container { padding:20px; }
-            .risk-matrix { grid-template-columns:repeat(4, 1fr); }
+            .data-table { font-size:11px; }
+            .data-table th, .data-table td { padding:6px 4px; }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>📊 Analyse de risque EBIOS RM</h1>
-        <p>Méthodologie d'analyse des risques selon le référentiel ANSSI</p>
+        <div>
+            <h1>📊 Analyse de risque EBIOS RM</h1>
+            <p>Édition interactive - Cliquez dans les cellules pour modifier, sauvegarde automatique</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="window.location.reload()">⟳ Rafraîchir</button>
+            <button class="btn btn-success" onclick="exportAllData()">📥 Exporter JSON</button>
+        </div>
     </div>
     <div class="container">
         <a href="/" class="back-link">← Retour à l'outil SI Governance</a>
@@ -185,75 +251,153 @@
         <!-- PÉRIMÈTRE -->
         <div id="perimetre" class="tab-pane active">
             <div class="card">
-                <h2>📊 Valeurs métier</h2>
-                <div id="valeursMetierContainer"></div>
+                <div class="card-header">
+                    <h2>📊 Valeurs métier</h2>
+                    <button class="btn btn-success btn-sm" onclick="addRow('valeurs_metier')">➕ Ajouter</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" id="table_valeurs_metier">
+                        <thead><tr><th>Code</th><th>Libellé</th><th>Nature</th><th>Description</th><th>Responsable</th><th>Actions</th></tr></thead>
+                        <tbody id="tbody_valeurs_metier"></tbody>
+                    </table>
+                </div>
             </div>
             <div class="card">
-                <h2>📏 Échelles d'impacts</h2>
-                <div id="echellesImpactsContainer"></div>
+                <div class="card-header">
+                    <h2>📏 Échelles d'impacts</h2>
+                    <button class="btn btn-success btn-sm" onclick="addRow('impact_echelles')">➕ Ajouter</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" id="table_impact_echelles">
+                        <thead><tr><th>Gravité</th><th>Libellé</th><th>Social/Organisation</th><th>Financier</th><th>Responsabilité</th><th>Réputation</th><th>Vie privée</th><th>Actions</th></tr></thead>
+                        <tbody id="tbody_impact_echelles"></tbody>
+                    </table>
+                </div>
             </div>
             <div class="card">
-                <h2>📋 Socle de sécurité</h2>
-                <div id="socleSecuriteContainer"></div>
+                <div class="card-header">
+                    <h2>📋 Socle de sécurité</h2>
+                    <button class="btn btn-success btn-sm" onclick="addRow('socle_securite')">➕ Ajouter</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" id="table_socle_securite">
+                        <thead><tr><th>Type</th><th>Référentiel</th><th>État d'application</th><th>Actions</th></tr></thead>
+                        <tbody id="tbody_socle_securite"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- ÉVÉNEMENTS REDOUTÉS -->
         <div id="evenements" class="tab-pane">
             <div class="card">
-                <h2>⚠️ Événements redoutés</h2>
-                <div id="evenementsContainer"></div>
+                <div class="card-header">
+                    <h2>⚠️ Événements redoutés</h2>
+                    <button class="btn btn-success btn-sm" onclick="addRow('événements_redoutes')">➕ Ajouter</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" id="table_evenements_redoutes">
+                        <thead><tr><th>Code</th><th>Libellé</th><th>Valeurs métier</th><th>Social</th><th>Financier</th><th>Juridique</th><th>Réputation</th><th>Vie privée</th><th>Actions</th></tr></thead>
+                        <tbody id="tbody_evenements_redoutes"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- SOURCES DE RISQUE -->
         <div id="sources" class="tab-pane">
             <div class="card">
-                <h2>🎯 Sources de risque</h2>
-                <div id="sourcesContainer"></div>
+                <div class="card-header">
+                    <h2>🎯 Sources de risque</h2>
+                    <button class="btn btn-success btn-sm" onclick="addRow('sources_de_risque')">➕ Ajouter</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" id="table_sources_de_risque">
+                        <thead><tr><th>Code</th><th>Libellé</th><th>Description</th><th>Objectifs</th><th>Motivation</th><th>Ressources</th><th>Activité</th><th>Pertinence</th><th>Retenu</th><th>Actions</th></tr></thead>
+                        <tbody id="tbody_sources_de_risque"></tbody>
+                    </table>
+                </div>
             </div>
             <div class="card">
-                <h2>👥 Parties prenantes critiques</h2>
-                <div id="partiesPrenantesContainer"></div>
+                <div class="card-header">
+                    <h2>👥 Parties prenantes critiques</h2>
+                    <button class="btn btn-success btn-sm" onclick="addRow('parties_prenantes')">➕ Ajouter</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" id="table_parties_prenantes">
+                        <thead><tr><th>Code</th><th>Catégorie</th><th>Libellé</th><th>Dépendance</th><th>Pénétration</th><th>Maturité</th><th>Confiance</th><th>Niveau</th><th>Actions</th></tr></thead>
+                        <tbody id="tbody_parties_prenantes"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- SCÉNARIOS -->
         <div id="scenarios" class="tab-pane">
             <div class="card">
-                <h2>⚔️ Scénarios opérationnels</h2>
-                <div id="scenariosOperationnelsContainer"></div>
+                <div class="card-header">
+                    <h2>⚔️ Scénarios opérationnels</h2>
+                    <button class="btn btn-success btn-sm" onclick="addRow('scénarios_opérationnels')">➕ Ajouter</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" id="table_scenarios_operationnels">
+                        <thead><tr><th>Code</th><th>Libellé</th><th>Scénario stratégique</th><th>Événement redouté</th><th>Vraisemblance</th><th>Actions</th></tr></thead>
+                        <tbody id="tbody_scenarios_operationnels"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- RISQUES -->
         <div id="risques" class="tab-pane">
             <div class="card">
-                <h2>⚠️ Risques identifiés</h2>
-                <div id="risquesContainer"></div>
+                <div class="card-header">
+                    <h2>⚠️ Risques identifiés</h2>
+                    <button class="btn btn-success btn-sm" onclick="addRow('risques')">➕ Ajouter</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" id="table_risques">
+                        <thead><tr><th>Code</th><th>Libellé</th><th>Description</th><th>Niveau</th><th>Gravité</th><th>Vraisemblance</th><th>Traitement</th><th>Propriétaire</th><th>Actions</th></tr></thead>
+                        <tbody id="tbody_risques"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- PLAN DE TRAITEMENT -->
         <div id="traitement" class="tab-pane">
             <div class="card">
-                <h2>📋 Plan de traitement des risques</h2>
-                <div id="planTraitementContainer"></div>
+                <div class="card-header">
+                    <h2>📋 Plan de traitement des risques</h2>
+                    <button class="btn btn-success btn-sm" onclick="addRow('mesures_securite')">➕ Ajouter</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table" id="table_mesures_securite">
+                        <thead><tr><th>Code</th><th>Typologie</th><th>Mesure</th><th>Risques associés</th><th>Coût</th><th>Complexité</th><th>Gain</th><th>Statut</th><th>Échéance</th><th>Actions</th></tr></thead>
+                        <tbody id="tbody_mesures_securite"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- CARTOGRAPHIE -->
         <div id="cartographie" class="tab-pane">
             <div class="card">
-                <h2>🗺️ Cartographie initiale des risques</h2>
+                <div class="card-header">
+                    <h2>🗺️ Cartographie initiale des risques</h2>
+                </div>
                 <div id="cartographieInitiale"></div>
             </div>
             <div class="card">
-                <h2>🗺️ Cartographie résiduelle des risques</h2>
+                <div class="card-header">
+                    <h2>🗺️ Cartographie résiduelle des risques</h2>
+                </div>
                 <div id="cartographieResiduelle"></div>
             </div>
         </div>
     </div>
+
+    <div id="toast" class="toast"></div>
 
     <script>
         const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
@@ -261,6 +405,15 @@
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let user = null;
+        let currentUser = null;
+        let saveTimeouts = {};
+
+        function showToast(msg, type='success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
 
         async function checkAuth() {
             const { data: { session } } = await sb.auth.getSession();
@@ -269,212 +422,114 @@
                 return;
             }
             const { data: profile } = await sb.from('ea_users').select('*').eq('email', session.user.email).single();
-            user = profile;
+            currentUser = profile;
             loadAllData();
         }
 
         async function loadAllData() {
-            await loadValeursMetier();
-            await loadEchellesImpacts();
-            await loadSocleSecurite();
-            await loadEvenementsRedoutes();
-            await loadSourcesRisque();
-            await loadPartiesPrenantes();
-            await loadScenariosOperationnels();
-            await loadRisques();
-            await loadPlanTraitement();
+            await loadTableData('valeurs_metier', 'tbody_valeurs_metier', [
+                {key:'code', type:'text'}, {key:'libelle', type:'text'}, {key:'nature', type:'select', options:['Information','Processus','Service','Autre']},
+                {key:'description', type:'textarea'}, {key:'responsable', type:'text'}
+            ]);
+            await loadTableData('impact_echelles', 'tbody_impact_echelles', [
+                {key:'gravite', type:'number'}, {key:'libelle', type:'text'}, {key:'social_organisation', type:'textarea'},
+                {key:'financier', type:'textarea'}, {key:'responsabilite_juridique', type:'textarea'},
+                {key:'reputation_image', type:'textarea'}, {key:'vie_privee', type:'textarea'}
+            ]);
+            await loadTableData('socle_securite', 'tbody_socle_securite', [
+                {key:'type_referentiel', type:'text'}, {key:'nom_referentiel', type:'text'},
+                {key:'etat_application', type:'select', options:['Appliqué sans restriction','Appliqué avec restriction','Non appliqué']}
+            ]);
+            await loadTableData('événements_redoutes', 'tbody_evenements_redoutes', [
+                {key:'code', type:'text'}, {key:'libelle', type:'text'}, {key:'valeurs_metier', type:'text'},
+                {key:'impact_social', type:'number'}, {key:'impact_financier', type:'number'},
+                {key:'impact_juridique', type:'number'}, {key:'impact_reputation', type:'number'}, {key:'impact_vie_privee', type:'number'}
+            ]);
+            await loadTableData('sources_de_risque', 'tbody_sources_de_risque', [
+                {key:'code', type:'text'}, {key:'libelle', type:'text'}, {key:'description', type:'textarea'},
+                {key:'objectifs_vises', type:'textarea'}, {key:'motivation', type:'text'}, {key:'ressources', type:'text'},
+                {key:'activite', type:'text'}, {key:'pertinence', type:'text'}, {key:'retenu', type:'checkbox'}
+            ]);
+            await loadTableData('parties_prenantes', 'tbody_parties_prenantes', [
+                {key:'code', type:'text'}, {key:'categorie', type:'text'}, {key:'libelle', type:'text'},
+                {key:'dependance', type:'number'}, {key:'penetration', type:'number'}, {key:'maturite', type:'number'},
+                {key:'confiance', type:'number'}, {key:'evaluation', type:'select', options:['Faible','Moyen','Elevé','Très élevé']}
+            ]);
+            await loadTableData('scénarios_opérationnels', 'tbody_scenarios_operationnels', [
+                {key:'code', type:'text'}, {key:'libelle', type:'text'}, {key:'scenario_strategique', type:'text'},
+                {key:'evenement_redoute', type:'text'}, {key:'vraisemblance', type:'number'}
+            ]);
+            await loadTableData('risques', 'tbody_risques', [
+                {key:'code', type:'text'}, {key:'libelle', type:'text'}, {key:'description', type:'textarea'},
+                {key:'niveau', type:'select', options:['Faible','Moyen','Elevé','Critique']},
+                {key:'gravite', type:'number'}, {key:'vraisemblance', type:'number'},
+                {key:'traitement', type:'select', options:['Réduire','Accepter','Transférer','Eviter']},
+                {key:'proprietaire', type:'text'}
+            ]);
+            await loadTableData('mesures_securite', 'tbody_mesures_securite', [
+                {key:'code', type:'text'}, {key:'typologie', type:'text'}, {key:'libelle', type:'textarea'},
+                {key:'risques_associes', type:'text'}, {key:'cout', type:'number'}, {key:'complexite', type:'number'},
+                {key:'gain', type:'number'}, {key:'statut', type:'select', options:['A lancer','En cours','Terminé','Annulé']},
+                {key:'echeance', type:'date'}
+            ]);
             await loadCartographie();
         }
 
-        async function loadValeursMetier() {
-            const { data, error } = await sb.from('valeurs_metier').select('*').order('code');
-            const container = document.getElementById('valeursMetierContainer');
-            if (error || !data) { container.innerHTML = '<p>Erreur de chargement</p>'; return; }
-            container.innerHTML = `
-                <table class="data-table">
-                    <thead> <th>Code</th><th>Valeur métier</th><th>Nature</th><th>Description</th><th>Responsable</th> </thead>
-                    <tbody>${data.map(v => `
-                         <tr>
-                            <td>${v.code}</td>
-                            <td><strong>${v.libelle}</strong></td>
-                            <td>${v.nature || '-'}</td>
-                            <td>${v.description || '-'}</td>
-                            <td>${v.responsable || '-'}</td>
-                         </tr>
-                    `).join('')}</tbody>
-                </table>
-            `;
-        }
-
-        async function loadEchellesImpacts() {
-            const { data, error } = await sb.from('impact_echelles').select('*').order('gravite');
-            const container = document.getElementById('echellesImpactsContainer');
-            if (error || !data) { container.innerHTML = '<p>Erreur de chargement</p>'; return; }
-            container.innerHTML = data.map(e => `
-                <div style="margin-bottom: 20px; border-left: 4px solid var(--${e.gravite >= 4 ? 'rose' : (e.gravite >= 3 ? 'amber' : (e.gravite >= 2 ? 'orange' : 'blue'))}); padding-left: 16px;">
-                    <h3 style="color: var(--navy);">Gravité ${e.gravite} - ${e.libelle}</h3>
-                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:12px; margin-top:12px;">
-                        <div><strong>Social/Organisation</strong><br><span style="font-size:12px;">${e.social_organisation || '-'}</span></div>
-                        <div><strong>Financier</strong><br><span style="font-size:12px;">${e.financier || '-'}</span></div>
-                        <div><strong>Responsabilité/Juridique</strong><br><span style="font-size:12px;">${e.responsabilite_juridique || '-'}</span></div>
-                        <div><strong>Réputation/Image</strong><br><span style="font-size:12px;">${e.reputation_image || '-'}</span></div>
-                        <div><strong>Vie privée</strong><br><span style="font-size:12px;">${e.vie_privee || '-'}</span></div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function loadSocleSecurite() {
-            const { data, error } = await sb.from('socle_securite').select('*').order('id');
-            const container = document.getElementById('socleSecuriteContainer');
-            if (error || !data) { container.innerHTML = '<p>Erreur de chargement</p>'; return; }
-            container.innerHTML = `
-                <table class="data-table">
-                    <thead> <th>Type</th><th>Référentiel</th><th>État d'application</th> </thead>
-                    <tbody>${data.map(s => `
-                         <tr>
-                            <td>${s.type_referentiel || '-'}</td>
-                            <td>${s.nom_referentiel || '-'}</td>
-                            <td><span class="badge ${s.etat_application === 'Appliqué sans restriction' ? 'badge-faible' : 'badge-moyen'}">${s.etat_application || '-'}</span></td>
-                         </tr>
-                    `).join('')}</tbody>
-                </table>
-            `;
-        }
-
-        async function loadEvenementsRedoutes() {
-            const { data, error } = await sb.from('événements_redoutes').select('*').order('code');
-            const container = document.getElementById('evenementsContainer');
-            if (error || !data) { container.innerHTML = '<p>Erreur de chargement</p>'; return; }
-            container.innerHTML = data.map(e => `
-                <div style="border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px;">
-                    <h3 style="color:var(--blue);">${e.code} - ${e.libelle}</h3>
-                    <div style="display:flex; gap:16px; flex-wrap:wrap; margin:12px 0;">
-                        <div><span class="badge">Social: ${e.impact_social || '-'}</span></div>
-                        <div><span class="badge">Financier: ${e.impact_financier || '-'}</span></div>
-                        <div><span class="badge">Juridique: ${e.impact_juridique || '-'}</span></div>
-                        <div><span class="badge">Réputation: ${e.impact_reputation || '-'}</span></div>
-                        <div><span class="badge">Vie privée: ${e.impact_vie_privee || '-'}</span></div>
-                        <div><span class="badge badge-eleve">MAX: ${e.gravite_max || '-'}</span></div>
-                    </div>
-                    <div><strong>Valeurs métier:</strong> ${e.valeurs_metier || '-'}</div>
-                    ${e.commentaires ? `<div style="margin-top:8px; color:#666;"><em>${e.commentaires}</em></div>` : ''}
-                </div>
-            `).join('');
-        }
-
-        async function loadSourcesRisque() {
-            const { data, error } = await sb.from('sources_de_risque').select('*').order('code');
-            const container = document.getElementById('sourcesContainer');
-            if (error || !data) { container.innerHTML = '<p>Erreur de chargement</p>'; return; }
-            container.innerHTML = data.map(s => `
-                <div style="border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px;">
-                    <h3 style="color:var(--blue);">${s.code} - ${s.libelle}</h3>
-                    <p><strong>Description:</strong> ${s.description || '-'}</p>
-                    <p><strong>Objectifs visés:</strong> ${s.objectifs_vises || '-'}</p>
-                    <div style="display:flex; gap:16px; margin-top:8px;">
-                        <span class="badge">Motivation: ${s.motivation || '-'}</span>
-                        <span class="badge">Ressources: ${s.ressources || '-'}</span>
-                        <span class="badge">Activité: ${s.activite || '-'}</span>
-                        <span class="badge">Pertinence: ${s.pertinence || '-'}</span>
-                    </div>
-                    ${s.retenu ? '<span class="badge badge-eleve">Retenu</span>' : '<span class="badge">Non retenu</span>'}
-                    ${s.justification ? `<div style="margin-top:8px; color:#666;"><em>${s.justification}</em></div>` : ''}
-                </div>
-            `).join('');
-        }
-
-        async function loadPartiesPrenantes() {
-            const { data, error } = await sb.from('parties_prenantes').select('*').order('code');
-            const container = document.getElementById('partiesPrenantesContainer');
-            if (error || !data) { container.innerHTML = '<p>Erreur de chargement</p>'; return; }
-            container.innerHTML = `
-                <table class="data-table">
-                    <thead> <th>Code</th><th>Catégorie</th><th>Partie prenante</th><th>Dépendance</th><th>Pénétration</th><th>Maturité</th><th>Confiance</th><th>Niveau</th> </thead>
-                    <tbody>${data.map(p => `
-                         <tr>
-                            <td>${p.code}</td>
-                            <td>${p.categorie || '-'}</td>
-                            <td><strong>${p.libelle}</strong></td>
-                            <td>${p.dependance}</td>
-                            <td>${p.penetration}</td>
-                            <td>${p.maturite}</td>
-                            <td>${p.confiance}</td>
-                            <td><span class="badge ${p.evaluation === 'Elevé' ? 'badge-eleve' : (p.evaluation === 'Moyen' ? 'badge-moyen' : 'badge-faible')}">${p.evaluation || p.niveau_menace}</span></td>
-                         </tr>
-                    `).join('')}</tbody>
-                </table>
-            `;
-        }
-
-        async function loadScenariosOperationnels() {
-            const { data, error } = await sb.from('scénarios_opérationnels').select('*').order('code');
-            const container = document.getElementById('scenariosOperationnelsContainer');
-            if (error || !data) { container.innerHTML = '<p>Erreur de chargement</p>'; return; }
-            container.innerHTML = data.map(s => `
-                <div style="border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px;">
-                    <h3 style="color:var(--blue);">${s.code} - ${s.libelle}</h3>
-                    ${s.scenario_strategique ? `<div><strong>Scénario stratégique associé:</strong> ${s.scenario_strategique}</div>` : ''}
-                    ${s.evenement_redoute ? `<div><strong>Événement redouté:</strong> ${s.evenement_redoute}</div>` : ''}
-                    ${s.vraisemblance ? `<div><strong>Vraisemblance:</strong> <span class="badge ${s.vraisemblance >= 3 ? 'badge-eleve' : (s.vraisemblance >= 2 ? 'badge-moyen' : 'badge-faible')}">${s.vraisemblance}</span></div>` : ''}
-                </div>
-            `).join('');
-        }
-
-        async function loadRisques() {
-            const { data, error } = await sb.from('risques').select('*').order('code');
-            const container = document.getElementById('risquesContainer');
-            if (error || !data) { container.innerHTML = '<p>Erreur de chargement</p>'; return; }
+        async function loadTableData(tableName, tbodyId, fields) {
+            const { data, error } = await sb.from(tableName).select('*').order('id');
+            if (error) { console.error(error); return; }
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
             
-            // Récupérer les risques résiduels
-            const { data: residuels } = await sb.from('risques_residuels').select('*');
-            const residuelMap = {};
-            if (residuels) residuels.forEach(r => { residuelMap[r.risque_id] = r; });
-            
-            container.innerHTML = data.map(r => {
-                const residuel = residuelMap[r.id];
-                return `
-                    <div style="border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px;">
-                        <h3 style="color:var(--blue);">${r.code} - ${r.libelle}</h3>
-                        <p><strong>Description:</strong> ${r.description || '-'}</p>
-                        <div style="display:flex; gap:24px; flex-wrap:wrap; margin:12px 0;">
-                            <div><strong>Niveau initial:</strong> <span class="badge ${r.niveau === 'Elevé' ? 'badge-eleve' : (r.niveau === 'Moyen' ? 'badge-moyen' : 'badge-faible')}">${r.niveau}</span> (G${r.gravite}/V${r.vraisemblance})</div>
-                            ${residuel ? `<div><strong>Niveau résiduel:</strong> <span class="badge ${residuel.niveau_residuel === 'Elevé' ? 'badge-eleve' : (residuel.niveau_residuel === 'Moyen' ? 'badge-moyen' : 'badge-faible')}">${residuel.niveau_residuel}</span> (G${residuel.gravite_residuelle}/V${residuel.vraisemblance_residuelle})</div>` : ''}
-                            <div><strong>Traitement:</strong> ${r.traitement || '-'}</div>
-                            <div><strong>Propriétaire:</strong> ${r.proprietaire || '-'}</div>
-                        </div>
-                    </div>
-                `;
+            tbody.innerHTML = data.map(row => {
+                let cells = '';
+                fields.forEach(field => {
+                    const value = row[field.key] !== undefined && row[field.key] !== null ? row[field.key] : '';
+                    if (field.type === 'select') {
+                        cells += `<td><select data-table="${tableName}" data-id="${row.id}" data-field="${field.key}" onchange="saveField('${tableName}', ${row.id}, '${field.key}', this.value)">
+                            ${field.options.map(opt => `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                        </select></td>`;
+                    } else if (field.type === 'checkbox') {
+                        cells += `<td><input type="checkbox" data-table="${tableName}" data-id="${row.id}" data-field="${field.key}" ${value ? 'checked' : ''} onchange="saveField('${tableName}', ${row.id}, '${field.key}', this.checked)"></td>`;
+                    } else if (field.type === 'textarea') {
+                        cells += `<td><textarea data-table="${tableName}" data-id="${row.id}" data-field="${field.key}" onblur="saveFieldDebounced('${tableName}', ${row.id}, '${field.key}', this.value)">${escapeHtml(String(value))}</textarea></td>`;
+                    } else {
+                        cells += `<td><input type="${field.type}" value="${escapeHtml(String(value))}" data-table="${tableName}" data-id="${row.id}" data-field="${field.key}" onblur="saveFieldDebounced('${tableName}', ${row.id}, '${field.key}', this.value)"></td>`;
+                    }
+                });
+                cells += `<td><button class="btn btn-danger btn-sm" onclick="deleteRow('${tableName}', ${row.id})">🗑️</button></td>`;
+                return `<tr>${cells}</tr>`;
             }).join('');
         }
 
-        async function loadPlanTraitement() {
-            const { data, error } = await sb.from('mesures_securite').select('*').order('code');
-            const container = document.getElementById('planTraitementContainer');
-            if (error || !data) { container.innerHTML = '<p>Erreur de chargement</p>'; return; }
-            container.innerHTML = `
-                <table class="data-table">
-                    <thead> <th>Code</th><th>Typologie</th><th>Mesure</th><th>Risques associés</th><th>Coût</th><th>Complexité</th><th>Gain</th><th>Statut</th><th>Échéance</th> </thead>
-                    <tbody>${data.map(m => `
-                         <tr>
-                            <td><strong>${m.code}</strong></td>
-                            <td>${m.typologie || '-'}</td>
-                            <td>${m.libelle}</td>
-                            <td>${m.risques_associes || '-'}</td>
-                            <td><span class="badge">${m.cout}</span></td>
-                            <td><span class="badge">${m.complexite}</span></td>
-                            <td><span class="badge">${m.gain}</span></td>
-                            <td><span class="badge ${m.statut === 'A lancer' ? 'badge-moyen' : 'badge-faible'}">${m.statut}</span></td>
-                            <td>${m.echeance || '-'}</td>
-                         </tr>
-                    `).join('')}</tbody>
-                </table>
-            `;
+        async function saveField(tableName, id, field, value) {
+            const { error } = await sb.from(tableName).update({ [field]: value }).eq('id', id);
+            if (error) { showToast(`Erreur: ${error.message}`, 'error'); }
+            else { showToast(`✅ ${tableName} mis à jour`, 'success'); }
+        }
+
+        function saveFieldDebounced(tableName, id, field, value) {
+            const key = `${tableName}_${id}_${field}`;
+            if (saveTimeouts[key]) clearTimeout(saveTimeouts[key]);
+            saveTimeouts[key] = setTimeout(() => saveField(tableName, id, field, value), 800);
+        }
+
+        async function addRow(tableName) {
+            const { data, error } = await sb.from(tableName).insert({}).select();
+            if (error) { showToast(`Erreur: ${error.message}`, 'error'); }
+            else { showToast(`✅ Nouvelle ligne ajoutée`); loadAllData(); }
+        }
+
+        async function deleteRow(tableName, id) {
+            if (!confirm('Supprimer définitivement cette ligne ?')) return;
+            const { error } = await sb.from(tableName).delete().eq('id', id);
+            if (error) { showToast(`Erreur: ${error.message}`, 'error'); }
+            else { showToast(`✅ Ligne supprimée`); loadAllData(); }
         }
 
         async function loadCartographie() {
             const { data, error } = await sb.from('cartographie_risques').select('*');
-            if (error || !data) { console.error(error); return; }
+            if (error || !data) return;
             
             const initial = data.filter(c => c.est_residuel === false);
             const residuel = data.filter(c => c.est_residuel === true);
@@ -513,6 +568,35 @@
             renderMatrix(residuel, 'cartographieResiduelle');
         }
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function exportAllData() {
+            showToast('Export en cours...');
+            const tables = ['valeurs_metier', 'impact_echelles', 'socle_securite', 'événements_redoutes', 'sources_de_risque', 'parties_prenantes', 'scénarios_opérationnels', 'risques', 'mesures_securite', 'cartographie_risques'];
+            Promise.all(tables.map(async t => {
+                const { data } = await sb.from(t).select('*');
+                return { [t]: data };
+            })).then(results => {
+                const exportData = Object.assign({}, ...results);
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ebios_export_${new Date().toISOString().slice(0,19)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('✅ Export JSON réussi');
+            });
+        }
+
         // Onglets
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -520,6 +604,7 @@
                 document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
                 btn.classList.add('active');
                 document.getElementById(btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'cartographie') loadCartographie();
             });
         });
 
