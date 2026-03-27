@@ -88,7 +88,7 @@
         .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
         .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
         .dashboard-header h1 { font-family:'Syne'; margin:0; }
-        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:20px; }
+        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(380px, 1fr)); gap:20px; }
 
         .vp-card {
             background:#fff; border-radius:16px; padding:24px;
@@ -111,6 +111,71 @@
         .vp-saved { font-size:11px; color:var(--teal); margin-top:6px; display:none; }
         .spell-bar { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
         .spell-word { font-size:10px; padding:2px 8px; border-radius:12px; background:#FEF3C7; color:#92400E; cursor:pointer; }
+
+        /* Styles pour l'évaluation des outils */
+        .evaluation-block {
+            margin: 12px 0;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 12px;
+            border: 1px solid #eef2ff;
+        }
+        .evaluation-block label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #4b5563;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .tool-level {
+            width: 100%;
+            margin: 8px 0;
+            accent-color: var(--blue);
+        }
+        .level-value {
+            display: inline-block;
+            font-weight: 700;
+            color: var(--blue);
+            margin-left: 8px;
+        }
+        .level-bars {
+            display: flex;
+            gap: 6px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+        .level-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .level-dot.filled {
+            background: var(--blue);
+            color: white;
+        }
+        .tool-comment {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 12px;
+            margin-top: 12px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .tool-comment:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
 
         #kpiSection, #complianceSection, #cyberSection, #communicationSection { display:none; }
         .kpi-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:20px; margin-bottom:30px; }
@@ -170,6 +235,7 @@
             .topbar { padding:0 16px; }
             .container { padding:90px 16px 30px; }
             .dashboard-header { flex-direction:column; align-items:flex-start; }
+            .views-grid { grid-template-columns:1fr; }
         }
     </style>
 </head>
@@ -210,7 +276,7 @@
     <main id="diagSection" class="container">
         <div class="dashboard-header">
             <h1>Dashboard des 25 Outils</h1>
-            <button class="btn" onclick="exportPDF()" style="background:var(--navy)">📊 Rapport PDF</button>
+            <button class="btn" onclick="exportFullPDF()" style="background:var(--navy)">📊 Rapport PDF complet</button>
         </div>
         <div id="mainContainer" class="views-grid"></div>
     </main>
@@ -228,6 +294,7 @@
         <div class="kpi-grid" id="kpiGrid"></div>
         <div class="chart-container"><h3>📈 Évolution de la maturité</h3><div class="chart-wrap"><canvas id="maturityChart"></canvas></div></div>
         <div class="chart-container"><h3>📊 Complétion des outils</h3><div class="chart-wrap"><canvas id="toolsChart"></canvas></div></div>
+        <div class="chart-container"><h3>📊 Niveaux de conformité par norme</h3><div class="chart-wrap"><canvas id="normeMaturityChart"></canvas></div></div>
     </section>
 
     <!-- CONFORMITÉ & GESTION DES COÛTS (version allégée) -->
@@ -333,7 +400,8 @@ const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let db = null, user = null;
-let chartMaturity = null, chartTools = null;
+let chartMaturity = null, chartTools = null, chartNormeMaturity = null;
+let toolEvaluations = [];
 
 const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5',
     SERVICE_MANAGER:'#F97316', CEO:'#F5A623', NET:'#0EA5E9', SYS:'#6B7280' };
@@ -428,6 +496,10 @@ async function loadUserProfile(email) {
         document.getElementById('admLink').style.display = user.role === 'ADMIN' ? 'inline-block' : 'none';
         const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
         db = (row && row.content) ? row.content : {};
+        
+        // Charger les évaluations des outils
+        await loadToolEvaluations();
+        
         setScreen('appScreen'); tab('diag'); renderTools(); updateKPI(); renderCharts();
         if (user.role === 'ADMIN') { loadSecurityQuestions(); generateCaptcha(); }
         loadMessages();
@@ -445,43 +517,192 @@ function tab(which) {
     document.getElementById('cyberSection').style.display = which === 'cyber' ? 'block' : 'none';
     document.getElementById('communicationSection').style.display = which === 'communication' ? 'block' : 'none';
     document.getElementById('adminSection').style.display = which === 'admin' ? 'block' : 'none';
-    if (which === 'kpi') { updateKPI(); renderCharts(); }
+    if (which === 'kpi') { updateKPI(); renderCharts(); renderNormeMaturityChart(); }
     if (which === 'communication') { loadMessages(); loadProducts(); loadProblems(); loadUsersForMessaging(); loadUsersForProducts(); loadUsersForProblems(); }
 }
 
-// OUTILS
+// ============================================================
+// ÉVALUATION DES OUTILS (SLIDER 0-10 + COMMENTAIRES)
+// ============================================================
+async function loadToolEvaluations() {
+    const { data, error } = await sb
+        .from('tool_evaluations')
+        .select('*')
+        .eq('user_email', user.email);
+    if (error) {
+        console.error('Erreur chargement évaluations:', error);
+        toolEvaluations = [];
+    } else {
+        toolEvaluations = data || [];
+    }
+}
+
+async function saveEvaluation(toolId, niveau, commentaire) {
+    const existing = toolEvaluations.find(e => e.tool_id === toolId);
+    const evaluation = {
+        tool_id: toolId,
+        niveau: niveau,
+        commentaire: commentaire,
+        user_email: user.email,
+        updated_at: new Date().toISOString()
+    };
+    
+    let error;
+    if (existing) {
+        const { error: updateError } = await sb
+            .from('tool_evaluations')
+            .update(evaluation)
+            .eq('id', existing.id);
+        error = updateError;
+        if (!error) {
+            existing.niveau = niveau;
+            existing.commentaire = commentaire;
+        }
+    } else {
+        const { error: insertError } = await sb
+            .from('tool_evaluations')
+            .insert(evaluation);
+        error = insertError;
+        if (!error) {
+            toolEvaluations.push({ ...evaluation, id: Date.now() });
+        }
+    }
+    
+    if (error) {
+        showToast('Erreur sauvegarde évaluation', 'error');
+    } else {
+        // Mettre à jour les scores des normes
+        await updateNormesMaturityFromTools();
+        showToast('Évaluation enregistrée');
+    }
+}
+
+async function updateNormesMaturityFromTools() {
+    // Récupérer les mappings outil → norme
+    const { data: mappings } = await sb.from('tool_norme_mapping').select('*');
+    if (!mappings || mappings.length === 0) return;
+    
+    // Grouper par norme
+    const normeScores = {};
+    const normeWeights = {};
+    
+    for (const m of mappings) {
+        const evalTool = toolEvaluations.find(e => e.tool_id === m.tool_id);
+        if (evalTool) {
+            const contribution = evalTool.niveau * m.poids;
+            normeScores[m.norme] = (normeScores[m.norme] || 0) + contribution;
+            normeWeights[m.norme] = (normeWeights[m.norme] || 0) + m.poids;
+        }
+    }
+    
+    // Calculer le score pour chaque norme (sur 100)
+    for (const norme of Object.keys(normeScores)) {
+        const score = (normeScores[norme] / normeWeights[norme]) * 10; // ramené sur 10
+        const niveau_maturite = Math.round(score * 10); // sur 100
+        await sb
+            .from('normes_compliance')
+            .update({ niveau_maturite })
+            .eq('norme', norme);
+    }
+}
+
+// ============================================================
+// RENDU DES OUTILS AVEC SLIDERS ET COMMENTAIRES
+// ============================================================
 function renderTools() {
-    const grid = document.getElementById('mainContainer'); grid.innerHTML = '';
+    const grid = document.getElementById('mainContainer');
+    grid.innerHTML = '';
+    
     TOOLS.forEach(tool => {
         const val = db && db[`tool_${tool.id}`] ? db[`tool_${tool.id}`] : '';
-        const card = document.createElement('div'); card.className = 'vp-card';
+        const evalData = toolEvaluations.find(e => e.tool_id === tool.id) || { niveau: 0, commentaire: '' };
+        const level = evalData.niveau || 0;
+        const comment = evalData.commentaire || '';
+        
+        const card = document.createElement('div');
+        card.className = 'vp-card';
         card.style.borderTopColor = COLORS[user.role] || COLORS.ADMIN;
         
-        if (tool.id === 25) {
-            // L'outil 25 reste dans l'index car il fait partie du diagnostic
-            card.innerHTML = `<div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #25 – Référentiels officiels</div></div></div>
-                <p style="color:#666; font-size:13px; margin-bottom:12px;">Les référentiels de conformité (NIS2, ITIL, ISO 27001/5) sont maintenant disponibles dans la page dédiée.</p>
-                <a href="/compliance-costs.html" target="_blank" class="btn" style="display:inline-block; background:var(--blue); color:#fff; padding:8px 16px; text-decoration:none; border-radius:8px;">📋 Accéder aux référentiels</a>
-                <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes personnelles sur la conformité…" style="margin-top: 16px;">${esc(val)}</textarea>
-                <div class="spell-bar" id="spell_${tool.id}"></div>
-                <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>`;
-            grid.appendChild(card);
-            const ta = card.querySelector(`#note_${tool.id}`);
-            if (val) updateSpell(tool.id, val);
-            let deb; ta.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700); });
-            return;
+        // Générer les points de niveau
+        let levelDotsHtml = '';
+        for (let i = 1; i <= 10; i++) {
+            levelDotsHtml += `<span class="level-dot ${i <= level ? 'filled' : ''}" data-val="${i}" data-tool="${tool.id}">${i}</span>`;
         }
         
-        card.innerHTML = `<div class="vp-card-header"><span class="vp-ico">${tool.ico}</span><div><div class="vp-title">${tool.t}</div><div class="vp-id">Outil #${tool.id}</div></div></div>
+        card.innerHTML = `
+            <div class="vp-card-header">
+                <span class="vp-ico">${tool.ico}</span>
+                <div>
+                    <div class="vp-title">${tool.t}</div>
+                    <div class="vp-id">Outil #${tool.id}</div>
+                </div>
+            </div>
+            <div class="evaluation-block">
+                <label>📊 Niveau d'évaluation (0-10) : <span class="level-value" id="level_val_${tool.id}">${level}</span></label>
+                <input type="range" class="tool-level" min="0" max="10" step="1" value="${level}" data-tool="${tool.id}" id="level_slider_${tool.id}">
+                <div class="level-bars" id="level_dots_${tool.id}">
+                    ${levelDotsHtml}
+                </div>
+                <textarea class="tool-comment" data-tool="${tool.id}" id="comment_${tool.id}" placeholder="Commentaires sur l'évaluation (alimentera les rapports PDF)...">${esc(comment)}</textarea>
+            </div>
             <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes, statut, observations…">${esc(val)}</textarea>
             <div class="spell-bar" id="spell_${tool.id}"></div>
-            <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>`;
+            <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>
+        `;
         grid.appendChild(card);
+        
+        // Gestion du slider
+        const slider = card.querySelector(`#level_slider_${tool.id}`);
+        const levelSpan = card.querySelector(`#level_val_${tool.id}`);
+        const dotsContainer = card.querySelector(`#level_dots_${tool.id}`);
+        const commentArea = card.querySelector(`#comment_${tool.id}`);
+        
+        slider.addEventListener('input', async (e) => {
+            const val = parseInt(e.target.value);
+            levelSpan.textContent = val;
+            // Mettre à jour les points
+            for (let i = 1; i <= 10; i++) {
+                const dot = dotsContainer.querySelector(`.level-dot[data-val="${i}"]`);
+                if (dot) {
+                    if (i <= val) dot.classList.add('filled');
+                    else dot.classList.remove('filled');
+                }
+            }
+            await saveEvaluation(tool.id, val, commentArea.value);
+        });
+        
+        commentArea.addEventListener('blur', async () => {
+            await saveEvaluation(tool.id, slider.value, commentArea.value);
+        });
+        
+        // Gestion des clics sur les points
+        dotsContainer.querySelectorAll('.level-dot').forEach(dot => {
+            dot.addEventListener('click', async () => {
+                const newVal = parseInt(dot.getAttribute('data-val'));
+                slider.value = newVal;
+                levelSpan.textContent = newVal;
+                for (let i = 1; i <= 10; i++) {
+                    const d = dotsContainer.querySelector(`.level-dot[data-val="${i}"]`);
+                    if (d) {
+                        if (i <= newVal) d.classList.add('filled');
+                        else d.classList.remove('filled');
+                    }
+                }
+                await saveEvaluation(tool.id, newVal, commentArea.value);
+            });
+        });
+        
+        // Sauvegarde automatique des notes existantes
         const ta = card.querySelector(`#note_${tool.id}`);
         if (val) updateSpell(tool.id, val);
-        let deb; ta.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700); });
+        let deb;
+        ta.addEventListener('input', () => {
+            clearTimeout(deb);
+            deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700);
+        });
     });
 }
+
 async function saveNote(toolId, value) {
     if (!db) db = {}; db[`tool_${toolId}`] = value;
     await sb.from('ea_platform_data').upsert({ id:1, content: db }, { onConflict:'id' });
@@ -509,6 +730,22 @@ function renderCharts() {
     if(ctxM) chartMaturity = new Chart(ctxM.getContext('2d'), { type:'line', data:{ labels:['Jan','Fév','Mar','Avr','Mai','Juin'], datasets:[{ label:'Maturité (%)', data:[30,42,55,63,71,k.completion], borderColor:'#1A6CF5', tension:0.3 }] }, options:{ responsive:true, maintainAspectRatio:false } });
     const ctxT = document.getElementById('toolsChart');
     if(ctxT) chartTools = new Chart(ctxT.getContext('2d'), { type:'doughnut', data:{ labels:['Complétés','À renseigner'], datasets:[{ data:[k.filled,25-k.filled], backgroundColor:['#00B49C','#E5E7EB'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
+}
+
+async function renderNormeMaturityChart() {
+    const { data: norms } = await sb.from('normes_compliance').select('norme, niveau_maturite');
+    if (!norms) return;
+    const labels = norms.map(n => n.norme);
+    const data = norms.map(n => n.niveau_maturite);
+    const ctx = document.getElementById('normeMaturityChart');
+    if (ctx) {
+        if (chartNormeMaturity) chartNormeMaturity.destroy();
+        chartNormeMaturity = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Maturité (%)', data, backgroundColor: '#1A6CF5', borderRadius: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { max: 100, title: { display: true, text: 'Maturité (%)' } } } }
+        });
+    }
 }
 
 // IMPORT TABLEUR
@@ -589,7 +826,79 @@ document.getElementById('createUserForm')?.addEventListener('submit', async (e) 
     } catch(err){ document.getElementById('createUserMessage').innerHTML=`<span style="color:red;">❌ ${err.message}</span>`; }
 });
 
-// MESSAGERIE INTERNE
+// ============================================================
+// EXPORT PDF COMPLET AVEC ÉVALUATIONS ET COMMENTAIRES
+// ============================================================
+async function exportFullPDF() {
+    showToast('📄 Génération du rapport PDF...');
+    
+    // Récupérer les évaluations et les normes
+    await loadToolEvaluations();
+    const { data: norms } = await sb.from('normes_compliance').select('*');
+    
+    let evaluationsHtml = '';
+    for (const tool of TOOLS) {
+        const evalData = toolEvaluations.find(e => e.tool_id === tool.id) || { niveau: 0, commentaire: '' };
+        evaluationsHtml += `
+            <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+                <h3 style="color: #1A6CF5;">${tool.t} (Outil #${tool.id})</h3>
+                <p><strong>Niveau d'évaluation:</strong> ${evalData.niveau}/10</p>
+                <p><strong>Commentaire:</strong> ${esc(evalData.commentaire || 'Aucun commentaire')}</p>
+                <p><strong>Notes:</strong> ${esc(db[`tool_${tool.id}`] || 'Aucune note')}</p>
+            </div>
+        `;
+    }
+    
+    let normsHtml = '';
+    if (norms) {
+        normsHtml = norms.map(n => `
+            <div style="margin-bottom: 15px;">
+                <strong>${n.norme}</strong>: ${n.niveau_maturite}% - ${n.statut}
+                <div style="background:#e5e7eb; height:8px; border-radius:4px; margin-top:4px;">
+                    <div style="background:#1A6CF5; width:${n.niveau_maturite}%; height:8px; border-radius:4px;"></div>
+                </div>
+                <div style="font-size:12px; color:#666;">${esc(n.actions || '')}</div>
+            </div>
+        `).join('');
+    }
+    
+    const htmlContent = `
+        <div style="font-family: 'Instrument Sans', sans-serif; padding: 32px; max-width: 1200px; margin: 0 auto;">
+            <h1 style="font-family: 'Syne'; color: #0B1829;">Rapport SI Governance</h1>
+            <p>Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+            <p>Utilisateur: ${user.nom} (${user.email})</p>
+            <hr style="margin: 20px 0;">
+            
+            <h2>📊 Synthèse des évaluations par outil</h2>
+            ${evaluationsHtml}
+            
+            <hr style="margin: 20px 0;">
+            <h2>⚖️ Scores de conformité par norme</h2>
+            ${normsHtml}
+            
+            <hr style="margin: 20px 0;">
+            <p style="font-size: 12px; color: #888;">Rapport généré par SI Governance Enterprise v5.0</p>
+        </div>
+    `;
+    
+    const el = document.createElement('div');
+    el.innerHTML = htmlContent;
+    document.body.appendChild(el);
+    
+    html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: `SI_Governance_Rapport_${new Date().toISOString().slice(0,10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(el).save()
+        .then(() => { document.body.removeChild(el); showToast('✅ PDF exporté !'); })
+        .catch(() => { document.body.removeChild(el); showToast('❌ Erreur PDF', 'error'); });
+}
+
+// ============================================================
+// MESSAGERIE INTERNE, PRODUITS, PROBLÈMES (inchangé)
+// ============================================================
 async function loadUsersForMessaging() {
     const { data: users } = await sb.from('ea_users').select('email, nom');
     const select = document.getElementById('msgDestinataires');
@@ -621,8 +930,6 @@ async function markMessageRead(messageId, recipientId) {
     await sb.from('message_recipients').update({ lu: true, lu_at: new Date().toISOString(), accuse_reception_envoye: true }).eq('id', recipientId);
     showToast('Message marqué comme lu, accusé envoyé'); loadMessages();
 }
-
-// FICHES PRODUIT
 async function loadUsersForProducts() {
     const { data: users } = await sb.from('ea_users').select('email, nom');
     const select = document.getElementById('prodOwnerSelect');
@@ -645,8 +952,6 @@ async function loadProducts() {
     container.innerHTML = products.map(p => `<div class="product-item"><div><strong>${esc(p.nom_produit)}</strong> <span>v${p.version}</span></div><div>${esc(p.description || '')}</div><div>Product Owner: ${esc(p.product_owner_nom)} (${p.product_owner_email})</div>${user.email === p.product_owner_email ? `<button class="btn btn-sm" style="background:var(--blue);" onclick="editProductSheet(${p.id})">✏️ Modifier</button>` : ''}</div>`).join('');
 }
 async function editProductSheet(id) { const newDesc = prompt("Nouvelle description (seul le Product Owner peut modifier)"); if (newDesc) { const { error } = await sb.from('product_sheets').update({ description: newDesc }).eq('id', id); if (error) showToast('Erreur: ' + error.message, 'error'); else { showToast('Fiche mise à jour'); loadProducts(); } } }
-
-// SUIVI DES PROBLÈMES
 async function loadUsersForProblems() {
     const { data: users } = await sb.from('ea_users').select('email, nom');
     const select = document.getElementById('probResponsableSelect');
@@ -672,9 +977,6 @@ async function loadProblems() {
 }
 async function updateProblemProgress(id, newValue) { await sb.from('problems').update({ niveau_progression: parseInt(newValue) }).eq('id', id); await sb.from('problem_progress').insert({ problem_id: id, ancien_niveau: 0, nouveau_niveau: parseInt(newValue), modifie_par_email: user.email }); showToast('Progression mise à jour'); loadProblems(); }
 async function closeProblem(id) { await sb.from('problems').update({ statut: 'clos', closed_at: new Date().toISOString(), niveau_progression: 100 }).eq('id', id); showToast('Problème clos'); loadProblems(); }
-
-// EXPORT PDF
-function exportPDF() { const el = document.getElementById('diagSection'); html2pdf().set({margin:[10,10,10,10],filename:`SI_Rapport_${new Date().toISOString().slice(0,10)}.pdf`,image:{type:'jpeg',quality:.95},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(el).save().then(()=>showToast('✅ PDF exporté')).catch(()=>showToast('❌ Erreur PDF','error')); }
 
 init();
 </script>
