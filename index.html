@@ -88,7 +88,7 @@
         .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
         .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
         .dashboard-header h1 { font-family:'Syne'; margin:0; }
-        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(450px, 1fr)); gap:20px; }
+        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(480px, 1fr)); gap:20px; }
 
         .vp-card {
             background:#fff; border-radius:16px; padding:20px;
@@ -127,7 +127,6 @@
         .status-table th {
             background: #f8fafc;
             font-weight: 600;
-            color: #1e293b;
         }
         .status-badge-prevu { background: #E2E3E5; color: #4B5563; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
         .status-badge-a-faire { background: #FEF3C7; color: #92400E; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
@@ -153,54 +152,33 @@
             margin: 8px 0;
         }
 
-        /* Dictionnaire popup */
-        .dict-popup {
-            position: fixed;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            padding: 12px;
-            max-width: 350px;
-            z-index: 1000;
-            font-size: 12px;
-            display: none;
-            pointer-events: auto;
-        }
-        .dict-popup h4 {
-            margin: 0 0 8px 0;
-            color: var(--blue);
-            font-family: 'Syne';
-            font-size: 14px;
-        }
-        .dict-popup p {
-            margin: 4px 0;
-        }
-        .dict-popup .definition {
-            color: #555;
-        }
-        .dict-popup .exemple {
-            font-family: monospace;
-            background: #f5f5f5;
-            padding: 4px;
-            border-radius: 4px;
-            margin-top: 8px;
-        }
-        .dict-popup .close-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
+        /* Tags dictionnaire */
+        .dict-tag {
+            display: inline-block;
+            background: #eef2ff;
+            color: #1E40AF;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            margin: 4px;
             cursor: pointer;
-            font-size: 12px;
-            color: #888;
+            transition: all 0.2s;
         }
-        .dict-popup .close-btn:hover {
-            color: #333;
+        .dict-tag.selected {
+            background: var(--blue);
+            color: white;
         }
-        .dict-trigger {
-            cursor: help;
-            border-bottom: 1px dashed var(--blue);
-            color: var(--blue);
+        .dict-tag:hover {
+            opacity: 0.8;
+        }
+        .maturity-slider {
+            width: 100%;
+            margin: 8px 0;
+            accent-color: var(--blue);
+        }
+        .maturity-value {
+            font-weight: bold;
+            margin-left: 8px;
         }
 
         #kpiSection, #complianceSection, #cyberSection, #communicationSection { display:none; }
@@ -224,7 +202,7 @@
         .card-link {
             background: #fff;
             border-radius: 16px;
-            padding: 60px 40px;
+            padding: 40px;
             text-align: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border: 1px solid var(--border);
@@ -318,9 +296,10 @@
         <div class="chart-container"><h3>📊 Complétion des outils</h3><div class="chart-wrap"><canvas id="toolsChart"></canvas></div></div>
         <div class="chart-container"><h3>📊 Niveaux de conformité par norme</h3><div class="chart-wrap"><canvas id="normeMaturityChart"></canvas></div></div>
         <div class="chart-container"><h3>💰 Coûts d'intégration par métier</h3><div class="chart-wrap"><canvas id="integrationCostsChart"></canvas></div></div>
+        <div class="chart-container"><h3>📊 Scores de maturité par outil</h3><div class="chart-wrap"><canvas id="maturityByToolChart"></canvas></div></div>
     </section>
 
-    <!-- CONFORMITÉ & GESTION DES COÛTS (version allégée) -->
+    <!-- CONFORMITÉ & GESTION DES COÛTS (avec lien EBIOS) -->
     <section id="complianceSection" class="container s-hide">
         <div class="dashboard-header">
             <h1>Conformité & Gestion des Coûts</h1>
@@ -333,6 +312,16 @@
             - La gestion des taux horaires (techniciens, opérateurs)<br>
             - La feuille de calcul des coûts et le suivi des factures</p>
             <a href="/compliance-costs.html" target="_blank" class="btn">🔗 Ouvrir la page Conformité & Coûts</a>
+            <p style="margin-top: 24px; font-size: 12px; color: #888;">La page s'ouvre dans un nouvel onglet pour ne pas surcharger l'interface principale</p>
+        </div>
+        <div class="card-link" style="margin-top: 24px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
+            <h2>Analyse de risque EBIOS RM</h2>
+            <p style="margin-bottom: 24px; color: #555;">Méthodologie complète d'analyse des risques selon le référentiel ANSSI :<br>
+            - Périmètre (valeurs métier, biens supports)<br>
+            - Événements redoutés et scénarios<br>
+            - Cartographie et plan de traitement</p>
+            <a href="/ebios-rm.html" target="_blank" class="btn">🔗 Ouvrir l'analyse EBIOS RM</a>
             <p style="margin-top: 24px; font-size: 12px; color: #888;">La page s'ouvre dans un nouvel onglet pour ne pas surcharger l'interface principale</p>
         </div>
     </section>
@@ -417,9 +406,11 @@ const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let db = null, user = null;
-let chartMaturity = null, chartTools = null, chartNormeMaturity = null, chartIntegrationCosts = null;
+let chartMaturity = null, chartTools = null, chartNormeMaturity = null, chartIntegrationCosts = null, chartMaturityByTool = null;
 let toolStatuses = {};
 let toolCharts = {};
+let toolDictSelections = {};
+let toolMaturityScores = {};
 
 const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5',
     SERVICE_MANAGER:'#F97316', CEO:'#F5A623', NET:'#0EA5E9', SYS:'#6B7280' };
@@ -466,76 +457,72 @@ function updateSpell(id, text) {
 }
 
 // ============================================================
-// DICTIONNAIRE PROFESSIONNEL
+// DICTIONNAIRE PROFESSIONNEL ET SCORE DE MATURITÉ
 // ============================================================
-let currentDictPopup = null;
+let dictionaryTerms = [];
 
-async function loadDictionary(metier) {
+async function loadDictionaryTerms() {
     const { data, error } = await sb
         .from('professional_dict')
-        .select('*')
-        .eq('metier', metier)
-        .order('categorie', { ascending: true })
-        .order('terme', { ascending: true });
+        .select('id, terme, categorie')
+        .eq('metier', user.role)
+        .order('terme');
     if (error) {
         console.error('Erreur chargement dictionnaire:', error);
         return [];
     }
-    return data || [];
+    dictionaryTerms = data || [];
+    return dictionaryTerms;
 }
 
-function showDictionaryPopup(term, definitions, x, y) {
-    if (currentDictPopup) {
-        currentDictPopup.remove();
-    }
-    const popup = document.createElement('div');
-    popup.className = 'dict-popup';
-    popup.style.left = `${x + 10}px`;
-    popup.style.top = `${y + 10}px`;
-    
-    let html = `<span class="close-btn" onclick="this.parentElement.remove()">✕</span><h4>📖 ${term}</h4>`;
-    for (const def of definitions) {
-        html += `<p class="definition"><strong>${def.categorie || 'Général'}</strong> : ${def.definition}</p>`;
-        if (def.exemple) {
-            html += `<p class="exemple">💡 Exemple : ${def.exemple}</p>`;
-        }
-    }
-    popup.innerHTML = html;
-    document.body.appendChild(popup);
-    currentDictPopup = popup;
-    
-    setTimeout(() => {
-        document.addEventListener('click', function closePopup(e) {
-            if (!popup.contains(e.target)) {
-                popup.remove();
-                document.removeEventListener('click', closePopup);
-            }
-        });
-    }, 100);
+async function loadToolDictSelections(toolId) {
+    const { data, error } = await sb
+        .from('tool_dict_selections')
+        .select('terme_id')
+        .eq('tool_id', toolId)
+        .eq('user_email', user.email);
+    if (error) return {};
+    const selections = {};
+    data.forEach(item => { selections[item.terme_id] = true; });
+    return selections;
 }
 
-async function enableDictionaryOnTool(toolId, textareaId) {
-    const textarea = document.getElementById(textareaId);
-    if (!textarea) return;
-    
-    const dict = await loadDictionary(user.role);
-    if (!dict.length) return;
-    
-    const termMap = {};
-    dict.forEach(item => {
-        if (!termMap[item.terme]) termMap[item.terme] = [];
-        termMap[item.terme].push(item);
-    });
-    
-    textarea.addEventListener('mouseup', async (e) => {
-        const selectedText = window.getSelection().toString().trim();
-        if (selectedText && termMap[selectedText]) {
-            const rect = textarea.getBoundingClientRect();
-            const x = e.clientX;
-            const y = e.clientY;
-            showDictionaryPopup(selectedText, termMap[selectedText], x, y);
-        }
-    });
+async function saveDictSelection(toolId, termeId, selected) {
+    if (selected) {
+        await sb.from('tool_dict_selections').upsert({
+            tool_id: toolId,
+            terme_id: termeId,
+            user_email: user.email,
+            selected: true,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'tool_id, terme_id, user_email' });
+    } else {
+        await sb.from('tool_dict_selections').delete()
+            .eq('tool_id', toolId)
+            .eq('terme_id', termeId)
+            .eq('user_email', user.email);
+    }
+}
+
+async function loadToolMaturity(toolId) {
+    const { data, error } = await sb
+        .from('tool_maturity_score')
+        .select('score')
+        .eq('tool_id', toolId)
+        .eq('user_email', user.email)
+        .single();
+    if (error) return 5;
+    return data?.score || 5;
+}
+
+async function saveToolMaturity(toolId, score) {
+    await sb.from('tool_maturity_score').upsert({
+        tool_id: toolId,
+        user_email: user.email,
+        score: score,
+        updated_at: new Date().toISOString()
+    }, { onConflict: 'tool_id, user_email' });
+    renderMaturityByToolChart();
 }
 
 // ============================================================
@@ -641,14 +628,18 @@ function renderProgressChart(toolId) {
 // ============================================================
 // RENDU DES OUTILS
 // ============================================================
-function renderTools() {
+async function renderTools() {
     const grid = document.getElementById('mainContainer');
     grid.innerHTML = '';
     
-    TOOLS.forEach(tool => {
+    await loadDictionaryTerms();
+    
+    for (const tool of TOOLS) {
         const val = db && db[`tool_${tool.id}`] ? db[`tool_${tool.id}`] : '';
         const statuses = toolStatuses[tool.id] || {};
         const completedCount = Object.keys(statuses).length;
+        const dictSelections = await loadToolDictSelections(tool.id);
+        const maturityScore = await loadToolMaturity(tool.id);
         
         const card = document.createElement('div');
         card.className = 'vp-card';
@@ -663,7 +654,7 @@ function renderTools() {
             const badgeClass = `status-badge-${statut.toLowerCase().replace(/ /g, '-')}`;
             tableRows += `
                 <tr>
-                    <td style="width: 110px;">
+                    <td style="width: 100px;">
                         <span class="${badgeClass}" style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px;">${statut}</span>
                     </td>
                     <td style="width: 110px;">
@@ -672,9 +663,35 @@ function renderTools() {
                     <td>
                         <input type="text" class="status-comment-input" data-tool="${tool.id}" data-statut="${statut}" value="${esc(commentValue)}" placeholder="Commentaire" style="width: 100%; padding: 4px; font-size: 10px; border-radius: 6px; border: 1px solid #ddd;">
                     </td>
-                </tr>
+                 </tr>
             `;
         }
+        
+        // Tags dictionnaire
+        let dictHtml = '';
+        if (dictionaryTerms.length) {
+            dictHtml = `
+                <div style="margin-top: 12px;">
+                    <strong style="font-size: 11px;">📚 Dictionnaire métier (${ROLE_LABELS[user.role] || user.role})</strong>
+                    <div class="dict-tags-container" data-tool="${tool.id}" style="margin-top: 6px;">
+                        ${dictionaryTerms.map(term => `
+                            <span class="dict-tag ${dictSelections[term.id] ? 'selected' : ''}" data-term-id="${term.id}" data-term="${term.terme}">${term.terme}</span>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Score de maturité
+        const maturityHtml = `
+            <div style="margin-top: 12px;">
+                <strong style="font-size: 11px;">📊 Score de maturité (1-10)</strong>
+                <div>
+                    <input type="range" class="maturity-slider" min="1" max="10" step="1" value="${maturityScore}" data-tool="${tool.id}">
+                    <span class="maturity-value" id="maturity_val_${tool.id}">${maturityScore}</span>
+                </div>
+            </div>
+        `;
         
         card.innerHTML = `
             <div class="vp-card-header">
@@ -695,14 +712,12 @@ function renderTools() {
             </div>
             <div class="status-table-container" style="margin-top: 8px;">
                 <table class="status-table">
-                    <thead>
-                        <tr><th>Statut</th><th>Date</th><th>Commentaire</th></tr>
-                    </thead>
-                    <tbody>
-                        ${tableRows}
-                    </tbody>
+                    <thead><tr><th>Statut</th><th>Date</th><th>Commentaire</th></tr></thead>
+                    <tbody>${tableRows}</tbody>
                 </table>
             </div>
+            ${dictHtml}
+            ${maturityHtml}
             <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes complémentaires..." style="margin-top: 12px;">${esc(val)}</textarea>
             <div class="spell-bar" id="spell_${tool.id}"></div>
             <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>
@@ -724,6 +739,32 @@ function renderTools() {
             });
         });
         
+        // Attacher les événements des tags dictionnaire
+        card.querySelectorAll('.dict-tag').forEach(tag => {
+            tag.addEventListener('click', async () => {
+                const termId = parseInt(tag.dataset.termId);
+                const isSelected = tag.classList.contains('selected');
+                if (isSelected) {
+                    tag.classList.remove('selected');
+                    await saveDictSelection(tool.id, termId, false);
+                } else {
+                    tag.classList.add('selected');
+                    await saveDictSelection(tool.id, termId, true);
+                }
+            });
+        });
+        
+        // Attacher l'événement du slider de maturité
+        const slider = card.querySelector(`.maturity-slider[data-tool="${tool.id}"]`);
+        const maturitySpan = card.querySelector(`#maturity_val_${tool.id}`);
+        if (slider) {
+            slider.addEventListener('input', async (e) => {
+                const val = parseInt(e.target.value);
+                maturitySpan.textContent = val;
+                await saveToolMaturity(tool.id, val);
+            });
+        }
+        
         // Sauvegarde automatique des notes
         const ta = card.querySelector(`#note_${tool.id}`);
         if (val) updateSpell(tool.id, val);
@@ -733,12 +774,9 @@ function renderTools() {
             deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700);
         });
         
-        // Activer le dictionnaire sur la zone de notes
-        enableDictionaryOnTool(tool.id, `note_${tool.id}`);
-        
         // Générer le graphique
         renderProgressChart(tool.id);
-    });
+    }
 }
 
 async function saveNote(toolId, value) {
@@ -748,9 +786,7 @@ async function saveNote(toolId, value) {
     updateKPI(); renderCharts();
 }
 
-// ============================================================
 // AUTH
-// ============================================================
 async function init() {
     try { const { data: { session } } = await sb.auth.getSession();
         if (session) await loadUserProfile(session.user.email);
@@ -810,6 +846,7 @@ async function loadUserProfile(email) {
         loadUsersForMessaging();
         loadUsersForProducts();
         loadUsersForProblems();
+        renderMaturityByToolChart();
     } catch(err) { showDebug('Erreur profil : '+err.message); setScreen('authScreen'); }
 }
 function tab(which) {
@@ -819,7 +856,7 @@ function tab(which) {
     document.getElementById('cyberSection').style.display = which === 'cyber' ? 'block' : 'none';
     document.getElementById('communicationSection').style.display = which === 'communication' ? 'block' : 'none';
     document.getElementById('adminSection').style.display = which === 'admin' ? 'block' : 'none';
-    if (which === 'kpi') { updateKPI(); renderCharts(); renderNormeMaturityChart(); renderIntegrationCostsChart(); }
+    if (which === 'kpi') { updateKPI(); renderCharts(); renderNormeMaturityChart(); renderIntegrationCostsChart(); renderMaturityByToolChart(); }
     if (which === 'communication') { loadMessages(); loadProducts(); loadProblems(); loadUsersForMessaging(); loadUsersForProducts(); loadUsersForProblems(); }
 }
 
@@ -878,6 +915,27 @@ async function renderIntegrationCostsChart() {
             type: 'bar',
             data: { labels, datasets: [{ label: 'Coût estimé (€)', data, backgroundColor: '#F97316', borderRadius: 8 }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'Coût (€)' } } } }
+        });
+    }
+}
+
+async function renderMaturityByToolChart() {
+    const { data: scores } = await sb
+        .from('tool_maturity_score')
+        .select('tool_id, score')
+        .eq('user_email', user.email);
+    if (!scores) return;
+    const toolScores = {};
+    scores.forEach(s => { toolScores[s.tool_id] = s.score; });
+    const labels = TOOLS.map(t => t.t.substring(0, 20));
+    const data = TOOLS.map(t => toolScores[t.id] || 5);
+    const ctx = document.getElementById('maturityByToolChart');
+    if (ctx) {
+        if (chartMaturityByTool) chartMaturityByTool.destroy();
+        chartMaturityByTool = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Score de maturité (1-10)', data, backgroundColor: '#6366F1', borderRadius: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 10, title: { display: true, text: 'Score' } } } }
         });
     }
 }
@@ -961,97 +1019,6 @@ document.getElementById('createUserForm')?.addEventListener('submit', async (e) 
 });
 
 // ============================================================
-// EXPORT PDF COMPLET
-// ============================================================
-async function exportFullPDF() {
-    showToast('📄 Génération du rapport PDF...');
-    
-    await loadToolStatuses();
-    const { data: norms } = await sb.from('normes_compliance').select('*');
-    const { data: costs } = await sb.from('integration_costs').select('*');
-    
-    let toolsHtml = '';
-    for (const tool of TOOLS) {
-        const statuses = toolStatuses[tool.id] || {};
-        const note = db[`tool_${tool.id}`] || '';
-        let statusHtml = '<ul>';
-        for (const [statut, data] of Object.entries(statuses)) {
-            statusHtml += `<li><strong>${statut}</strong> : ${data.date}${data.commentaire ? ` – ${data.commentaire}` : ''}</li>`;
-        }
-        statusHtml += '</ul>';
-        
-        toolsHtml += `
-            <div style="margin-bottom: 25px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; page-break-inside: avoid;">
-                <h3 style="color: #1A6CF5;">${tool.t} (Outil #${tool.id})</h3>
-                <p><strong>Statuts atteints:</strong> ${Object.keys(statuses).length}/5</p>
-                ${statusHtml}
-                <p><strong>Notes complémentaires:</strong> ${esc(note || 'Aucune')}</p>
-            </div>
-        `;
-    }
-    
-    let normsHtml = '';
-    if (norms) {
-        normsHtml = norms.map(n => `
-            <div style="margin-bottom: 15px;">
-                <strong>${n.norme}</strong>: ${n.niveau_maturite}% - ${n.statut}
-                <div style="background:#e5e7eb; height:8px; border-radius:4px; margin-top:4px;">
-                    <div style="background:#1A6CF5; width:${n.niveau_maturite}%; height:8px; border-radius:4px;"></div>
-                </div>
-                <div style="font-size:12px; color:#666;">${esc(n.actions || '')}</div>
-            </div>
-        `).join('');
-    }
-    
-    let costsHtml = '';
-    if (costs) {
-        costsHtml = costs.map(c => `
-            <div style="margin-bottom: 10px;">
-                <strong>${c.metier}</strong> - ${c.type_cout}: ${c.description}<br>
-                Coût: ${c.cout_unitaire}€ x ${c.quantite_estimee} = ${c.cout_unitaire * c.quantite_estimee}€
-            </div>
-        `).join('');
-    }
-    
-    const htmlContent = `
-        <div style="font-family: 'Instrument Sans', sans-serif; padding: 32px; max-width: 1200px; margin: 0 auto;">
-            <h1 style="font-family: 'Syne'; color: #0B1829;">Rapport SI Governance</h1>
-            <p>Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
-            <p>Utilisateur: ${user.nom} (${user.email})</p>
-            <hr style="margin: 20px 0;">
-            
-            <h2>📊 Suivi des outils (statuts et dates)</h2>
-            ${toolsHtml}
-            
-            <hr style="margin: 20px 0;">
-            <h2>⚖️ Scores de conformité par norme</h2>
-            ${normsHtml}
-            
-            <hr style="margin: 20px 0;">
-            <h2>💰 Coûts d'intégration estimés</h2>
-            ${costsHtml || 'Aucun coût enregistré'}
-            
-            <hr style="margin: 20px 0;">
-            <p style="font-size: 12px; color: #888;">Rapport généré par SI Governance Enterprise v5.0</p>
-        </div>
-    `;
-    
-    const el = document.createElement('div');
-    el.innerHTML = htmlContent;
-    document.body.appendChild(el);
-    
-    html2pdf().set({
-        margin: [10, 10, 10, 10],
-        filename: `SI_Governance_Rapport_${new Date().toISOString().slice(0,10)}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(el).save()
-        .then(() => { document.body.removeChild(el); showToast('✅ PDF exporté !'); })
-        .catch(() => { document.body.removeChild(el); showToast('❌ Erreur PDF', 'error'); });
-}
-
-// ============================================================
 // MESSAGERIE INTERNE, PRODUITS, PROBLÈMES
 // ============================================================
 async function loadUsersForMessaging() {
@@ -1132,6 +1099,102 @@ async function loadProblems() {
 }
 async function updateProblemProgress(id, newValue) { await sb.from('problems').update({ niveau_progression: parseInt(newValue) }).eq('id', id); await sb.from('problem_progress').insert({ problem_id: id, ancien_niveau: 0, nouveau_niveau: parseInt(newValue), modifie_par_email: user.email }); showToast('Progression mise à jour'); loadProblems(); }
 async function closeProblem(id) { await sb.from('problems').update({ statut: 'clos', closed_at: new Date().toISOString(), niveau_progression: 100 }).eq('id', id); showToast('Problème clos'); loadProblems(); }
+
+// ============================================================
+// EXPORT PDF COMPLET
+// ============================================================
+async function exportFullPDF() {
+    showToast('📄 Génération du rapport PDF...');
+    
+    await loadToolStatuses();
+    const { data: norms } = await sb.from('normes_compliance').select('*');
+    const { data: costs } = await sb.from('integration_costs').select('*');
+    const { data: maturityScores } = await sb.from('tool_maturity_score').select('*').eq('user_email', user.email);
+    const maturityMap = {};
+    if (maturityScores) maturityScores.forEach(s => { maturityMap[s.tool_id] = s.score; });
+    
+    let toolsHtml = '';
+    for (const tool of TOOLS) {
+        const statuses = toolStatuses[tool.id] || {};
+        const note = db[`tool_${tool.id}`] || '';
+        const maturity = maturityMap[tool.id] || 5;
+        let statusHtml = '<ul>';
+        for (const [statut, data] of Object.entries(statuses)) {
+            statusHtml += `<li><strong>${statut}</strong> : ${data.date}${data.commentaire ? ` – ${data.commentaire}` : ''}</li>`;
+        }
+        statusHtml += '</ul>';
+        
+        toolsHtml += `
+            <div style="margin-bottom: 25px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; page-break-inside: avoid;">
+                <h3 style="color: #1A6CF5;">${tool.t} (Outil #${tool.id})</h3>
+                <p><strong>Score de maturité:</strong> ${maturity}/10</p>
+                <p><strong>Statuts atteints:</strong> ${Object.keys(statuses).length}/5</p>
+                ${statusHtml}
+                <p><strong>Notes complémentaires:</strong> ${esc(note || 'Aucune')}</p>
+            </div>
+        `;
+    }
+    
+    let normsHtml = '';
+    if (norms) {
+        normsHtml = norms.map(n => `
+            <div style="margin-bottom: 15px;">
+                <strong>${n.norme}</strong>: ${n.niveau_maturite}% - ${n.statut}
+                <div style="background:#e5e7eb; height:8px; border-radius:4px; margin-top:4px;">
+                    <div style="background:#1A6CF5; width:${n.niveau_maturite}%; height:8px; border-radius:4px;"></div>
+                </div>
+                <div style="font-size:12px; color:#666;">${esc(n.actions || '')}</div>
+            </div>
+        `).join('');
+    }
+    
+    let costsHtml = '';
+    if (costs) {
+        costsHtml = costs.map(c => `
+            <div style="margin-bottom: 10px;">
+                <strong>${c.metier}</strong> - ${c.type_cout}: ${c.description}<br>
+                Coût: ${c.cout_unitaire}€ x ${c.quantite_estimee} = ${c.cout_unitaire * c.quantite_estimee}€
+            </div>
+        `).join('');
+    }
+    
+    const htmlContent = `
+        <div style="font-family: 'Instrument Sans', sans-serif; padding: 32px; max-width: 1200px; margin: 0 auto;">
+            <h1 style="font-family: 'Syne'; color: #0B1829;">Rapport SI Governance</h1>
+            <p>Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+            <p>Utilisateur: ${user.nom} (${user.email})</p>
+            <hr style="margin: 20px 0;">
+            
+            <h2>📊 Suivi des outils (statuts, dates, scores)</h2>
+            ${toolsHtml}
+            
+            <hr style="margin: 20px 0;">
+            <h2>⚖️ Scores de conformité par norme</h2>
+            ${normsHtml}
+            
+            <hr style="margin: 20px 0;">
+            <h2>💰 Coûts d'intégration estimés</h2>
+            ${costsHtml || 'Aucun coût enregistré'}
+            
+            <hr style="margin: 20px 0;">
+            <p style="font-size: 12px; color: #888;">Rapport généré par SI Governance Enterprise v5.0</p>
+        </div>
+    `;
+    
+    const el = document.createElement('div');
+    el.innerHTML = htmlContent;
+    document.body.appendChild(el);
+    
+    html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: `SI_Governance_Rapport_${new Date().toISOString().slice(0,10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(el).save()
+        .then(() => { document.body.removeChild(el); showToast('✅ PDF exporté !'); })
+        .catch(() => { document.body.removeChild(el); showToast('❌ Erreur PDF', 'error'); });
+}
 
 init();
 </script>
