@@ -6,61 +6,42 @@
     <title>Analyse de risque EBIOS RM | SI Governance</title>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        :root {
-            --navy:#0B1829; --blue:#1A6CF5; --teal:#00B49C; --rose:#E84568;
-            --bg:#F4F7FB; --border:rgba(0,0,0,0.1); --amber:#F5A623; --orange:#F97316;
-        }
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
             font-family:'Instrument Sans', sans-serif;
-            background:var(--bg);
-            color:var(--navy);
-            line-height:1.5;
+            background:#F4F7FB;
+            color:#0B1829;
         }
         .header {
-            background:var(--navy);
+            background:#0B1829;
             color:#fff;
             padding:20px 32px;
-            border-bottom:1px solid rgba(255,255,255,0.1);
             display:flex;
             justify-content:space-between;
             align-items:center;
             flex-wrap:wrap;
             gap:16px;
         }
-        .header h1 {
-            font-family:'Syne';
-            font-size:22px;
-        }
-        .header-actions {
-            display:flex;
-            gap:12px;
-        }
-        .container {
-            max-width:1400px;
-            margin:0 auto;
-            padding:24px;
-        }
+        .header h1 { font-family:'Syne'; font-size:22px; }
+        .container { max-width:1400px; margin:0 auto; padding:24px; }
         .back-link {
             display:inline-block;
             margin-bottom:20px;
-            padding:6px 14px;
+            padding:8px 16px;
             background:#fff;
-            border-radius:6px;
+            border-radius:8px;
             text-decoration:none;
-            color:var(--blue);
+            color:#1A6CF5;
             font-weight:600;
-            font-size:13px;
-            border:1px solid var(--border);
+            border:1px solid rgba(0,0,0,0.1);
         }
         .tabs {
             display:flex;
-            gap:6px;
+            gap:8px;
             margin-bottom:20px;
             flex-wrap:wrap;
-            border-bottom:1px solid var(--border);
+            border-bottom:1px solid rgba(0,0,0,0.1);
             padding-bottom:10px;
         }
         .tab-btn {
@@ -71,29 +52,19 @@
             font-weight:600;
             color:#666;
             border-radius:6px;
-            transition:all 0.2s;
         }
         .tab-btn.active {
-            background:var(--blue);
+            background:#1A6CF5;
             color:#fff;
         }
-        .tab-btn:hover:not(.active) {
-            background:#eef2ff;
-            color:var(--blue);
-        }
-        .tab-pane {
-            display:none;
-        }
-        .tab-pane.active {
-            display:block;
-        }
+        .tab-pane { display:none; }
+        .tab-pane.active { display:block; }
         .card {
             background:#fff;
             border-radius:12px;
             padding:20px;
             margin-bottom:20px;
-            box-shadow:0 1px 4px rgba(0,0,0,0.05);
-            border:1px solid var(--border);
+            border:1px solid rgba(0,0,0,0.1);
         }
         .card-header {
             display:flex;
@@ -103,11 +74,7 @@
             flex-wrap:wrap;
             gap:12px;
         }
-        .card h2 {
-            font-family:'Syne';
-            font-size:18px;
-            margin:0;
-        }
+        .card h2 { font-family:'Syne'; font-size:18px; }
         .btn {
             padding:6px 14px;
             border-radius:6px;
@@ -115,45 +82,22 @@
             cursor:pointer;
             font-weight:600;
             font-size:12px;
-            transition:all 0.2s;
         }
-        .btn-primary {
-            background:var(--blue);
-            color:#fff;
-        }
-        .btn-success {
-            background:var(--teal);
-            color:#fff;
-        }
-        .btn-danger {
-            background:var(--rose);
-            color:#fff;
-        }
-        .btn-sm {
-            padding:4px 10px;
-            font-size:11px;
-        }
+        .btn-primary { background:#1A6CF5; color:#fff; }
+        .btn-success { background:#00B49C; color:#fff; }
+        .btn-danger { background:#E84568; color:#fff; }
+        .btn-sm { padding:4px 10px; font-size:11px; }
         .data-table {
             width:100%;
             border-collapse:collapse;
             font-size:12px;
-            overflow-x:auto;
-            display:block;
-        }
-        .data-table thead, .data-table tbody {
-            display:table;
-            width:100%;
         }
         .data-table th, .data-table td {
             padding:8px 6px;
             text-align:left;
             border-bottom:1px solid #eee;
-            vertical-align:middle;
         }
-        .data-table th {
-            background:#f8f9fa;
-            font-weight:600;
-        }
+        .data-table th { background:#f8f9fa; font-weight:600; }
         .data-table input, .data-table select, .data-table textarea {
             width:100%;
             padding:4px 6px;
@@ -162,16 +106,19 @@
             font-family:inherit;
             font-size:11px;
         }
-        .badge {
-            display:inline-block;
-            padding:2px 8px;
-            border-radius:12px;
-            font-size:10px;
-            font-weight:600;
+        .toast {
+            position:fixed;
+            bottom:20px;
+            right:20px;
+            background:#0B1829;
+            color:#fff;
+            padding:10px 18px;
+            border-radius:10px;
+            opacity:0;
+            transition:opacity 0.3s;
+            z-index:1000;
         }
-        .badge-eleve { background:#E8456820; color:#E84568; }
-        .badge-moyen { background:#F5A62320; color:#F5A623; }
-        .badge-faible { background:#00B49C20; color:#00B49C; }
+        .toast.show { opacity:1; }
         .risk-matrix {
             display:grid;
             grid-template-columns:repeat(5, 1fr);
@@ -185,41 +132,18 @@
             text-align:center;
             font-size:11px;
             border:1px solid #eee;
-            min-height:50px;
+            min-height:45px;
         }
         .risk-cell.high { background:#E8456820; border-color:#E84568; }
         .risk-cell.medium { background:#F5A62320; border-color:#F5A623; }
         .risk-cell.low { background:#00B49C20; border-color:#00B49C; }
-        .toast {
-            position:fixed;
-            bottom:20px;
-            right:20px;
-            background:var(--navy);
-            color:#fff;
-            padding:10px 18px;
-            border-radius:10px;
-            font-size:13px;
-            opacity:0;
-            transition:opacity 0.3s;
-            pointer-events:none;
-            z-index:1000;
-        }
-        .toast.show { opacity:1; }
-        .loader {
-            text-align:center;
-            padding:30px;
-            color:#666;
-        }
-        @media (max-width:768px) {
-            .container { padding:16px; }
-            .data-table { font-size:10px; }
-        }
+        @media (max-width:768px) { .container { padding:16px; } }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>📊 Analyse de risque EBIOS RM</h1>
-        <div class="header-actions">
+        <div>
             <button class="btn btn-primary" onclick="refreshData()">⟳ Rafraîchir</button>
             <button class="btn btn-success" onclick="exportData()">📥 Exporter JSON</button>
         </div>
@@ -229,7 +153,7 @@
 
         <div class="tabs">
             <button class="tab-btn active" data-tab="perimetre">📋 Périmètre</button>
-            <button class="tab-btn" data-tab="evenements">⚠️ Événements redoutés</button>
+            <button class="tab-btn" data-tab="evenements">⚠️ Événements</button>
             <button class="tab-btn" data-tab="sources">🎯 Sources</button>
             <button class="tab-btn" data-tab="scenarios">📜 Scénarios</button>
             <button class="tab-btn" data-tab="risques">⚠️ Risques</button>
@@ -237,142 +161,63 @@
             <button class="tab-btn" data-tab="cartographie">🗺️ Cartographie</button>
         </div>
 
-        <!-- PÉRIMÈTRE -->
         <div id="perimetre" class="tab-pane active">
             <div class="card">
-                <div class="card-header">
-                    <h2>📊 Valeurs métier</h2>
-                    <button class="btn btn-success btn-sm" onclick="addRow('valeurs_metier')">➕ Ajouter</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead> <th>Code</th><th>Libellé</th><th>Nature</th><th>Description</th><th>Responsable</th><th>Actions</th> </thead>
-                        <tbody id="valeurs_metier_body"></tbody>
-                     </table>
-                </div>
+                <div class="card-header"><h2>📊 Valeurs métier</h2><button class="btn btn-success btn-sm" onclick="addRow('valeurs_metier')">➕ Ajouter</button></div>
+                <div style="overflow-x:auto;"><table class="data-table"><thead><th>Code</th><th>Libellé</th><th>Nature</th><th>Description</th><th>Responsable</th><th>Actions</th></thead><tbody id="valeurs_body"></tbody></table></div>
             </div>
             <div class="card">
-                <div class="card-header">
-                    <h2>📏 Échelles d'impacts</h2>
-                </div>
-                <div id="echelles_impacts_list"></div>
+                <div class="card-header"><h2>📏 Échelles d'impacts</h2></div>
+                <div id="echelles_body"></div>
             </div>
             <div class="card">
-                <div class="card-header">
-                    <h2>📋 Socle de sécurité</h2>
-                    <button class="btn btn-success btn-sm" onclick="addRow('socle_securite')">➕ Ajouter</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead> <th>Type</th><th>Référentiel</th><th>État</th><th>Actions</th> </thead>
-                        <tbody id="socle_securite_body"></tbody>
-                     </table>
-                </div>
+                <div class="card-header"><h2>📋 Socle de sécurité</h2><button class="btn btn-success btn-sm" onclick="addRow('socle_securite')">➕ Ajouter</button></div>
+                <div style="overflow-x:auto;"><table class="data-table"><thead><th>Type</th><th>Référentiel</th><th>État</th><th>Actions</th></thead><tbody id="socle_body"></tbody></table></div>
             </div>
         </div>
 
-        <!-- ÉVÉNEMENTS REDOUTÉS -->
         <div id="evenements" class="tab-pane">
             <div class="card">
-                <div class="card-header">
-                    <h2>⚠️ Événements redoutés</h2>
-                    <button class="btn btn-success btn-sm" onclick="addRow('événements_redoutes')">➕ Ajouter</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead> <th>Code</th><th>Libellé</th><th>Social</th><th>Financier</th><th>Juridique</th><th>Réputation</th><th>Vie privée</th><th>Actions</th> </thead>
-                        <tbody id="evenements_body"></tbody>
-                     </table>
-                </div>
+                <div class="card-header"><h2>⚠️ Événements redoutés</h2><button class="btn btn-success btn-sm" onclick="addRow('événements_redoutes')">➕ Ajouter</button></div>
+                <div style="overflow-x:auto;"><table class="data-table"><thead><th>Code</th><th>Libellé</th><th>Social</th><th>Financier</th><th>Juridique</th><th>Réputation</th><th>Vie privée</th><th>Actions</th></thead><tbody id="evenements_body"></tbody></table></div>
             </div>
         </div>
 
-        <!-- SOURCES DE RISQUE -->
         <div id="sources" class="tab-pane">
             <div class="card">
-                <div class="card-header">
-                    <h2>🎯 Sources de risque</h2>
-                    <button class="btn btn-success btn-sm" onclick="addRow('sources_de_risque')">➕ Ajouter</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead> <th>Code</th><th>Libellé</th><th>Description</th><th>Motivation</th><th>Retenu</th><th>Actions</th> </thead>
-                        <tbody id="sources_body"></tbody>
-                     </table>
-                </div>
+                <div class="card-header"><h2>🎯 Sources de risque</h2><button class="btn btn-success btn-sm" onclick="addRow('sources_de_risque')">➕ Ajouter</button></div>
+                <div style="overflow-x:auto;"><table class="data-table"><thead><th>Code</th><th>Libellé</th><th>Description</th><th>Motivation</th><th>Retenu</th><th>Actions</th></thead><tbody id="sources_body"></tbody></table></div>
             </div>
             <div class="card">
-                <div class="card-header">
-                    <h2>👥 Parties prenantes</h2>
-                    <button class="btn btn-success btn-sm" onclick="addRow('parties_prenantes')">➕ Ajouter</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead> <th>Code</th><th>Partie prenante</th><th>Dépendance</th><th>Pénétration</th><th>Maturité</th><th>Confiance</th><th>Niveau</th><th>Actions</th> </thead>
-                        <tbody id="parties_body"></tbody>
-                     </table>
-                </div>
+                <div class="card-header"><h2>👥 Parties prenantes</h2><button class="btn btn-success btn-sm" onclick="addRow('parties_prenantes')">➕ Ajouter</button></div>
+                <div style="overflow-x:auto;"><table class="data-table"><thead><th>Code</th><th>Partie prenante</th><th>Dépendance</th><th>Pénétration</th><th>Maturité</th><th>Confiance</th><th>Niveau</th><th>Actions</th></thead><tbody id="parties_body"></tbody></table></div>
             </div>
         </div>
 
-        <!-- SCÉNARIOS -->
         <div id="scenarios" class="tab-pane">
             <div class="card">
-                <div class="card-header">
-                    <h2>⚔️ Scénarios opérationnels</h2>
-                    <button class="btn btn-success btn-sm" onclick="addRow('scénarios_opérationnels')">➕ Ajouter</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead> <th>Code</th><th>Libellé</th><th>Vraisemblance</th><th>Actions</th> </thead>
-                        <tbody id="scenarios_body"></tbody>
-                     </table>
-                </div>
+                <div class="card-header"><h2>⚔️ Scénarios opérationnels</h2><button class="btn btn-success btn-sm" onclick="addRow('scénarios_opérationnels')">➕ Ajouter</button></div>
+                <div style="overflow-x:auto;"><table class="data-table"><thead><th>Code</th><th>Libellé</th><th>Vraisemblance</th><th>Actions</th></thead><tbody id="scenarios_body"></tbody></table></div>
             </div>
         </div>
 
-        <!-- RISQUES -->
         <div id="risques" class="tab-pane">
             <div class="card">
-                <div class="card-header">
-                    <h2>⚠️ Risques identifiés</h2>
-                    <button class="btn btn-success btn-sm" onclick="addRow('risques')">➕ Ajouter</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead> <th>Code</th><th>Libellé</th><th>Niveau</th><th>Gravité</th><th>Vraisemblance</th><th>Traitement</th><th>Actions</th> </thead>
-                        <tbody id="risques_body"></tbody>
-                     </table>
-                </div>
+                <div class="card-header"><h2>⚠️ Risques identifiés</h2><button class="btn btn-success btn-sm" onclick="addRow('risques')">➕ Ajouter</button></div>
+                <div style="overflow-x:auto;"><table class="data-table"><thead><th>Code</th><th>Libellé</th><th>Niveau</th><th>Gravité</th><th>Vraisemblance</th><th>Traitement</th><th>Actions</th></thead><tbody id="risques_body"></tbody></table></div>
             </div>
         </div>
 
-        <!-- PLAN DE TRAITEMENT -->
         <div id="traitement" class="tab-pane">
             <div class="card">
-                <div class="card-header">
-                    <h2>📋 Plan de traitement</h2>
-                    <button class="btn btn-success btn-sm" onclick="addRow('mesures_securite')">➕ Ajouter</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead> <th>Code</th><th>Mesure</th><th>Risques</th><th>Coût</th><th>Complexité</th><th>Gain</th><th>Statut</th><th>Actions</th> </thead>
-                        <tbody id="mesures_body"></tbody>
-                     </table>
-                </div>
+                <div class="card-header"><h2>📋 Plan de traitement</h2><button class="btn btn-success btn-sm" onclick="addRow('mesures_securite')">➕ Ajouter</button></div>
+                <div style="overflow-x:auto;"><table class="data-table"><thead><th>Code</th><th>Mesure</th><th>Risques</th><th>Coût</th><th>Complexité</th><th>Gain</th><th>Statut</th><th>Actions</th></thead><tbody id="mesures_body"></tbody></table></div>
             </div>
         </div>
 
-        <!-- CARTOGRAPHIE -->
         <div id="cartographie" class="tab-pane">
-            <div class="card">
-                <h2>🗺️ Cartographie initiale des risques</h2>
-                <div id="carto_init"></div>
-            </div>
-            <div class="card">
-                <h2>🗺️ Cartographie résiduelle des risques</h2>
-                <div id="carto_residuel"></div>
-            </div>
+            <div class="card"><h2>🗺️ Cartographie initiale</h2><div id="carto_init"></div></div>
+            <div class="card"><h2>🗺️ Cartographie résiduelle</h2><div id="carto_residuel"></div></div>
         </div>
     </div>
 
@@ -381,15 +226,11 @@
     <script>
         const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: { persistSession: true },
-            realtime: { enabled: false }
-        });
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentUser = null;
         let saveTimeouts = {};
 
-        function showToast(msg, type = 'success') {
+        function showToast(msg) {
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.classList.add('show');
@@ -402,54 +243,70 @@
                 window.location.href = '/';
                 return;
             }
-            const { data: profile } = await sb.from('ea_users').select('*').eq('email', session.user.email).single();
-            currentUser = profile;
             loadAllData();
         }
 
         async function loadAllData() {
-            await loadValeursMetier();
-            await loadEchellesImpacts();
-            await loadSocleSecurite();
-            await loadEvenements();
-            await loadSources();
-            await loadParties();
-            await loadScenarios();
-            await loadRisques();
-            await loadMesures();
+            await loadTable('valeurs_metier', 'valeurs_body', ['code', 'libelle', 'nature', 'description', 'responsable']);
+            await loadEchelles();
+            await loadTable('socle_securite', 'socle_body', ['type_referentiel', 'nom_referentiel', 'etat_application']);
+            await loadTable('événements_redoutes', 'evenements_body', ['code', 'libelle', 'impact_social', 'impact_financier', 'impact_juridique', 'impact_reputation', 'impact_vie_privee']);
+            await loadTable('sources_de_risque', 'sources_body', ['code', 'libelle', 'description', 'motivation', 'retenu']);
+            await loadTable('parties_prenantes', 'parties_body', ['code', 'libelle', 'dependance', 'penetration', 'maturite', 'confiance', 'evaluation']);
+            await loadTable('scénarios_opérationnels', 'scenarios_body', ['code', 'libelle', 'vraisemblance']);
+            await loadTable('risques', 'risques_body', ['code', 'libelle', 'niveau', 'gravite', 'vraisemblance', 'traitement']);
+            await loadTable('mesures_securite', 'mesures_body', ['code', 'libelle', 'risques_associes', 'cout', 'complexite', 'gain', 'statut']);
             await loadCartographie();
         }
 
-        async function loadValeursMetier() {
-            const { data } = await sb.from('valeurs_metier').select('*').order('code');
-            const tbody = document.getElementById('valeurs_metier_body');
-            if (!tbody) return;
-            tbody.innerHTML = (data || []).map(row => `
-                <tr>
-                    <td><input type="text" value="${escapeHtml(row.code || '')}" data-id="${row.id}" data-field="code" onblur="saveField('valeurs_metier', ${row.id}, 'code', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(row.libelle || '')}" data-id="${row.id}" data-field="libelle" onblur="saveField('valeurs_metier', ${row.id}, 'libelle', this.value)"></td>
-                    <td><select data-id="${row.id}" data-field="nature" onchange="saveField('valeurs_metier', ${row.id}, 'nature', this.value)">
-                        <option value="">--</option>
-                        <option value="Information" ${row.nature === 'Information' ? 'selected' : ''}>Information</option>
-                        <option value="Processus" ${row.nature === 'Processus' ? 'selected' : ''}>Processus</option>
-                        <option value="Service" ${row.nature === 'Service' ? 'selected' : ''}>Service</option>
-                    </select></td>
-                    <td><textarea rows="2" data-id="${row.id}" data-field="description" onblur="saveFieldDebounced('valeurs_metier', ${row.id}, 'description', this.value)">${escapeHtml(row.description || '')}</textarea></td>
-                    <td><input type="text" value="${escapeHtml(row.responsable || '')}" data-id="${row.id}" data-field="responsable" onblur="saveField('valeurs_metier', ${row.id}, 'responsable', this.value)"></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteRow('valeurs_metier', ${row.id})">🗑️</button></td>
-                </tr>
-            `).join('');
+        async function loadTable(tableName, tbodyId, fields) {
+            try {
+                const { data, error } = await sb.from(tableName).select('*').order('id');
+                if (error) throw error;
+                const tbody = document.getElementById(tbodyId);
+                if (!tbody) return;
+                tbody.innerHTML = (data || []).map(row => `
+                    <tr>
+                        ${fields.map(field => {
+                            const value = row[field] !== undefined && row[field] !== null ? row[field] : '';
+                            if (field === 'retenu') {
+                                return `<td><input type="checkbox" ${value ? 'checked' : ''} data-id="${row.id}" data-table="${tableName}" data-field="${field}" onchange="saveField('${tableName}', ${row.id}, '${field}', this.checked)"></td>`;
+                            }
+                            if (field === 'nature' || field === 'niveau' || field === 'traitement' || field === 'etat_application' || field === 'evaluation' || field === 'statut') {
+                                let options = [];
+                                if (field === 'nature') options = ['Information', 'Processus', 'Service'];
+                                if (field === 'niveau') options = ['Faible', 'Moyen', 'Elevé', 'Critique'];
+                                if (field === 'traitement') options = ['Réduire', 'Accepter', 'Transférer', 'Eviter'];
+                                if (field === 'etat_application') options = ['Appliqué sans restriction', 'Appliqué avec restriction', 'Non appliqué'];
+                                if (field === 'evaluation') options = ['Faible', 'Moyen', 'Elevé'];
+                                if (field === 'statut') options = ['A lancer', 'En cours', 'Terminé', 'Annulé'];
+                                return `<td><select data-id="${row.id}" data-table="${tableName}" data-field="${field}" onchange="saveField('${tableName}', ${row.id}, '${field}', this.value)">
+                                    <option value="">--</option>${options.map(opt => `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                                </select></td>`;
+                            }
+                            if (field === 'description' || field === 'libelle' && tableName !== 'risques') {
+                                return `<td><textarea rows="1" data-id="${row.id}" data-table="${tableName}" data-field="${field}" onblur="saveFieldDebounced('${tableName}', ${row.id}, '${field}', this.value)">${escapeHtml(String(value))}</textarea></td>`;
+                            }
+                            return `<td><input type="${field.includes('impact') || field === 'gravite' || field === 'vraisemblance' || field === 'dependance' || field === 'penetration' || field === 'maturite' || field === 'confiance' || field === 'cout' || field === 'complexite' || field === 'gain' ? 'number' : 'text'}" value="${escapeHtml(String(value))}" data-id="${row.id}" data-table="${tableName}" data-field="${field}" onblur="saveFieldDebounced('${tableName}', ${row.id}, '${field}', this.value)"></td>`;
+                        }).join('')}
+                        <td><button class="btn btn-danger btn-sm" onclick="deleteRow('${tableName}', ${row.id})">🗑️</button></td>
+                    </tr>
+                `).join('');
+            } catch(e) {
+                console.error('Erreur chargement', tableName, e);
+                document.getElementById(tbodyId).innerHTML = `<tr><td colspan="10">Erreur chargement ${tableName}</td></tr>`;
+            }
         }
 
-        async function loadEchellesImpacts() {
+        async function loadEchelles() {
             const { data } = await sb.from('impact_echelles').select('*').order('gravite');
-            const container = document.getElementById('echelles_impacts_list');
+            const container = document.getElementById('echelles_body');
             if (!container) return;
             container.innerHTML = (data || []).map(e => `
                 <div style="border-left: 3px solid ${e.gravite >= 4 ? '#E84568' : (e.gravite >= 3 ? '#F5A623' : '#1A6CF5')}; padding-left: 12px; margin-bottom: 16px;">
                     <strong>Gravité ${e.gravite} - ${e.libelle || ''}</strong>
                     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:8px; margin-top:8px;">
-                        <div><small>Social:</small><br><textarea rows="1" onblur="saveField('impact_echelles', ${e.id}, 'social_organisation', this.value)" style="width:100%">${escapeHtml(e.social_organisation || '')}</textarea></div>
+                        <div><small>Social:</small><br><textarea rows="1" onblur="saveField('impact_echelles', ${e.id}, 'social_organisation', this.value)">${escapeHtml(e.social_organisation || '')}</textarea></div>
                         <div><small>Financier:</small><br><textarea rows="1" onblur="saveField('impact_echelles', ${e.id}, 'financier', this.value)">${escapeHtml(e.financier || '')}</textarea></div>
                         <div><small>Juridique:</small><br><textarea rows="1" onblur="saveField('impact_echelles', ${e.id}, 'responsabilite_juridique', this.value)">${escapeHtml(e.responsabilite_juridique || '')}</textarea></div>
                         <div><small>Réputation:</small><br><textarea rows="1" onblur="saveField('impact_echelles', ${e.id}, 'reputation_image', this.value)">${escapeHtml(e.reputation_image || '')}</textarea></div>
@@ -459,121 +316,117 @@
             `).join('');
         }
 
-        async function loadSocleSecurite() {
-            const { data } = await sb.from('socle_securite').select('*').order('id');
-            const tbody = document.getElementById('socle_securite_body');
-            if (!tbody) return;
-            tbody.innerHTML = (data || []).map(row => `
-                <tr>
-                    <td><input type="text" value="${escapeHtml(row.type_referentiel || '')}" data-id="${row.id}" data-field="type_referentiel" onblur="saveField('socle_securite', ${row.id}, 'type_referentiel', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(row.nom_referentiel || '')}" data-id="${row.id}" data-field="nom_referentiel" onblur="saveField('socle_securite', ${row.id}, 'nom_referentiel', this.value)"></td>
-                    <td><select data-id="${row.id}" data-field="etat_application" onchange="saveField('socle_securite', ${row.id}, 'etat_application', this.value)">
-                        <option value="Appliqué sans restriction" ${row.etat_application === 'Appliqué sans restriction' ? 'selected' : ''}>Appliqué sans restriction</option>
-                        <option value="Appliqué avec restriction" ${row.etat_application === 'Appliqué avec restriction' ? 'selected' : ''}>Appliqué avec restriction</option>
-                        <option value="Non appliqué" ${row.etat_application === 'Non appliqué' ? 'selected' : ''}>Non appliqué</option>
-                    </select></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteRow('socle_securite', ${row.id})">🗑️</button></td>
-                </tr>
-            `).join('');
+        async function saveField(table, id, field, value) {
+            try {
+                const { error } = await sb.from(table).update({ [field]: value }).eq('id', id);
+                if (error) throw error;
+                showToast(`✅ ${table} mis à jour`);
+            } catch(e) {
+                showToast(`❌ Erreur: ${e.message}`);
+            }
         }
 
-        async function loadEvenements() {
-            const { data } = await sb.from('événements_redoutes').select('*').order('code');
-            const tbody = document.getElementById('evenements_body');
-            if (!tbody) return;
-            tbody.innerHTML = (data || []).map(row => `
-                <tr>
-                    <td><input type="text" value="${escapeHtml(row.code || '')}" style="width:70px" data-id="${row.id}" data-field="code" onblur="saveField('événements_redoutes', ${row.id}, 'code', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(row.libelle || '')}" style="min-width:150px" data-id="${row.id}" data-field="libelle" onblur="saveField('événements_redoutes', ${row.id}, 'libelle', this.value)"></td>
-                    <td><input type="number" value="${row.impact_social || 0}" style="width:60px" data-id="${row.id}" data-field="impact_social" onblur="saveField('événements_redoutes', ${row.id}, 'impact_social', this.value)"></td>
-                    <td><input type="number" value="${row.impact_financier || 0}" style="width:60px" data-id="${row.id}" data-field="impact_financier" onblur="saveField('événements_redoutes', ${row.id}, 'impact_financier', this.value)"></td>
-                    <td><input type="number" value="${row.impact_juridique || 0}" style="width:60px" data-id="${row.id}" data-field="impact_juridique" onblur="saveField('événements_redoutes', ${row.id}, 'impact_juridique', this.value)"></td>
-                    <td><input type="number" value="${row.impact_reputation || 0}" style="width:60px" data-id="${row.id}" data-field="impact_reputation" onblur="saveField('événements_redoutes', ${row.id}, 'impact_reputation', this.value)"></td>
-                    <td><input type="number" value="${row.impact_vie_privee || 0}" style="width:60px" data-id="${row.id}" data-field="impact_vie_privee" onblur="saveField('événements_redoutes', ${row.id}, 'impact_vie_privee', this.value)"></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteRow('événements_redoutes', ${row.id})">🗑️</button></td>
-                </tr>
-            `).join('');
+        function saveFieldDebounced(table, id, field, value) {
+            const key = `${table}_${id}_${field}`;
+            if (saveTimeouts[key]) clearTimeout(saveTimeouts[key]);
+            saveTimeouts[key] = setTimeout(() => saveField(table, id, field, value), 800);
         }
 
-        async function loadSources() {
-            const { data } = await sb.from('sources_de_risque').select('*').order('code');
-            const tbody = document.getElementById('sources_body');
-            if (!tbody) return;
-            tbody.innerHTML = (data || []).map(row => `
-                <tr>
-                    <td><input type="text" value="${escapeHtml(row.code || '')}" style="width:70px" data-id="${row.id}" data-field="code" onblur="saveField('sources_de_risque', ${row.id}, 'code', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(row.libelle || '')}" style="min-width:150px" data-id="${row.id}" data-field="libelle" onblur="saveField('sources_de_risque', ${row.id}, 'libelle', this.value)"></td>
-                    <td><textarea rows="1" data-id="${row.id}" data-field="description" onblur="saveFieldDebounced('sources_de_risque', ${row.id}, 'description', this.value)">${escapeHtml(row.description || '')}</textarea></td>
-                    <td><input type="text" value="${escapeHtml(row.motivation || '')}" style="width:80px" data-id="${row.id}" data-field="motivation" onblur="saveField('sources_de_risque', ${row.id}, 'motivation', this.value)"></td>
-                    <td><input type="checkbox" ${row.retenu ? 'checked' : ''} onchange="saveField('sources_de_risque', ${row.id}, 'retenu', this.checked)"></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteRow('sources_de_risque', ${row.id})">🗑️</button></td>
-                </tr>
-            `).join('');
+        async function addRow(table) {
+            try {
+                const { error } = await sb.from(table).insert({}).select();
+                if (error) throw error;
+                showToast(`✅ Nouvelle ligne ajoutée`);
+                loadAllData();
+            } catch(e) {
+                showToast(`❌ Erreur: ${e.message}`);
+            }
         }
 
-        async function loadParties() {
-            const { data } = await sb.from('parties_prenantes').select('*').order('code');
-            const tbody = document.getElementById('parties_body');
-            if (!tbody) return;
-            tbody.innerHTML = (data || []).map(row => `
-                <tr>
-                    <td><input type="text" value="${escapeHtml(row.code || '')}" style="width:70px" data-id="${row.id}" data-field="code" onblur="saveField('parties_prenantes', ${row.id}, 'code', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(row.libelle || '')}" style="min-width:120px" data-id="${row.id}" data-field="libelle" onblur="saveField('parties_prenantes', ${row.id}, 'libelle', this.value)"></td>
-                    <td><input type="number" value="${row.dependance || 1}" style="width:60px" data-id="${row.id}" data-field="dependance" onblur="saveField('parties_prenantes', ${row.id}, 'dependance', this.value)"></td>
-                    <td><input type="number" value="${row.penetration || 1}" style="width:60px" data-id="${row.id}" data-field="penetration" onblur="saveField('parties_prenantes', ${row.id}, 'penetration', this.value)"></td>
-                    <td><input type="number" value="${row.maturite || 1}" style="width:60px" data-id="${row.id}" data-field="maturite" onblur="saveField('parties_prenantes', ${row.id}, 'maturite', this.value)"></td>
-                    <td><input type="number" value="${row.confiance || 1}" style="width:60px" data-id="${row.id}" data-field="confiance" onblur="saveField('parties_prenantes', ${row.id}, 'confiance', this.value)"></td>
-                    <td><select data-id="${row.id}" data-field="evaluation" onchange="saveField('parties_prenantes', ${row.id}, 'evaluation', this.value)">
-                        <option value="Faible" ${row.evaluation === 'Faible' ? 'selected' : ''}>Faible</option>
-                        <option value="Moyen" ${row.evaluation === 'Moyen' ? 'selected' : ''}>Moyen</option>
-                        <option value="Elevé" ${row.evaluation === 'Elevé' ? 'selected' : ''}>Elevé</option>
-                    </select></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteRow('parties_prenantes', ${row.id})">🗑️</button></td>
-                </tr>
-            `).join('');
+        async function deleteRow(table, id) {
+            if (!confirm('Supprimer définitivement cette ligne ?')) return;
+            try {
+                const { error } = await sb.from(table).delete().eq('id', id);
+                if (error) throw error;
+                showToast(`✅ Ligne supprimée`);
+                loadAllData();
+            } catch(e) {
+                showToast(`❌ Erreur: ${e.message}`);
+            }
         }
 
-        async function loadScenarios() {
-            const { data } = await sb.from('scénarios_opérationnels').select('*').order('code');
-            const tbody = document.getElementById('scenarios_body');
-            if (!tbody) return;
-            tbody.innerHTML = (data || []).map(row => `
-                <tr>
-                    <td><input type="text" value="${escapeHtml(row.code || '')}" style="width:70px" data-id="${row.id}" data-field="code" onblur="saveField('scénarios_opérationnels', ${row.id}, 'code', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(row.libelle || '')}" style="min-width:200px" data-id="${row.id}" data-field="libelle" onblur="saveField('scénarios_opérationnels', ${row.id}, 'libelle', this.value)"></td>
-                    <td><input type="number" value="${row.vraisemblance || 0}" style="width:60px" data-id="${row.id}" data-field="vraisemblance" onblur="saveField('scénarios_opérationnels', ${row.id}, 'vraisemblance', this.value)"></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteRow('scénarios_opérationnels', ${row.id})">🗑️</button></td>
-                </tr>
-            `).join('');
+        async function loadCartographie() {
+            const { data } = await sb.from('cartographie_risques').select('*');
+            if (!data) return;
+            const initial = data.filter(c => !c.est_residuel);
+            const residuel = data.filter(c => c.est_residuel);
+            const renderMatrix = (risks, containerId) => {
+                const matrix = [[],[],[],[]];
+                risks.forEach(c => {
+                    if (c.gravite >= 1 && c.gravite <= 4 && c.vraisemblance >= 1 && c.vraisemblance <= 4) {
+                        if (!matrix[4-c.gravite][c.vraisemblance-1]) matrix[4-c.gravite][c.vraisemblance-1] = [];
+                        matrix[4-c.gravite][c.vraisemblance-1].push(c.risque_id?.toUpperCase() || '');
+                    }
+                });
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = `
+                    <div class="risk-matrix">
+                        <div class="risk-cell" style="background:#f0f0f0;"><strong>G/V</strong></div>
+                        <div class="risk-cell" style="background:#f0f0f0;"><strong>1</strong></div>
+                        <div class="risk-cell" style="background:#f0f0f0;"><strong>2</strong></div>
+                        <div class="risk-cell" style="background:#f0f0f0;"><strong>3</strong></div>
+                        <div class="risk-cell" style="background:#f0f0f0;"><strong>4</strong></div>
+                        ${matrix.map((row, i) => `
+                            <div class="risk-cell" style="background:#f0f0f0;"><strong>${4-i}</strong></div>
+                            ${row.map(cell => `<div class="risk-cell ${cell && cell.length ? (4-i >= 3 ? 'high' : (4-i >= 2 ? 'medium' : 'low')) : ''}">${cell && cell.length ? cell.join('<br>') : '-'}</div>`).join('')}
+                        `).join('')}
+                    </div>
+                `;
+            };
+            renderMatrix(initial, 'carto_init');
+            renderMatrix(residuel, 'carto_residuel');
         }
 
-        async function loadRisques() {
-            const { data } = await sb.from('risques').select('*').order('code');
-            const tbody = document.getElementById('risques_body');
-            if (!tbody) return;
-            tbody.innerHTML = (data || []).map(row => `
-                <tr>
-                    <td><input type="text" value="${escapeHtml(row.code || '')}" style="width:70px" data-id="${row.id}" data-field="code" onblur="saveField('risques', ${row.id}, 'code', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(row.libelle || '')}" style="min-width:180px" data-id="${row.id}" data-field="libelle" onblur="saveField('risques', ${row.id}, 'libelle', this.value)"></td>
-                    <td><select data-id="${row.id}" data-field="niveau" onchange="saveField('risques', ${row.id}, 'niveau', this.value)">
-                        <option value="Faible" ${row.niveau === 'Faible' ? 'selected' : ''}>Faible</option>
-                        <option value="Moyen" ${row.niveau === 'Moyen' ? 'selected' : ''}>Moyen</option>
-                        <option value="Elevé" ${row.niveau === 'Elevé' ? 'selected' : ''}>Elevé</option>
-                        <option value="Critique" ${row.niveau === 'Critique' ? 'selected' : ''}>Critique</option>
-                    </select></td>
-                    <td><input type="number" value="${row.gravite || 1}" style="width:60px" data-id="${row.id}" data-field="gravite" onblur="saveField('risques', ${row.id}, 'gravite', this.value)"></td>
-                    <td><input type="number" value="${row.vraisemblance || 1}" style="width:60px" data-id="${row.id}" data-field="vraisemblance" onblur="saveField('risques', ${row.id}, 'vraisemblance', this.value)"></td>
-                    <td><select data-id="${row.id}" data-field="traitement" onchange="saveField('risques', ${row.id}, 'traitement', this.value)">
-                        <option value="">--</option>
-                        <option value="Réduire" ${row.traitement === 'Réduire' ? 'selected' : ''}>Réduire</option>
-                        <option value="Accepter" ${row.traitement === 'Accepter' ? 'selected' : ''}>Accepter</option>
-                        <option value="Transférer" ${row.traitement === 'Transférer' ? 'selected' : ''}>Transférer</option>
-                        <option value="Eviter" ${row.traitement === 'Eviter' ? 'selected' : ''}>Eviter</option>
-                    </select></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteRow('risques', ${row.id})">🗑️</button></td>
-                </tr>
-            `).join('');
+        function refreshData() { loadAllData(); showToast('🔄 Données rafraîchies'); }
+        async function exportData() {
+            const tables = ['valeurs_metier', 'impact_echelles', 'socle_securite', 'événements_redoutes', 'sources_de_risque', 'parties_prenantes', 'scénarios_opérationnels', 'risques', 'mesures_securite', 'cartographie_risques'];
+            const results = {};
+            for (const t of tables) {
+                const { data } = await sb.from(t).select('*');
+                results[t] = data;
+            }
+            const blob = new Blob([JSON.stringify(results, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ebios_export_${new Date().toISOString().slice(0,19)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('✅ Export JSON réussi');
         }
 
-        async function loadMesures() {
-            const { data } = await sb.from('mesures_securite').select('*
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'cartographie') loadCartographie();
+            });
+        });
+
+        checkAuth();
+    </script>
+</body>
+</html>
