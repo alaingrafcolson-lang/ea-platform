@@ -3,835 +3,498 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SI Governance Enterprise | v5.0</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <title>SI Governance | Authentification</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --navy:#0B1829; --blue:#1A6CF5; --white:#FFF; --border:rgba(0,0,0,0.1);
-            --violet:#7C5CFC; --teal:#00B49C; --amber:#F5A623; --rose:#E84568; --u-color: var(--blue);
-            --orange:#F97316; --gold:#F5A623; --sky:#0EA5E9; --gray:#6B7280;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Instrument Sans', sans-serif; background:#F4F7FB; color:var(--navy); }
-
-        .screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; }
-        .screen.active { display:flex; }
-        #authScreen { background:var(--navy); color:#fff; }
-
+        body {
+            font-family: 'Instrument Sans', sans-serif;
+            background: linear-gradient(135deg, #0B1829 0%, #1a2a3f 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .auth-container {
+            width: 100%;
+            max-width: 480px;
+        }
         .auth-card {
-            width:100%; max-width:420px; padding:40px;
-            background:rgba(255,255,255,0.05); border-radius:30px;
-            backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.1);
-            text-align:center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
-        .auth-card h2 { font-family:'Syne'; margin:0 0 20px; font-size:24px; }
-        .auth-loader { display:flex; align-items:center; justify-content:center; gap:10px; opacity:0.6; font-size:14px; }
-        .spinner {
-            width:18px; height:18px; border:2px solid rgba(255,255,255,0.2);
-            border-top-color:#fff; border-radius:50%;
-            animation:spin 0.8s linear infinite;
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
         }
-        @keyframes spin { to { transform:rotate(360deg); } }
-
-        .login-form { display:none; }
-        .login-form input {
-            padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.15);
-            width:100%; margin-bottom:12px; font-family:inherit; font-size:14px;
-            background:rgba(255,255,255,0.08); color:#fff; outline:none;
+        .logo h1 {
+            font-family: 'Syne';
+            font-size: 28px;
+            color: #fff;
+            letter-spacing: 2px;
         }
-        .login-form input::placeholder { color:rgba(255,255,255,0.4); }
-        .login-form input:focus { border-color:var(--blue); }
-        .login-form .btn-login {
-            width:100%; padding:14px; border-radius:12px; border:none; cursor:pointer;
-            font-weight:700; background:var(--blue); color:#fff; font-family:inherit;
-            font-size:15px; transition:opacity 0.2s;
-        }
-        .login-form .btn-login:hover { opacity:0.85; }
-        .login-form .btn-login:disabled { opacity:0.5; cursor:not-allowed; }
-
-        .debug-err {
-            color:#FF8FAD; font-size:11px; margin-top:15px;
-            border:1px solid rgba(255,143,173,0.3); padding:10px;
-            border-radius:8px; display:none; text-align:left; line-height:1.5;
-        }
-
-        .topbar {
-            background:#fff; padding:0 32px; height:70px;
-            display:flex; align-items:center; justify-content:space-between;
-            width:100%; border-bottom:1px solid var(--border);
-            position:fixed; top:0; z-index:100;
-        }
-        .topbar-left { display:flex; align-items:center; gap:15px; }
-        #uAvatar {
-            width:35px; height:35px; border-radius:10px;
-            background:var(--u-color); color:#fff;
-            display:flex; align-items:center; justify-content:center; font-weight:800;
-        }
-        .topbar-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-
-        .btn {
-            padding:10px 20px; border-radius:10px; border:none; cursor:pointer;
-            font-weight:600; background:var(--u-color); color:#fff;
-            font-family:inherit; font-size:14px; transition:opacity 0.2s;
-        }
-        .btn:hover { opacity:0.85; }
-        .btn-ghost { background:none; color:var(--navy); }
-        .btn-ghost:hover { background:rgba(0,0,0,0.05); opacity:1; }
-        .btn-danger { background:var(--rose); }
-        .btn-sm { padding:6px 12px; font-size:12px; }
-        .btn-success { background:var(--teal); }
-
-        .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
-        .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
-        .dashboard-header h1 { font-family:'Syne'; margin:0; }
-        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(540px, 1fr)); gap:20px; }
-
-        .vp-card {
-            background:#fff; border-radius:16px; padding:20px;
-            border-top:5px solid var(--u-color);
-            box-shadow:0 4px 15px rgba(0,0,0,0.05);
-            transition:transform 0.2s, box-shadow 0.2s;
-        }
-        .vp-card:hover { transform:translateY(-3px); box-shadow:0 8px 25px rgba(0,0,0,0.1); }
-        .vp-card-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
-        .vp-ico { font-size:24px; line-height:1; }
-        .vp-title { font-weight:600; font-size:15px; color:var(--navy); }
-        .vp-id { font-size:11px; color:#999; margin-top:2px; }
-        .vp-notes {
-            width:100%; border:1px solid #eee; border-radius:8px;
-            padding:10px; font-family:inherit; font-size:13px;
-            resize:vertical; min-height:60px; color:var(--navy);
-            transition:border-color 0.2s; outline:none;
-        }
-        .vp-notes:focus { border-color:var(--blue); }
-        .vp-saved { font-size:11px; color:var(--teal); margin-top:6px; display:none; }
-        .spell-bar { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
-        .spell-word { font-size:10px; padding:2px 8px; border-radius:12px; background:#FEF3C7; color:#92400E; cursor:pointer; }
-
-        /* Tableau de suivi des statuts */
-        .status-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11px;
-            margin: 10px 0;
-        }
-        .status-table th, .status-table td {
-            padding: 6px 4px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        .status-table th {
-            background: #f8fafc;
-            font-weight: 600;
-        }
-        .status-badge-prevu { background: #E2E3E5; color: #4B5563; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
-        .status-badge-a-faire { background: #FEF3C7; color: #92400E; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
-        .status-badge-en-reflexion { background: #DBEAFE; color: #1E40AF; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
-        .status-badge-fait { background: #D1FAE5; color: #065F46; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
-        .status-badge-en-production { background: #C7D2FE; color: #3730A3; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
-        .status-date-input, .status-comment-input {
-            padding: 4px;
-            font-size: 10px;
-            width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
-        .progress-chart {
-            width: 100%;
-            height: 80px;
-            margin: 5px 0;
-        }
-        .progress-section {
-            background: #fafcff;
-            border-radius: 12px;
-            padding: 8px;
-            margin: 8px 0;
-        }
-
-        /* Tags dictionnaire */
-        .dict-tag {
-            display: inline-block;
-            background: #eef2ff;
-            color: #1E40AF;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            margin: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .dict-tag.selected {
-            background: var(--blue);
-            color: white;
-        }
-        .maturity-bar-container {
+        .logo p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
             margin-top: 8px;
         }
-        .maturity-bar {
-            background: #e5e7eb;
-            border-radius: 10px;
-            height: 8px;
-            overflow: hidden;
+        .form-group {
+            margin-bottom: 20px;
         }
-        .maturity-bar-fill {
-            width: 0%;
-            height: 100%;
-            background: var(--blue);
-            border-radius: 10px;
-            transition: width 0.3s ease;
-        }
-
-        #kpiSection, #complianceSection, #cyberSection, #communicationSection { display:none; }
-        .kpi-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:20px; margin-bottom:30px; }
-        .kpi-card { background:#fff; border-radius:16px; padding:24px; border-left:4px solid var(--kpi-color, var(--blue)); box-shadow:0 2px 8px rgba(0,0,0,0.05); }
-        .kpi-value { font-family:'Syne'; font-size:32px; font-weight:800; }
-        .kpi-label { font-size:13px; color:#666; margin-top:8px; }
-        .chart-container { background:#fff; border-radius:16px; padding:20px; margin-bottom:24px; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
-        .chart-container h3 { font-family:'Syne'; margin-bottom:16px; font-size:18px; }
-        .chart-wrap { height:300px; }
-
-        .upload-zone { border:2px dashed #ddd; border-radius:16px; padding:30px; text-align:center; cursor:pointer; margin-bottom:24px; background:#fafafa; transition:all 0.2s; }
-        .upload-zone:hover, .upload-zone.drag { border-color:var(--blue); background:#f0f7ff; }
-
-        #adminSection { display:none; }
-        .admin-card { background:#fff; padding:30px; border-radius:20px; border:1px solid #eee; max-width:500px; margin-bottom:24px; }
-        .admin-card h3 { margin:0 0 20px; font-family:'Syne'; }
-        .admin-card input, .admin-card select { padding:12px; border-radius:10px; border:1px solid #ddd; width:100%; margin-bottom:15px; font-family:inherit; font-size:14px; outline:none; }
-        .admin-card input:focus, .admin-card select:focus { border-color:var(--blue); }
-
-        .card-link {
-            background: #fff;
-            border-radius: 16px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            border: 1px solid var(--border);
-        }
-        .card-link .btn {
-            display: inline-block;
-            background: var(--blue);
-            color: #fff;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 8px;
+        .form-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
             font-weight: 600;
+            margin-bottom: 8px;
         }
-
-        .message-item, .product-item, .problem-item {
-            border: 1px solid #eee;
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #1A6CF5;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .security-question {
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 12px;
             padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .security-question .question {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .captcha {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .captcha-question {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1A6CF5;
             margin-bottom: 12px;
         }
-        .message-unread { background: #FEF3C7; }
-        .message-read { background: #fff; }
-
-        #toast { position:fixed; bottom:30px; right:30px; z-index:9999; background:var(--navy); color:#fff; padding:14px 22px; border-radius:12px; font-size:14px; font-weight:600; transform:translateY(80px); opacity:0; transition:transform 0.3s, opacity 0.3s; pointer-events:none; max-width:300px; }
-        #toast.show { transform:translateY(0); opacity:1; }
-        #toast.success { border-left:4px solid var(--teal); }
-        #toast.error { border-left:4px solid var(--rose); }
-
-        @media (max-width:600px) {
-            .topbar { padding:0 16px; }
-            .container { padding:90px 16px 30px; }
-            .dashboard-header { flex-direction:column; align-items:flex-start; }
-            .views-grid { grid-template-columns:1fr; }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #1A6CF5;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+        .btn-login:hover {
+            background: #1558cc;
+            transform: translateY(-1px);
+        }
+        .btn-login:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .forgot-link {
+            text-align: center;
+            margin-top: 16px;
+        }
+        .forgot-link a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+        .forgot-link a:hover {
+            color: #1A6CF5;
+        }
+        .error-message {
+            background: rgba(232, 69, 104, 0.2);
+            border: 1px solid #E84568;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #FF8FAD;
+            font-size: 13px;
+            display: none;
+        }
+        .success-message {
+            background: rgba(0, 180, 156, 0.2);
+            border: 1px solid #00B49C;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #00B49C;
+            font-size: 13px;
+            display: none;
+        }
+        .loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        hr {
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 24px 0 16px;
+        }
+        .info-text {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="logo">
+                <h1>SI GOVERNANCE</h1>
+                <p>v5.0 · Sécurité & Conformité</p>
+            </div>
 
-<!-- AUTH SCREEN -->
-<div class="screen active" id="authScreen">
-    <div class="auth-card">
-        <div class="auth-logo">SI Governance · v5.0</div>
-        <h2 id="stTitle">Connexion Cloud…</h2>
-        <p class="auth-sub" id="authSub">Liaison Supabase en cours</p>
-        <div id="authLoader" class="auth-loader"><div class="spinner"></div></div>
-        <div id="loginForm" class="login-form">
-            <input type="email"    id="loginEmail"    placeholder="Email professionnel" autocomplete="email">
-            <input type="password" id="loginPassword" placeholder="Mot de passe"        autocomplete="current-password">
-            <button class="btn-login" id="loginBtn" onclick="doLogin()">Se connecter</button>
+            <div id="loginView">
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+                <div id="loader" class="loader">
+                    <div class="spinner"></div>
+                    <span style="color:#fff;">Connexion en cours...</span>
+                </div>
+
+                <div class="form-group">
+                    <label>📧 Email professionnel</label>
+                    <input type="email" id="email" placeholder="prenom.nom@entreprise.fr" autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label>🔒 Mot de passe</label>
+                    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+                </div>
+
+                <div class="security-question">
+                    <div class="question">❓ Question de sécurité (en cas d'oubli de mot de passe)</div>
+                    <select id="securityQuestion">
+                        <option value="">Sélectionnez une question</option>
+                    </select>
+                    <input type="text" id="securityAnswer" placeholder="Votre réponse" style="margin-top:12px;">
+                </div>
+
+                <div class="captcha">
+                    <div class="captcha-question" id="captchaQuestion">0 + 0 = ?</div>
+                    <input type="number" id="captchaAnswer" placeholder="Résultat" style="width:100%; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:12px; color:#fff; text-align:center;">
+                </div>
+
+                <button class="btn-login" id="loginBtn">Se connecter</button>
+
+                <div class="forgot-link">
+                    <a href="#" id="forgotLink">🔑 Mot de passe oublié ?</a>
+                </div>
+
+                <hr>
+                <div class="info-text">
+                    Contactez votre administrateur pour obtenir un compte
+                </div>
+            </div>
+
+            <div id="forgotView" style="display: none;">
+                <div id="forgotErrorMessage" class="error-message"></div>
+                <div id="forgotSuccessMessage" class="success-message"></div>
+                <div id="forgotLoader" class="loader">
+                    <div class="spinner"></div>
+                    <span style="color:#fff;">Vérification...</span>
+                </div>
+
+                <div class="form-group">
+                    <label>📧 Email professionnel</label>
+                    <input type="email" id="forgotEmail" placeholder="prenom.nom@entreprise.fr">
+                </div>
+
+                <div class="security-question">
+                    <div class="question">❓ Question de sécurité</div>
+                    <select id="forgotSecurityQuestion">
+                        <option value="">Sélectionnez une question</option>
+                    </select>
+                    <input type="text" id="forgotSecurityAnswer" placeholder="Votre réponse" style="margin-top:12px;">
+                </div>
+
+                <div class="captcha">
+                    <div class="captcha-question" id="forgotCaptchaQuestion">0 + 0 = ?</div>
+                    <input type="number" id="forgotCaptchaAnswer" placeholder="Résultat" style="width:100%; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:12px; color:#fff; text-align:center;">
+                </div>
+
+                <button class="btn-login" id="resetBtn">Réinitialiser le mot de passe</button>
+                <div class="forgot-link" style="margin-top: 16px;">
+                    <a href="#" id="backToLoginLink">← Retour à la connexion</a>
+                </div>
+            </div>
         </div>
-        <div id="debugZone" class="debug-err"></div>
     </div>
-</div>
 
-<!-- APP SCREEN -->
-<div class="screen" id="appScreen" style="justify-content:flex-start; align-items:flex-start;">
-    <nav class="topbar">
-        <div class="topbar-left"><div id="uAvatar"></div><span style="font-family:'Syne'; font-weight:800;">SI MANAGER</span></div>
-        <div class="topbar-right">
-            <button class="btn btn-ghost" onclick="tab('diag')">📊 Diagnostic</button>
-            <button class="btn btn-ghost" onclick="tab('kpi')">📈 KPI</button>
-            <button class="btn btn-ghost" onclick="tab('compliance')">⚖️ Conformité</button>
-            <button class="btn btn-ghost" onclick="tab('cyber')">🌍 Cyber Threat</button>
-            <button class="btn btn-ghost" onclick="tab('communication')">📬 Comm & Suivi</button>
-            <button class="btn btn-ghost" id="admLink" style="display:none;" onclick="tab('admin')">🔑 Admin</button>
-            <button class="btn btn-danger btn-sm" onclick="doLogout()">Déconnexion</button>
-        </div>
-    </nav>
+    <script>
+        const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    <!-- DIAGNOSTIC -->
-    <main id="diagSection" class="container">
-        <div class="dashboard-header">
-            <h1>Dashboard des 25 Outils</h1>
-            <button class="btn" onclick="exportFullPDF()" style="background:var(--navy)">📊 Rapport PDF complet</button>
-        </div>
-        <div id="mainContainer" class="views-grid"></div>
-    </main>
+        let securityQuestions = [];
+        let currentCaptcha = { a: 0, b: 0, answer: 0 };
 
-    <!-- KPI -->
-    <section id="kpiSection" class="container s-hide">
-        <div class="dashboard-header"><h1>KPI & Visualisations</h1></div>
-        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
-             ondragover="event.preventDefault();this.classList.add('drag')"
-             ondragleave="this.classList.remove('drag')"
-             ondrop="handleSpreadsheetDrop(event)">
-            <p>📊 Glissez un fichier <strong>Excel (.xlsx, .csv)</strong> ici ou <strong>cliquez pour importer</strong></p>
-            <input type="file" id="fileInput" accept=".xlsx,.csv,.xls" style="display:none" onchange="importSpreadsheet(event)">
-        </div>
-        <div class="kpi-grid" id="kpiGrid"></div>
-        <div class="chart-container"><h3>📈 Évolution de la maturité</h3><div class="chart-wrap"><canvas id="maturityChart"></canvas></div></div>
-        <div class="chart-container"><h3>📊 Complétion des outils</h3><div class="chart-wrap"><canvas id="toolsChart"></canvas></div></div>
-        <div class="chart-container"><h3>📊 Niveaux de conformité par norme</h3><div class="chart-wrap"><canvas id="normeMaturityChart"></canvas></div></div>
-        <div class="chart-container"><h3>💰 Coûts d'intégration par métier</h3><div class="chart-wrap"><canvas id="integrationCostsChart"></canvas></div></div>
-        <div class="chart-container"><h3>📊 Scores de maturité par rôle</h3><div class="chart-wrap"><canvas id="maturityByRoleChart"></canvas></div></div>
-    </section>
-
-    <!-- CONFORMITÉ & GESTION DES COÛTS -->
-    <section id="complianceSection" class="container s-hide">
-        <div class="dashboard-header"><h1>Conformité & Gestion des Coûts</h1></div>
-        <div class="card-link">
-            <div style="font-size: 48px; margin-bottom: 20px;">⚖️</div>
-            <h2>Gestion des normes et des coûts</h2>
-            <p style="margin-bottom: 24px; color: #555;">Accédez à la page dédiée contenant :<br>
-            - Les normes NIS2, ITIL, ISO 27001/5 avec checklist et suivi de maturité<br>
-            - La gestion des taux horaires (techniciens, opérateurs)<br>
-            - La feuille de calcul des coûts et le suivi des factures</p>
-            <a href="/compliance-costs.html" target="_blank" class="btn">🔗 Ouvrir la page Conformité & Coûts</a>
-        </div>
-        <div class="card-link" style="margin-top: 24px;">
-            <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
-            <h2>Analyse de risque EBIOS RM</h2>
-            <p style="margin-bottom: 24px; color: #555;">Méthodologie complète d'analyse des risques selon le référentiel ANSSI</p>
-            <a href="/ebios-rm.html" target="_blank" class="btn">🔗 Ouvrir l'analyse EBIOS RM</a>
-        </div>
-    </section>
-
-    <!-- CYBER THREAT INTELLIGENCE -->
-    <section id="cyberSection" class="container s-hide">
-        <div class="dashboard-header"><h1>Cyber Threat Intelligence</h1></div>
-        <div class="card-link">
-            <div style="font-size: 48px; margin-bottom: 20px;">🌍</div>
-            <h2>Informations détaillées sur la cyber menace</h2>
-            <p style="margin-bottom: 24px; color: #555;">Services AI Check Point, MITRE ATT&CK, actualité cyber</p>
-            <a href="/cyber-threat-intel.html" target="_blank" class="btn">🔗 Ouvrir la page Cyber Threat Intelligence</a>
-        </div>
-    </section>
-
-    <!-- COMMUNICATION & SUIVI -->
-    <section id="communicationSection" class="container s-hide">
-        <div class="dashboard-header"><h1>Communication & Suivi</h1></div>
-        <div style="margin-bottom: 32px;">
-            <h2 style="font-family:'Syne'; margin-bottom: 20px;">📨 Messagerie interne</h2>
-            <div class="card-link" style="padding: 24px; text-align: left;">
-                <div style="margin-bottom: 20px;">
-                    <h3>Nouveau message</h3>
-                    <input type="text" id="msgSujet" placeholder="Sujet" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
-                    <textarea id="msgContenu" placeholder="Contenu du message..." rows="3" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></textarea>
-                    <select id="msgDestinataires" multiple size="3" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></select>
-                    <button class="btn btn-success" onclick="sendMessage()">Envoyer le message</button>
-                </div>
-                <div><h3>Boîte de réception</h3><div id="messageList" style="max-height: 400px; overflow-y: auto;"><p>Chargement...</p></div></div>
-            </div>
-        </div>
-        <div style="margin-bottom: 32px;">
-            <h2 style="font-family:'Syne'; margin-bottom: 20px;">📦 Fiches produit</h2>
-            <div class="card-link" style="padding: 24px; text-align: left;">
-                <div style="margin-bottom: 20px;">
-                    <h3>Nouvelle fiche produit</h3>
-                    <input type="text" id="prodNom" placeholder="Nom du produit" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
-                    <textarea id="prodDesc" placeholder="Description" rows="2" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></textarea>
-                    <select id="prodOwnerSelect" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></select>
-                    <button class="btn btn-success" onclick="createProductSheet()">Créer la fiche</button>
-                </div>
-                <div><h3>Liste des produits</h3><div id="productList" style="max-height: 400px; overflow-y: auto;"><p>Chargement...</p></div></div>
-            </div>
-        </div>
-        <div style="margin-bottom: 32px;">
-            <h2 style="font-family:'Syne'; margin-bottom: 20px;">🐛 Suivi des problèmes</h2>
-            <div class="card-link" style="padding: 24px; text-align: left;">
-                <div style="margin-bottom: 20px;">
-                    <h3>Nouveau problème</h3>
-                    <input type="text" id="probTitre" placeholder="Titre" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
-                    <textarea id="probDesc" placeholder="Description" rows="2" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></textarea>
-                    <select id="probResponsableSelect" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></select>
-                    <select id="probPriorite" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;"><option value="basse">Basse</option><option value="normale">Normale</option><option value="haute">Haute</option><option value="critique">Critique</option></select>
-                    <input type="date" id="probEcheance" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
-                    <button class="btn btn-success" onclick="createProblem()">Créer le problème</button>
-                </div>
-                <div><h3>Problèmes en cours</h3><div id="problemList" style="max-height: 400px; overflow-y: auto;"><p>Chargement...</p></div></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ADMIN -->
-    <section id="adminSection" class="container s-hide">
-        <div class="dashboard-header"><h1>Administration</h1></div>
-        <div class="admin-card">
-            <h3>➕ Ajouter un Expert SI</h3>
-            <input type="email" id="newEmail" placeholder="Email">
-            <input type="text" id="newN" placeholder="Nom Prénom">
-            <select id="newR">
-                <option value="DSI">DSI (Violet)</option>
-                <option value="RSSI">RSSI (Rose)</option>
-                <option value="DATA">Expert Data (Teal)</option>
-                <option value="ADMIN">Super Admin (Blue)</option>
-                <option value="SERVICE_MANAGER">Manager de service (Orange)</option>
-                <option value="CEO">PDG / CEO (Or)</option>
-                <option value="NET">Admin Réseaux (Bleu ciel)</option>
-                <option value="SYS">Admin Système (Gris)</option>
-            </select>
-            <button class="btn" style="width:100%" onclick="addUser()">Créer le profil</button>
-        </div>
-
-        <div class="admin-card">
-            <h3>➕ Créer un nouvel utilisateur (avec sécurité)</h3>
-            <form id="createUserForm">
-                <input type="email" id="newUserEmail" placeholder="Email" required>
-                <input type="password" id="newUserPassword" placeholder="Mot de passe" required>
-                <select id="newUserType">
-                    <option value="RSSI">RSSI (Rose)</option>
-                    <option value="DSI">DSI (Violet)</option>
-                    <option value="DATA">DATA (Teal)</option>
-                    <option value="SERVICE_MANAGER">Manager de service (Orange)</option>
-                    <option value="CEO">PDG / CEO (Or)</option>
-                    <option value="NET">Admin Réseaux (Bleu ciel)</option>
-                    <option value="SYS">Admin Système (Gris)</option>
-                </select>
-                <div id="securityQuestionsContainer" style="margin:15px 0;"></div>
-                <div id="captchaContainer" style="margin:15px 0;"></div>
-                <button type="submit" class="btn" style="width:100%">Créer l'utilisateur</button>
-            </form>
-            <div id="createUserMessage" style="margin-top:12px;"></div>
-        </div>
-    </section>
-</div>
-
-<div id="toast"></div>
-
-<script>
-// CONFIGURATION
-const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession: true },
-    realtime: { enabled: false }
-});
-
-let db = null, user = null;
-let chartMaturity = null, chartTools = null, chartNormeMaturity = null, chartIntegrationCosts = null, chartMaturityByRole = null;
-let toolStatuses = {};
-let toolCharts = {};
-let dictionaryTerms = [];
-
-const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5',
-    SERVICE_MANAGER:'#F97316', CEO:'#F5A623', NET:'#0EA5E9', SYS:'#6B7280' };
-const ROLE_LABELS = { ADMIN:'Super Admin', DSI:'DSI', RSSI:'RSSI', DATA:'Expert Data',
-    SERVICE_MANAGER:'Manager de service', CEO:'PDG / CEO', NET:'Admin Réseaux', SYS:'Admin Système' };
-
-const TOOLS = [
-    {id:1, t:"Capacités Métier", ico:"🧭"},{id:2, t:"Transformation IT",ico:"⚡"},{id:3, t:"Objectifs Strat",ico:"🎯"},
-    {id:4, t:"Écosystème",ico:"🌐"},{id:5, t:"Portefeuille App",ico:"📱"},{id:6, t:"Flux & Interfaces",ico:"🔗"},
-    {id:7, t:"Mapping Cap/App",ico:"🗺️"},{id:8, t:"Obsolescence",ico:"🕰️"},{id:9, t:"Données Métier",ico:"🗄️"},
-    {id:10, t:"Lineage Data",ico:"📉"},{id:11, t:"RGPD",ico:"⚖️"},{id:12, t:"Analytique",ico:"📊"},
-    {id:13, t:"Infrastructure",ico:"🖥️"},{id:14, t:"Sécurité SI",ico:"🛡️"},{id:15, t:"Standards",ico:"📜"},
-    {id:16, t:"Cloud Arch",ico:"☁️"},{id:17, t:"Processus",ico:"🏢"},{id:18, t:"Parties Prenantes",ico:"👥"},
-    {id:19, t:"Gouvernance",ico:"🏛️"},{id:20, t:"Risques SI",ico:"⚠️"},{id:21, t:"Roadmap SI",ico:"🗓️"},
-    {id:22, t:"Impact Projets",ico:"💥"},{id:23, t:"Coût IT",ico:"💰"},{id:24, t:"Innovation",ico:"💡"},
-    {id:25, t:"Référentiels de conformité", ico:"📋"}
-];
-
-// UTILITAIRES
-function showToast(msg, type='success') {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.className = `show ${type}`;
-    clearTimeout(t._timer); t._timer = setTimeout(() => t.className = '', 3000);
-}
-function showDebug(msg) { const z = document.getElementById('debugZone'); if(z){ z.style.display='block'; z.textContent=msg; } }
-function setScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// AUTH
-async function init() {
-    try { const { data: { session } } = await sb.auth.getSession();
-        if (session) await loadUserProfile(session.user.email);
-        else { document.getElementById('authLoader').style.display='none'; document.getElementById('loginForm').style.display='block'; document.getElementById('stTitle').textContent='Bienvenue sur SI Governance'; document.getElementById('authSub').textContent='Connectez-vous pour accéder à la plateforme'; }
-    } catch(err) { showDebug('Erreur init : '+err.message); }
-}
-async function doLogin() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const pwd = document.getElementById('loginPassword').value;
-    const btn = document.getElementById('loginBtn');
-    if (!email || !pwd) { showDebug('Email et mot de passe requis.'); return; }
-    btn.disabled = true; btn.textContent = 'Connexion…';
-    document.getElementById('debugZone').style.display = 'none';
-    try {
-        const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
-        if (error) throw error;
-        await loadUserProfile(data.user.email);
-    } catch(err) { btn.disabled = false; btn.textContent = 'Se connecter'; showDebug('❌ '+err.message); }
-}
-async function doLogout() {
-    await sb.auth.signOut(); user = null; db = null;
-    document.getElementById('mainContainer').innerHTML = '';
-    document.getElementById('loginEmail').value = '';
-    document.getElementById('loginPassword').value = '';
-    document.getElementById('loginBtn').disabled = false;
-    document.getElementById('loginBtn').textContent = 'Se connecter';
-    document.getElementById('debugZone').style.display = 'none';
-    document.getElementById('authLoader').style.display = 'none';
-    document.getElementById('loginForm').style.display = 'block';
-    document.getElementById('stTitle').textContent = 'Bienvenue sur SI Governance';
-    document.getElementById('authSub').textContent = 'Connectez-vous pour accéder à la plateforme';
-    setScreen('authScreen');
-}
-async function loadUserProfile(email) {
-    try {
-        const { data: profile, error: pErr } = await sb.from('ea_users').select('*').eq('email', email).single();
-        if (pErr || !profile) {
-            const { count } = await sb.from('ea_users').select('*', { count:'exact', head:true });
-            if (count === 0) { await sb.from('ea_users').insert({ email, nom: email.split('@')[0], role: 'ADMIN' }); showToast('✅ Super Admin créé'); return loadUserProfile(email); }
-            else { await sb.auth.signOut(); showDebug('❌ Email non autorisé'); setScreen('authScreen'); return; }
-        }
-        user = profile;
-        const color = COLORS[user.role] || COLORS.ADMIN;
-        document.documentElement.style.setProperty('--u-color', color);
-        const av = document.getElementById('uAvatar'); av.style.background = color; av.textContent = (user.nom || 'U').charAt(0).toUpperCase();
-        document.getElementById('admLink').style.display = user.role === 'ADMIN' ? 'inline-block' : 'none';
-        const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
-        db = (row && row.content) ? row.content : {};
-        
-        setScreen('appScreen'); tab('diag'); renderTools(); updateKPI(); renderCharts();
-        if (user.role === 'ADMIN') { 
-            loadSecurityQuestions(); 
-            generateCaptcha();
-        }
-        loadMessages();
-        loadProducts();
-        loadProblems();
-        loadUsersForMessaging();
-        loadUsersForProducts();
-        loadUsersForProblems();
-    } catch(err) { showDebug('Erreur profil : '+err.message); setScreen('authScreen'); }
-}
-function tab(which) {
-    document.getElementById('diagSection').style.display = which === 'diag' ? 'block' : 'none';
-    document.getElementById('kpiSection').style.display = which === 'kpi' ? 'block' : 'none';
-    document.getElementById('complianceSection').style.display = which === 'compliance' ? 'block' : 'none';
-    document.getElementById('cyberSection').style.display = which === 'cyber' ? 'block' : 'none';
-    document.getElementById('communicationSection').style.display = which === 'communication' ? 'block' : 'none';
-    document.getElementById('adminSection').style.display = which === 'admin' ? 'block' : 'none';
-    if (which === 'kpi') { updateKPI(); renderCharts(); renderNormeMaturityChart(); renderIntegrationCostsChart(); renderMaturityByRoleChart(); }
-    if (which === 'communication') { loadMessages(); loadProducts(); loadProblems(); loadUsersForMessaging(); loadUsersForProducts(); loadUsersForProblems(); }
-}
-
-// RENDU DES OUTILS (simplifié pour la lisibilité)
-function renderTools() {
-    const grid = document.getElementById('mainContainer');
-    grid.innerHTML = '<p style="text-align:center; padding:40px;">Chargement des outils...</p>';
-    // Code complet des outils ici (pour ne pas surcharger, je garde la structure)
-    setTimeout(() => {
-        grid.innerHTML = TOOLS.map(tool => `
-            <div class="vp-card">
-                <div class="vp-card-header">
-                    <span class="vp-ico">${tool.ico}</span>
-                    <div>
-                        <div class="vp-title">${tool.t}</div>
-                        <div class="vp-id">Outil #${tool.id}</div>
-                    </div>
-                </div>
-                <div class="progress-section">
-                    <strong>📊 Progression</strong>
-                    <div style="height: 80px;"><canvas id="chart_${tool.id}"></canvas></div>
-                </div>
-                <textarea class="vp-notes" placeholder="Notes complémentaires..."></textarea>
-            </div>
-        `).join('');
-    }, 100);
-}
-
-function updateKPI() { /* KPI update */ }
-function renderCharts() { /* Charts render */ }
-function renderNormeMaturityChart() { /* Norme chart */ }
-function renderIntegrationCostsChart() { /* Costs chart */ }
-function renderMaturityByRoleChart() { /* Role chart */ }
-
-// IMPORT TABLEUR
-function handleSpreadsheetDrop(e) { e.preventDefault(); }
-function importSpreadsheet(e) { }
-function processSpreadsheet(file) { }
-
-// ADMIN SIMPLE
-async function addUser() {
-    if(!user || user.role!=='ADMIN'){ showToast('❌ Accès refusé', 'error'); return; }
-    const email = document.getElementById('newEmail').value.trim(), nom = document.getElementById('newN').value.trim(), role = document.getElementById('newR').value;
-    if(!email || !nom){ showToast('⚠️ Email et nom requis', 'error'); return; }
-    const { error } = await sb.from('ea_users').insert({ email, nom, role });
-    if(error) showToast('❌ '+error.message, 'error'); else { showToast(`✅ ${nom} créé`); document.getElementById('newEmail').value=''; document.getElementById('newN').value=''; }
-}
-
-// CRÉATION SÉCURISÉE
-async function loadSecurityQuestions() {
-    try {
-        // Essayer de charger depuis l'API, sinon utiliser des questions par défaut
-        let questions = [];
-        try {
-            const response = await fetch('/api/security-questions');
-            if (response.ok) {
-                questions = await response.json();
+        async function loadSecurityQuestions() {
+            const { data, error } = await sb.from('security_questions').select('*');
+            if (error) {
+                console.error('Erreur chargement questions:', error);
+                securityQuestions = [
+                    { id: 1, question_text: "Quel est le nom de votre premier animal de compagnie ?" },
+                    { id: 2, question_text: "Quelle est votre ville de naissance ?" },
+                    { id: 3, question_text: "Quel est le modèle de votre première voiture ?" },
+                    { id: 4, question_text: "Quel est le nom de votre meilleur ami d'enfance ?" },
+                    { id: 5, question_text: "Quelle est votre couleur préférée ?" }
+                ];
+            } else {
+                securityQuestions = data;
             }
-        } catch(e) {
-            console.log('API non disponible, utilisation des questions par défaut');
+            const select = document.getElementById('securityQuestion');
+            const forgotSelect = document.getElementById('forgotSecurityQuestion');
+            if (select) {
+                select.innerHTML = '<option value="">Sélectionnez une question</option>' + 
+                    securityQuestions.map(q => `<option value="${q.id}">${q.question_text}</option>`).join('');
+            }
+            if (forgotSelect) {
+                forgotSelect.innerHTML = '<option value="">Sélectionnez une question</option>' + 
+                    securityQuestions.map(q => `<option value="${q.id}">${q.question_text}</option>`).join('');
+            }
         }
-        
-        if (!questions.length) {
-            questions = [
-                { id: 1, question_text: "Quel est le nom de votre premier animal de compagnie ?" },
-                { id: 2, question_text: "Quelle est votre ville de naissance ?" },
-                { id: 3, question_text: "Quel est le modèle de votre première voiture ?" },
-                { id: 4, question_text: "Quel est le nom de votre meilleur ami d'enfance ?" },
-                { id: 5, question_text: "Quelle est votre couleur préférée ?" }
-            ];
-        }
-        
-        const container = document.getElementById('securityQuestionsContainer');
-        if (!container) return;
-        container.innerHTML = '';
-        
-        for (let i = 0; i < 2; i++) {
-            const select = document.createElement('select');
-            select.id = `question_${i}`;
-            select.style.width = '100%';
-            select.style.padding = '10px';
-            select.style.margin = '8px 0';
-            select.style.borderRadius = '10px';
-            select.style.border = '1px solid #ddd';
-            select.required = true;
-            
-            questions.forEach(q => {
-                const opt = document.createElement('option');
-                opt.value = q.id;
-                opt.textContent = q.question_text;
-                select.appendChild(opt);
-            });
-            
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.placeholder = 'Votre réponse';
-            input.id = `answer_${i}`;
-            input.style.width = '100%';
-            input.style.padding = '10px';
-            input.style.margin = '8px 0';
-            input.style.borderRadius = '10px';
-            input.style.border = '1px solid #ddd';
-            input.required = true;
 
-            container.appendChild(document.createTextNode(`Question ${i+1} :`));
-            container.appendChild(select);
-            container.appendChild(input);
-            container.appendChild(document.createElement('br'));
+        function generateCaptcha() {
+            const a = Math.floor(Math.random() * 10) + 1;
+            const b = Math.floor(Math.random() * 10) + 1;
+            currentCaptcha = { a, b, answer: a + b };
+            return `${a} + ${b} = ?`;
         }
-    } catch(e) {
-        console.error('Erreur chargement questions:', e);
-        document.getElementById('securityQuestionsContainer').innerHTML = '<p style="color:red;">Erreur de chargement des questions</p>';
-    }
-}
 
-let captchaAnswer = 0;
-function generateCaptcha() {
-    const a = Math.floor(Math.random() * 10);
-    const b = Math.floor(Math.random() * 10);
-    captchaAnswer = a + b;
-    const container = document.getElementById('captchaContainer');
-    if (container) {
-        container.innerHTML = `
-            <label style="display:block; margin-bottom:8px;">Vérification anti-spam : ${a} + ${b} = ?</label>
-            <input type="number" id="captchaInput" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;" required>
-        `;
-    }
-}
-
-// Formulaire de création d'utilisateur
-document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const captchaInput = document.getElementById('captchaInput');
-    if (!captchaInput || parseInt(captchaInput.value) !== captchaAnswer) {
-        document.getElementById('createUserMessage').innerHTML = '<span style="color:red;">❌ Réponse anti-spam incorrecte</span>';
-        generateCaptcha();
-        return;
-    }
-    
-    const securityAnswers = [];
-    for (let i = 0; i < 2; i++) {
-        const questionId = document.getElementById(`question_${i}`).value;
-        const answer = document.getElementById(`answer_${i}`).value;
-        if (!answer.trim()) {
-            document.getElementById('createUserMessage').innerHTML = '<span style="color:red;">❌ Veuillez répondre aux deux questions de sécurité</span>';
-            return;
+        function updateCaptchaDisplay() {
+            const captchaQuestion = document.getElementById('captchaQuestion');
+            const forgotCaptchaQuestion = document.getElementById('forgotCaptchaQuestion');
+            const question = generateCaptcha();
+            if (captchaQuestion) captchaQuestion.textContent = question;
+            if (forgotCaptchaQuestion) forgotCaptchaQuestion.textContent = `${currentCaptcha.a} + ${currentCaptcha.b} = ?`;
         }
-        securityAnswers.push({ questionId: parseInt(questionId), answer: answer.trim() });
-    }
-    
-    const userData = {
-        email: document.getElementById('newUserEmail').value.trim(),
-        password: document.getElementById('newUserPassword').value,
-        userType: document.getElementById('newUserType').value,
-        securityAnswers: securityAnswers
-    };
-    
-    if (!userData.email || !userData.password) {
-        document.getElementById('createUserMessage').innerHTML = '<span style="color:red;">❌ Email et mot de passe requis</span>';
-        return;
-    }
-    
-    try {
-        const { data: { session } } = await sb.auth.getSession();
-        const token = session?.access_token;
-        
-        const response = await fetch('/api/create-user', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(userData)
+
+        function showError(message) {
+            const div = document.getElementById('errorMessage');
+            div.textContent = message;
+            div.style.display = 'block';
+            setTimeout(() => div.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const div = document.getElementById('successMessage');
+            div.textContent = message;
+            div.style.display = 'block';
+            setTimeout(() => div.style.display = 'none', 5000);
+        }
+
+        function showForgotError(message) {
+            const div = document.getElementById('forgotErrorMessage');
+            div.textContent = message;
+            div.style.display = 'block';
+            setTimeout(() => div.style.display = 'none', 5000);
+        }
+
+        function showForgotSuccess(message) {
+            const div = document.getElementById('forgotSuccessMessage');
+            div.textContent = message;
+            div.style.display = 'block';
+            setTimeout(() => div.style.display = 'none', 5000);
+        }
+
+        async function hashAnswer(text) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text.toLowerCase().trim());
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function verifySecurityQuestion(email, questionId, answer) {
+            // Récupérer l'utilisateur dans ea_users
+            const { data: userData, error: userError } = await sb
+                .from('ea_users')
+                .select('email')
+                .eq('email', email)
+                .single();
+            if (userError || !userData) return false;
+
+            // Récupérer l'id Supabase Auth
+            const { data: authUsers } = await sb.auth.admin.listUsers();
+            const authUser = authUsers?.users?.find(u => u.email === email);
+            if (!authUser) return false;
+
+            const hashedAnswer = await hashAnswer(answer);
+            const { data, error } = await sb
+                .from('user_security_answers')
+                .select('*')
+                .eq('user_id', authUser.id)
+                .eq('question_id', questionId)
+                .eq('answer_hash', hashedAnswer)
+                .single();
+            return !error && data;
+        }
+
+        async function doLogin() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const captchaInput = document.getElementById('captchaAnswer').value;
+
+            if (!email || !password) {
+                showError('Email et mot de passe requis');
+                return;
+            }
+            if (parseInt(captchaInput) !== currentCaptcha.answer) {
+                showError('Réponse anti-spam incorrecte');
+                updateCaptchaDisplay();
+                return;
+            }
+
+            const btn = document.getElementById('loginBtn');
+            const loader = document.getElementById('loader');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            loader.style.display = 'flex';
+
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                showSuccess('Connexion réussie ! Redirection...');
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1500);
+            } catch (err) {
+                showError('❌ ' + err.message);
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                loader.style.display = 'none';
+            }
+        }
+
+        async function doResetPassword() {
+            const email = document.getElementById('forgotEmail').value.trim();
+            const questionId = document.getElementById('forgotSecurityQuestion').value;
+            const answer = document.getElementById('forgotSecurityAnswer').value.trim();
+            const captchaInput = document.getElementById('forgotCaptchaAnswer').value;
+
+            if (!email) {
+                showForgotError('Email requis');
+                return;
+            }
+            if (!questionId) {
+                showForgotError('Veuillez sélectionner une question de sécurité');
+                return;
+            }
+            if (!answer) {
+                showForgotError('Veuillez répondre à la question de sécurité');
+                return;
+            }
+            if (parseInt(captchaInput) !== currentCaptcha.answer) {
+                showForgotError('Réponse anti-spam incorrecte');
+                updateCaptchaDisplay();
+                return;
+            }
+
+            const btn = document.getElementById('resetBtn');
+            const loader = document.getElementById('forgotLoader');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            loader.style.display = 'flex';
+
+            try {
+                const isValid = await verifySecurityQuestion(email, parseInt(questionId), answer);
+                if (!isValid) throw new Error('Question de sécurité incorrecte');
+
+                // Générer un nouveau mot de passe aléatoire
+                const newPassword = Math.random().toString(36).slice(-12) + 'A1!';
+                // Mettre à jour le mot de passe dans Auth
+                const { error: updateError } = await sb.auth.admin.updateUserByEmail(email, { password: newPassword });
+                if (updateError) throw updateError;
+
+                showForgotSuccess(`✅ Nouveau mot de passe envoyé à ${email}`);
+                setTimeout(() => {
+                    document.getElementById('forgotView').style.display = 'none';
+                    document.getElementById('loginView').style.display = 'block';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    loader.style.display = 'none';
+                }, 3000);
+            } catch (err) {
+                showForgotError('❌ ' + err.message);
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                loader.style.display = 'none';
+            }
+        }
+
+        // Événements
+        document.getElementById('loginBtn').addEventListener('click', doLogin);
+        document.getElementById('resetBtn').addEventListener('click', doResetPassword);
+        document.getElementById('forgotLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('forgotView').style.display = 'block';
+            updateCaptchaDisplay();
         });
-        
-        const result = await response.json();
-        const msgDiv = document.getElementById('createUserMessage');
-        
-        if (response.ok) {
-            msgDiv.innerHTML = '<span style="color:green;">✅ Utilisateur créé avec succès !</span>';
-            e.target.reset();
-            generateCaptcha();
-            loadSecurityQuestions();
-        } else {
-            msgDiv.innerHTML = `<span style="color:red;">❌ Erreur : ${result.error || 'Erreur inconnue'}</span>`;
-        }
-    } catch(err) {
-        document.getElementById('createUserMessage').innerHTML = `<span style="color:red;">❌ Erreur réseau : ${err.message}</span>`;
-    }
-});
+        document.getElementById('backToLoginLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('forgotView').style.display = 'none';
+            document.getElementById('loginView').style.display = 'block';
+            updateCaptchaDisplay();
+        });
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') doLogin();
+        });
 
-// ============================================================
-// MESSAGERIE INTERNE, PRODUITS, PROBLÈMES
-// ============================================================
-async function loadUsersForMessaging() {
-    const { data: users } = await sb.from('ea_users').select('email, nom');
-    const select = document.getElementById('msgDestinataires');
-    if (select && users) { select.innerHTML = users.filter(u => u.email !== user?.email).map(u => `<option value="${u.email}">${u.nom} (${u.email})</option>`).join(''); }
-}
-async function sendMessage() {
-    const sujet = document.getElementById('msgSujet').value.trim();
-    const contenu = document.getElementById('msgContenu').value.trim();
-    const destinataires = Array.from(document.getElementById('msgDestinataires').selectedOptions).map(opt => opt.value);
-    if (!sujet || !contenu || destinataires.length === 0) { showToast('Sujet, contenu et destinataires requis', 'error'); return; }
-    const { data: msg, error: msgError } = await sb.from('internal_messages').insert({ sujet, contenu, expediteur_email: user.email, expediteur_nom: user.nom }).select().single();
-    if (msgError) { showToast('Erreur: ' + msgError.message, 'error'); return; }
-    const recipients = destinataires.map(email => ({ message_id: msg.id, destinataire_email: email, destinataire_nom: email.split('@')[0] }));
-    await sb.from('message_recipients').insert(recipients);
-    showToast('Message envoyé'); document.getElementById('msgSujet').value = ''; document.getElementById('msgContenu').value = ''; loadMessages();
-}
-async function loadMessages() {
-    const { data: messages } = await sb.from('internal_messages').select('*, message_recipients(*)').order('created_at', { ascending: false });
-    const container = document.getElementById('messageList');
-    if (!container) return;
-    if (!messages || messages.length === 0) { container.innerHTML = '<p>Aucun message</p>'; return; }
-    container.innerHTML = messages.map(msg => {
-        const myRecipient = msg.message_recipients?.find(r => r.destinataire_email === user.email);
-        const isRecipient = !!myRecipient;
-        return `<div class="message-item ${isRecipient && !myRecipient.lu ? 'message-unread' : 'message-read'}"><div><strong>${esc(msg.sujet)}</strong> <span style="font-size:11px;">${new Date(msg.created_at).toLocaleString()}</span></div><div>De: ${esc(msg.expediteur_nom || msg.expediteur_email)}</div><div>${esc(msg.contenu)}</div><div>${isRecipient && !myRecipient.lu ? `<button class="btn btn-sm" style="background:var(--blue);" onclick="markMessageRead(${msg.id}, ${myRecipient.id})">📩 Marquer lu & accuser</button>` : ''}${myRecipient?.lu ? `<span style="color:var(--teal);">✅ Lu le ${new Date(myRecipient.lu_at).toLocaleString()}</span>` : ''}</div></div>`;
-    }).join('');
-}
-async function markMessageRead(messageId, recipientId) {
-    await sb.from('message_recipients').update({ lu: true, lu_at: new Date().toISOString(), accuse_reception_envoye: true }).eq('id', recipientId);
-    showToast('Message marqué comme lu, accusé envoyé'); loadMessages();
-}
-async function loadUsersForProducts() {
-    const { data: users } = await sb.from('ea_users').select('email, nom');
-    const select = document.getElementById('prodOwnerSelect');
-    if (select && users) { select.innerHTML = users.map(u => `<option value="${u.email}">${u.nom} (${u.email})</option>`).join(''); }
-}
-async function createProductSheet() {
-    const nom = document.getElementById('prodNom').value.trim();
-    const desc = document.getElementById('prodDesc').value.trim();
-    const ownerEmail = document.getElementById('prodOwnerSelect').value;
-    if (!nom || !ownerEmail) { showToast('Nom et Product Owner requis', 'error'); return; }
-    const { error } = await sb.from('product_sheets').insert({ nom_produit: nom, description: desc, product_owner_email: ownerEmail, product_owner_nom: ownerEmail.split('@')[0] });
-    if (error) { showToast('Erreur: ' + error.message, 'error'); return; }
-    showToast('Fiche produit créée'); document.getElementById('prodNom').value = ''; document.getElementById('prodDesc').value = ''; loadProducts();
-}
-async function loadProducts() {
-    const { data: products } = await sb.from('product_sheets').select('*').order('created_at', { ascending: false });
-    const container = document.getElementById('productList');
-    if (!container) return;
-    if (!products || products.length === 0) { container.innerHTML = '<p>Aucun produit</p>'; return; }
-    container.innerHTML = products.map(p => `<div class="product-item"><div><strong>${esc(p.nom_produit)}</strong> <span>v${p.version}</span></div><div>${esc(p.description || '')}</div><div>Product Owner: ${esc(p.product_owner_nom)} (${p.product_owner_email})</div>${user.email === p.product_owner_email ? `<button class="btn btn-sm" style="background:var(--blue);" onclick="editProductSheet(${p.id})">✏️ Modifier</button>` : ''}</div>`).join('');
-}
-async function editProductSheet(id) { const newDesc = prompt("Nouvelle description (seul le Product Owner peut modifier)"); if (newDesc) { const { error } = await sb.from('product_sheets').update({ description: newDesc }).eq('id', id); if (error) showToast('Erreur: ' + error.message, 'error'); else { showToast('Fiche mise à jour'); loadProducts(); } } }
-async function loadUsersForProblems() {
-    const { data: users } = await sb.from('ea_users').select('email, nom');
-    const select = document.getElementById('probResponsableSelect');
-    if (select && users) { select.innerHTML = users.map(u => `<option value="${u.email}">${u.nom} (${u.email})</option>`).join(''); }
-}
-async function createProblem() {
-    const titre = document.getElementById('probTitre').value.trim();
-    const desc = document.getElementById('probDesc').value.trim();
-    const responsableEmail = document.getElementById('probResponsableSelect').value;
-    const priorite = document.getElementById('probPriorite').value;
-    const echeance = document.getElementById('probEcheance').value;
-    if (!titre || !responsableEmail) { showToast('Titre et responsable requis', 'error'); return; }
-    const { error } = await sb.from('problems').insert({ titre, description: desc, responsable_email: responsableEmail, responsable_nom: responsableEmail.split('@')[0], priorite, date_echeance: echeance || null });
-    if (error) { showToast('Erreur: ' + error.message, 'error'); return; }
-    showToast('Problème créé'); document.getElementById('probTitre').value = ''; document.getElementById('probDesc').value = ''; document.getElementById('probEcheance').value = ''; loadProblems();
-}
-async function loadProblems() {
-    const { data: problems } = await sb.from('problems').select('*').order('created_at', { ascending: false });
-    const container = document.getElementById('problemList');
-    if (!container) return;
-    if (!problems || problems.length === 0) { container.innerHTML = '<p>Aucun problème</p>'; return; }
-    container.innerHTML = problems.map(p => `<div class="problem-item"><div><strong>${esc(p.titre)}</strong> <span style="font-size:11px; background:#${p.priorite === 'critique' ? 'E8456820' : 'F5A62320'}; padding:2px 8px; border-radius:12px;">${p.priorite}</span></div><div>${esc(p.description || '')}</div><div>Responsable: ${esc(p.responsable_nom)} | Statut: ${p.statut} | Progression: ${p.niveau_progression}%${p.date_echeance ? ` | Échéance: ${p.date_echeance}` : ''}</div>${p.responsable_email === user.email && p.statut !== 'clos' ? `<div><input type="range" min="0" max="100" value="${p.niveau_progression}" onchange="updateProblemProgress(${p.id}, this.value)"><button class="btn btn-sm" style="background:var(--blue);" onclick="closeProblem(${p.id})">✅ Clore</button></div>` : ''}${p.statut === 'clos' ? `<span style="color:var(--teal);">✅ Résolu le ${new Date(p.closed_at).toLocaleDateString()}</span>` : ''}</div>`).join('');
-}
-async function updateProblemProgress(id, newValue) { await sb.from('problems').update({ niveau_progression: parseInt(newValue) }).eq('id', id); await sb.from('problem_progress').insert({ problem_id: id, ancien_niveau: 0, nouveau_niveau: parseInt(newValue), modifie_par_email: user.email }); showToast('Progression mise à jour'); loadProblems(); }
-async function closeProblem(id) { await sb.from('problems').update({ statut: 'clos', closed_at: new Date().toISOString(), niveau_progression: 100 }).eq('id', id); showToast('Problème clos'); loadProblems(); }
-
-// EXPORT PDF
-async function exportFullPDF() {
-    showToast('📄 Génération du rapport PDF...');
-    const htmlContent = `
-        <div style="font-family: 'Instrument Sans', sans-serif; padding: 32px;">
-            <h1 style="font-family: 'Syne';">Rapport SI Governance</h1>
-            <p>Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
-            <hr>
-            <p>Rapport complet de l'outil de gouvernance</p>
-        </div>
-    `;
-    const el = document.createElement('div');
-    el.innerHTML = htmlContent;
-    document.body.appendChild(el);
-    html2pdf().set({ margin: 10, filename: `SI_Rapport_${new Date().toISOString().slice(0,10)}.pdf` }).from(el).save()
-        .then(() => { document.body.removeChild(el); showToast('✅ PDF exporté !'); })
-        .catch(() => { document.body.removeChild(el); showToast('❌ Erreur PDF', 'error'); });
-}
-
-init();
-</script>
+        loadSecurityQuestions();
+        updateCaptchaDisplay();
+    </script>
 </body>
 </html>
