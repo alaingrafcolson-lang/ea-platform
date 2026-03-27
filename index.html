@@ -88,7 +88,7 @@
         .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
         .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
         .dashboard-header h1 { font-family:'Syne'; margin:0; }
-        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(420px, 1fr)); gap:20px; }
+        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(450px, 1fr)); gap:20px; }
 
         .vp-card {
             background:#fff; border-radius:16px; padding:20px;
@@ -151,6 +151,56 @@
             border-radius: 12px;
             padding: 8px;
             margin: 8px 0;
+        }
+
+        /* Dictionnaire popup */
+        .dict-popup {
+            position: fixed;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 12px;
+            max-width: 350px;
+            z-index: 1000;
+            font-size: 12px;
+            display: none;
+            pointer-events: auto;
+        }
+        .dict-popup h4 {
+            margin: 0 0 8px 0;
+            color: var(--blue);
+            font-family: 'Syne';
+            font-size: 14px;
+        }
+        .dict-popup p {
+            margin: 4px 0;
+        }
+        .dict-popup .definition {
+            color: #555;
+        }
+        .dict-popup .exemple {
+            font-family: monospace;
+            background: #f5f5f5;
+            padding: 4px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        .dict-popup .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #888;
+        }
+        .dict-popup .close-btn:hover {
+            color: #333;
+        }
+        .dict-trigger {
+            cursor: help;
+            border-bottom: 1px dashed var(--blue);
+            color: var(--blue);
         }
 
         #kpiSection, #complianceSection, #cyberSection, #communicationSection { display:none; }
@@ -267,11 +317,14 @@
         <div class="chart-container"><h3>📈 Évolution de la maturité</h3><div class="chart-wrap"><canvas id="maturityChart"></canvas></div></div>
         <div class="chart-container"><h3>📊 Complétion des outils</h3><div class="chart-wrap"><canvas id="toolsChart"></canvas></div></div>
         <div class="chart-container"><h3>📊 Niveaux de conformité par norme</h3><div class="chart-wrap"><canvas id="normeMaturityChart"></canvas></div></div>
+        <div class="chart-container"><h3>💰 Coûts d'intégration par métier</h3><div class="chart-wrap"><canvas id="integrationCostsChart"></canvas></div></div>
     </section>
 
     <!-- CONFORMITÉ & GESTION DES COÛTS (version allégée) -->
     <section id="complianceSection" class="container s-hide">
-        <div class="dashboard-header"><h1>Conformité & Gestion des Coûts</h1></div>
+        <div class="dashboard-header">
+            <h1>Conformité & Gestion des Coûts</h1>
+        </div>
         <div class="card-link">
             <div style="font-size: 48px; margin-bottom: 20px;">⚖️</div>
             <h2>Gestion des normes et des coûts</h2>
@@ -286,7 +339,9 @@
 
     <!-- CYBER THREAT INTELLIGENCE (version allégée) -->
     <section id="cyberSection" class="container s-hide">
-        <div class="dashboard-header"><h1>Cyber Threat Intelligence</h1></div>
+        <div class="dashboard-header">
+            <h1>Cyber Threat Intelligence</h1>
+        </div>
         <div class="card-link">
             <div style="font-size: 48px; margin-bottom: 20px;">🌍</div>
             <h2>Informations détaillées sur la cyber menace</h2>
@@ -362,8 +417,8 @@ const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let db = null, user = null;
-let chartMaturity = null, chartTools = null, chartNormeMaturity = null;
-let toolStatuses = {}; // { toolId: { statut: { date, commentaire, id } } }
+let chartMaturity = null, chartTools = null, chartNormeMaturity = null, chartIntegrationCosts = null;
+let toolStatuses = {};
 let toolCharts = {};
 
 const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5',
@@ -410,82 +465,81 @@ function updateSpell(id, text) {
     bar.innerHTML = spellCheck(text).map(w => `<span class="spell-word" onclick="this.remove()">⚠️ ${esc(w)}</span>`).join('');
 }
 
-// AUTH
-async function init() {
-    try { const { data: { session } } = await sb.auth.getSession();
-        if (session) await loadUserProfile(session.user.email);
-        else { document.getElementById('authLoader').style.display='none'; document.getElementById('loginForm').style.display='block'; document.getElementById('stTitle').textContent='Bienvenue sur SI Governance'; document.getElementById('authSub').textContent='Connectez-vous pour accéder à la plateforme'; }
-    } catch(err) { showDebug('Erreur init : '+err.message); }
+// ============================================================
+// DICTIONNAIRE PROFESSIONNEL
+// ============================================================
+let currentDictPopup = null;
+
+async function loadDictionary(metier) {
+    const { data, error } = await sb
+        .from('professional_dict')
+        .select('*')
+        .eq('metier', metier)
+        .order('categorie', { ascending: true })
+        .order('terme', { ascending: true });
+    if (error) {
+        console.error('Erreur chargement dictionnaire:', error);
+        return [];
+    }
+    return data || [];
 }
-async function doLogin() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const pwd = document.getElementById('loginPassword').value;
-    const btn = document.getElementById('loginBtn');
-    if (!email || !pwd) { showDebug('Email et mot de passe requis.'); return; }
-    btn.disabled = true; btn.textContent = 'Connexion…';
-    document.getElementById('debugZone').style.display = 'none';
-    try {
-        const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
-        if (error) throw error;
-        await loadUserProfile(data.user.email);
-    } catch(err) { btn.disabled = false; btn.textContent = 'Se connecter'; showDebug('❌ '+err.message); }
-}
-async function doLogout() {
-    await sb.auth.signOut(); user = null; db = null;
-    document.getElementById('mainContainer').innerHTML = '';
-    document.getElementById('loginEmail').value = '';
-    document.getElementById('loginPassword').value = '';
-    document.getElementById('loginBtn').disabled = false;
-    document.getElementById('loginBtn').textContent = 'Se connecter';
-    document.getElementById('debugZone').style.display = 'none';
-    document.getElementById('authLoader').style.display = 'none';
-    document.getElementById('loginForm').style.display = 'block';
-    document.getElementById('stTitle').textContent = 'Bienvenue sur SI Governance';
-    document.getElementById('authSub').textContent = 'Connectez-vous pour accéder à la plateforme';
-    setScreen('authScreen');
-}
-async function loadUserProfile(email) {
-    try {
-        const { data: profile, error: pErr } = await sb.from('ea_users').select('*').eq('email', email).single();
-        if (pErr || !profile) {
-            const { count } = await sb.from('ea_users').select('*', { count:'exact', head:true });
-            if (count === 0) { await sb.from('ea_users').insert({ email, nom: email.split('@')[0], role: 'ADMIN' }); showToast('✅ Super Admin créé'); return loadUserProfile(email); }
-            else { await sb.auth.signOut(); showDebug('❌ Email non autorisé'); setScreen('authScreen'); return; }
+
+function showDictionaryPopup(term, definitions, x, y) {
+    if (currentDictPopup) {
+        currentDictPopup.remove();
+    }
+    const popup = document.createElement('div');
+    popup.className = 'dict-popup';
+    popup.style.left = `${x + 10}px`;
+    popup.style.top = `${y + 10}px`;
+    
+    let html = `<span class="close-btn" onclick="this.parentElement.remove()">✕</span><h4>📖 ${term}</h4>`;
+    for (const def of definitions) {
+        html += `<p class="definition"><strong>${def.categorie || 'Général'}</strong> : ${def.definition}</p>`;
+        if (def.exemple) {
+            html += `<p class="exemple">💡 Exemple : ${def.exemple}</p>`;
         }
-        user = profile;
-        const color = COLORS[user.role] || COLORS.ADMIN;
-        document.documentElement.style.setProperty('--u-color', color);
-        const av = document.getElementById('uAvatar'); av.style.background = color; av.textContent = (user.nom || 'U').charAt(0).toUpperCase();
-        document.getElementById('admLink').style.display = user.role === 'ADMIN' ? 'inline-block' : 'none';
-        const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
-        db = (row && row.content) ? row.content : {};
-        
-        // Charger les statuts des outils
-        await loadToolStatuses();
-        
-        setScreen('appScreen'); tab('diag'); renderTools(); updateKPI(); renderCharts();
-        if (user.role === 'ADMIN') { loadSecurityQuestions(); generateCaptcha(); }
-        loadMessages();
-        loadProducts();
-        loadProblems();
-        loadUsersForMessaging();
-        loadUsersForProducts();
-        loadUsersForProblems();
-    } catch(err) { showDebug('Erreur profil : '+err.message); setScreen('authScreen'); }
+    }
+    popup.innerHTML = html;
+    document.body.appendChild(popup);
+    currentDictPopup = popup;
+    
+    setTimeout(() => {
+        document.addEventListener('click', function closePopup(e) {
+            if (!popup.contains(e.target)) {
+                popup.remove();
+                document.removeEventListener('click', closePopup);
+            }
+        });
+    }, 100);
 }
-function tab(which) {
-    document.getElementById('diagSection').style.display = which === 'diag' ? 'block' : 'none';
-    document.getElementById('kpiSection').style.display = which === 'kpi' ? 'block' : 'none';
-    document.getElementById('complianceSection').style.display = which === 'compliance' ? 'block' : 'none';
-    document.getElementById('cyberSection').style.display = which === 'cyber' ? 'block' : 'none';
-    document.getElementById('communicationSection').style.display = which === 'communication' ? 'block' : 'none';
-    document.getElementById('adminSection').style.display = which === 'admin' ? 'block' : 'none';
-    if (which === 'kpi') { updateKPI(); renderCharts(); renderNormeMaturityChart(); }
-    if (which === 'communication') { loadMessages(); loadProducts(); loadProblems(); loadUsersForMessaging(); loadUsersForProducts(); loadUsersForProblems(); }
+
+async function enableDictionaryOnTool(toolId, textareaId) {
+    const textarea = document.getElementById(textareaId);
+    if (!textarea) return;
+    
+    const dict = await loadDictionary(user.role);
+    if (!dict.length) return;
+    
+    const termMap = {};
+    dict.forEach(item => {
+        if (!termMap[item.terme]) termMap[item.terme] = [];
+        termMap[item.terme].push(item);
+    });
+    
+    textarea.addEventListener('mouseup', async (e) => {
+        const selectedText = window.getSelection().toString().trim();
+        if (selectedText && termMap[selectedText]) {
+            const rect = textarea.getBoundingClientRect();
+            const x = e.clientX;
+            const y = e.clientY;
+            showDictionaryPopup(selectedText, termMap[selectedText], x, y);
+        }
+    });
 }
 
 // ============================================================
-// SUIVI DES STATUTS PAR OUTIL (TABLEAU + GRAPHIQUE)
+// SUIVI DES STATUTS PAR OUTIL
 // ============================================================
 async function loadToolStatuses() {
     const { data, error } = await sb
@@ -539,7 +593,7 @@ async function saveToolStatus(toolId, statut, date, commentaire = '') {
         };
     }
     showToast(`Statut "${statut}" enregistré`);
-    renderTools(); // Recharger l'affichage pour mettre à jour le graphique
+    renderTools();
 }
 
 function getProgressStats(toolId) {
@@ -585,7 +639,7 @@ function renderProgressChart(toolId) {
 }
 
 // ============================================================
-// RENDU DES OUTILS AVEC TABLEAU DE SUIVI
+// RENDU DES OUTILS
 // ============================================================
 function renderTools() {
     const grid = document.getElementById('mainContainer');
@@ -642,7 +696,8 @@ function renderTools() {
             <div class="status-table-container" style="margin-top: 8px;">
                 <table class="status-table">
                     <thead>
-                        <tr><th>Statut</th><th>Date</th><th>Commentaire</th> </thead>
+                        <tr><th>Statut</th><th>Date</th><th>Commentaire</th></tr>
+                    </thead>
                     <tbody>
                         ${tableRows}
                     </tbody>
@@ -665,14 +720,11 @@ function renderTools() {
                 const comment = commentInput ? commentInput.value : '';
                 if (date) {
                     await saveToolStatus(toolId, statut, date, comment);
-                } else if (comment && !date) {
-                    // Si seulement un commentaire sans date, on peut quand même sauvegarder avec date vide
-                    showToast('Veuillez renseigner une date', 'error');
                 }
             });
         });
         
-        // Sauvegarde automatique des notes existantes
+        // Sauvegarde automatique des notes
         const ta = card.querySelector(`#note_${tool.id}`);
         if (val) updateSpell(tool.id, val);
         let deb;
@@ -681,7 +733,10 @@ function renderTools() {
             deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700);
         });
         
-        // Générer le graphique après l'ajout du canvas
+        // Activer le dictionnaire sur la zone de notes
+        enableDictionaryOnTool(tool.id, `note_${tool.id}`);
+        
+        // Générer le graphique
         renderProgressChart(tool.id);
     });
 }
@@ -691,6 +746,81 @@ async function saveNote(toolId, value) {
     await sb.from('ea_platform_data').upsert({ id:1, content: db }, { onConflict:'id' });
     const el = document.getElementById(`saved_${toolId}`); if(el){ el.style.display='block'; setTimeout(()=>el.style.display='none',2000); }
     updateKPI(); renderCharts();
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+async function init() {
+    try { const { data: { session } } = await sb.auth.getSession();
+        if (session) await loadUserProfile(session.user.email);
+        else { document.getElementById('authLoader').style.display='none'; document.getElementById('loginForm').style.display='block'; document.getElementById('stTitle').textContent='Bienvenue sur SI Governance'; document.getElementById('authSub').textContent='Connectez-vous pour accéder à la plateforme'; }
+    } catch(err) { showDebug('Erreur init : '+err.message); }
+}
+async function doLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pwd = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('loginBtn');
+    if (!email || !pwd) { showDebug('Email et mot de passe requis.'); return; }
+    btn.disabled = true; btn.textContent = 'Connexion…';
+    document.getElementById('debugZone').style.display = 'none';
+    try {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+        if (error) throw error;
+        await loadUserProfile(data.user.email);
+    } catch(err) { btn.disabled = false; btn.textContent = 'Se connecter'; showDebug('❌ '+err.message); }
+}
+async function doLogout() {
+    await sb.auth.signOut(); user = null; db = null;
+    document.getElementById('mainContainer').innerHTML = '';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtn').textContent = 'Se connecter';
+    document.getElementById('debugZone').style.display = 'none';
+    document.getElementById('authLoader').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('stTitle').textContent = 'Bienvenue sur SI Governance';
+    document.getElementById('authSub').textContent = 'Connectez-vous pour accéder à la plateforme';
+    setScreen('authScreen');
+}
+async function loadUserProfile(email) {
+    try {
+        const { data: profile, error: pErr } = await sb.from('ea_users').select('*').eq('email', email).single();
+        if (pErr || !profile) {
+            const { count } = await sb.from('ea_users').select('*', { count:'exact', head:true });
+            if (count === 0) { await sb.from('ea_users').insert({ email, nom: email.split('@')[0], role: 'ADMIN' }); showToast('✅ Super Admin créé'); return loadUserProfile(email); }
+            else { await sb.auth.signOut(); showDebug('❌ Email non autorisé'); setScreen('authScreen'); return; }
+        }
+        user = profile;
+        const color = COLORS[user.role] || COLORS.ADMIN;
+        document.documentElement.style.setProperty('--u-color', color);
+        const av = document.getElementById('uAvatar'); av.style.background = color; av.textContent = (user.nom || 'U').charAt(0).toUpperCase();
+        document.getElementById('admLink').style.display = user.role === 'ADMIN' ? 'inline-block' : 'none';
+        const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
+        db = (row && row.content) ? row.content : {};
+        
+        await loadToolStatuses();
+        
+        setScreen('appScreen'); tab('diag'); renderTools(); updateKPI(); renderCharts();
+        if (user.role === 'ADMIN') { loadSecurityQuestions(); generateCaptcha(); }
+        loadMessages();
+        loadProducts();
+        loadProblems();
+        loadUsersForMessaging();
+        loadUsersForProducts();
+        loadUsersForProblems();
+    } catch(err) { showDebug('Erreur profil : '+err.message); setScreen('authScreen'); }
+}
+function tab(which) {
+    document.getElementById('diagSection').style.display = which === 'diag' ? 'block' : 'none';
+    document.getElementById('kpiSection').style.display = which === 'kpi' ? 'block' : 'none';
+    document.getElementById('complianceSection').style.display = which === 'compliance' ? 'block' : 'none';
+    document.getElementById('cyberSection').style.display = which === 'cyber' ? 'block' : 'none';
+    document.getElementById('communicationSection').style.display = which === 'communication' ? 'block' : 'none';
+    document.getElementById('adminSection').style.display = which === 'admin' ? 'block' : 'none';
+    if (which === 'kpi') { updateKPI(); renderCharts(); renderNormeMaturityChart(); renderIntegrationCostsChart(); }
+    if (which === 'communication') { loadMessages(); loadProducts(); loadProblems(); loadUsersForMessaging(); loadUsersForProducts(); loadUsersForProblems(); }
 }
 
 // KPI
@@ -727,6 +857,27 @@ async function renderNormeMaturityChart() {
             type: 'bar',
             data: { labels, datasets: [{ label: 'Maturité (%)', data, backgroundColor: '#1A6CF5', borderRadius: 8 }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { max: 100, title: { display: true, text: 'Maturité (%)' } } } }
+        });
+    }
+}
+
+async function renderIntegrationCostsChart() {
+    const { data: costs } = await sb.from('integration_costs').select('metier, cout_unitaire, quantite_estimee');
+    if (!costs) return;
+    const metierMap = {};
+    costs.forEach(c => {
+        const total = c.cout_unitaire * (c.quantite_estimee || 1);
+        metierMap[c.metier] = (metierMap[c.metier] || 0) + total;
+    });
+    const labels = Object.keys(metierMap);
+    const data = Object.values(metierMap);
+    const ctx = document.getElementById('integrationCostsChart');
+    if (ctx) {
+        if (chartIntegrationCosts) chartIntegrationCosts.destroy();
+        chartIntegrationCosts = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Coût estimé (€)', data, backgroundColor: '#F97316', borderRadius: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'Coût (€)' } } } }
         });
     }
 }
@@ -810,13 +961,14 @@ document.getElementById('createUserForm')?.addEventListener('submit', async (e) 
 });
 
 // ============================================================
-// EXPORT PDF COMPLET AVEC STATUTS ET COMMENTAIRES
+// EXPORT PDF COMPLET
 // ============================================================
 async function exportFullPDF() {
     showToast('📄 Génération du rapport PDF...');
     
     await loadToolStatuses();
     const { data: norms } = await sb.from('normes_compliance').select('*');
+    const { data: costs } = await sb.from('integration_costs').select('*');
     
     let toolsHtml = '';
     for (const tool of TOOLS) {
@@ -851,6 +1003,16 @@ async function exportFullPDF() {
         `).join('');
     }
     
+    let costsHtml = '';
+    if (costs) {
+        costsHtml = costs.map(c => `
+            <div style="margin-bottom: 10px;">
+                <strong>${c.metier}</strong> - ${c.type_cout}: ${c.description}<br>
+                Coût: ${c.cout_unitaire}€ x ${c.quantite_estimee} = ${c.cout_unitaire * c.quantite_estimee}€
+            </div>
+        `).join('');
+    }
+    
     const htmlContent = `
         <div style="font-family: 'Instrument Sans', sans-serif; padding: 32px; max-width: 1200px; margin: 0 auto;">
             <h1 style="font-family: 'Syne'; color: #0B1829;">Rapport SI Governance</h1>
@@ -864,6 +1026,10 @@ async function exportFullPDF() {
             <hr style="margin: 20px 0;">
             <h2>⚖️ Scores de conformité par norme</h2>
             ${normsHtml}
+            
+            <hr style="margin: 20px 0;">
+            <h2>💰 Coûts d'intégration estimés</h2>
+            ${costsHtml || 'Aucun coût enregistré'}
             
             <hr style="margin: 20px 0;">
             <p style="font-size: 12px; color: #888;">Rapport généré par SI Governance Enterprise v5.0</p>
@@ -886,7 +1052,7 @@ async function exportFullPDF() {
 }
 
 // ============================================================
-// MESSAGERIE INTERNE, PRODUITS, PROBLÈMES (inchangé)
+// MESSAGERIE INTERNE, PRODUITS, PROBLÈMES
 // ============================================================
 async function loadUsersForMessaging() {
     const { data: users } = await sb.from('ea_users').select('email, nom');
