@@ -15,7 +15,7 @@
             --violet:#7C5CFC; --teal:#00B49C; --amber:#F5A623; --rose:#E84568; --u-color: var(--blue);
             --orange:#F97316; --gold:#F5A623; --sky:#0EA5E9; --gray:#6B7280;
         }
-        * { box-sizing: border-box; margin:0; padding:0; }
+        * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Instrument Sans', sans-serif; background:#F4F7FB; color:var(--navy); }
 
         .screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; }
@@ -88,10 +88,10 @@
         .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
         .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
         .dashboard-header h1 { font-family:'Syne'; margin:0; }
-        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(380px, 1fr)); gap:20px; }
+        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(420px, 1fr)); gap:20px; }
 
         .vp-card {
-            background:#fff; border-radius:16px; padding:24px;
+            background:#fff; border-radius:16px; padding:20px;
             border-top:5px solid var(--u-color);
             box-shadow:0 4px 15px rgba(0,0,0,0.05);
             transition:transform 0.2s, box-shadow 0.2s;
@@ -112,69 +112,45 @@
         .spell-bar { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
         .spell-word { font-size:10px; padding:2px 8px; border-radius:12px; background:#FEF3C7; color:#92400E; cursor:pointer; }
 
-        /* Styles pour l'évaluation des outils */
-        .evaluation-block {
-            margin: 12px 0;
-            padding: 12px;
-            background: #f9fafb;
-            border-radius: 12px;
-            border: 1px solid #eef2ff;
-        }
-        .evaluation-block label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #4b5563;
-            display: block;
-            margin-bottom: 6px;
-        }
-        .tool-level {
+        /* Tableau de suivi des statuts */
+        .status-table {
             width: 100%;
-            margin: 8px 0;
-            accent-color: var(--blue);
+            border-collapse: collapse;
+            font-size: 11px;
+            margin: 10px 0;
         }
-        .level-value {
-            display: inline-block;
-            font-weight: 700;
-            color: var(--blue);
-            margin-left: 8px;
+        .status-table th, .status-table td {
+            padding: 6px 4px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
         }
-        .level-bars {
-            display: flex;
-            gap: 6px;
-            margin: 12px 0;
-            flex-wrap: wrap;
-        }
-        .level-dot {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            background: #e2e8f0;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
+        .status-table th {
+            background: #f8fafc;
             font-weight: 600;
-            color: #64748b;
+            color: #1e293b;
         }
-        .level-dot.filled {
-            background: var(--blue);
-            color: white;
-        }
-        .tool-comment {
+        .status-badge-prevu { background: #E2E3E5; color: #4B5563; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
+        .status-badge-a-faire { background: #FEF3C7; color: #92400E; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
+        .status-badge-en-reflexion { background: #DBEAFE; color: #1E40AF; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
+        .status-badge-fait { background: #D1FAE5; color: #065F46; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
+        .status-badge-en-production { background: #C7D2FE; color: #3730A3; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: inline-block; }
+        .status-date-input, .status-comment-input {
+            padding: 4px;
+            font-size: 10px;
             width: 100%;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 12px;
-            margin-top: 12px;
-            font-family: inherit;
-            resize: vertical;
+            border-radius: 6px;
         }
-        .tool-comment:focus {
-            outline: none;
-            border-color: var(--blue);
+        .progress-chart {
+            width: 100%;
+            height: 80px;
+            margin: 5px 0;
+        }
+        .progress-section {
+            background: #fafcff;
+            border-radius: 12px;
+            padding: 8px;
+            margin: 8px 0;
         }
 
         #kpiSection, #complianceSection, #cyberSection, #communicationSection { display:none; }
@@ -202,10 +178,6 @@
             text-align: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border: 1px solid var(--border);
-        }
-        .card-link h2 {
-            font-family: 'Syne';
-            margin-bottom: 16px;
         }
         .card-link .btn {
             display: inline-block;
@@ -299,9 +271,7 @@
 
     <!-- CONFORMITÉ & GESTION DES COÛTS (version allégée) -->
     <section id="complianceSection" class="container s-hide">
-        <div class="dashboard-header">
-            <h1>Conformité & Gestion des Coûts</h1>
-        </div>
+        <div class="dashboard-header"><h1>Conformité & Gestion des Coûts</h1></div>
         <div class="card-link">
             <div style="font-size: 48px; margin-bottom: 20px;">⚖️</div>
             <h2>Gestion des normes et des coûts</h2>
@@ -316,9 +286,7 @@
 
     <!-- CYBER THREAT INTELLIGENCE (version allégée) -->
     <section id="cyberSection" class="container s-hide">
-        <div class="dashboard-header">
-            <h1>Cyber Threat Intelligence</h1>
-        </div>
+        <div class="dashboard-header"><h1>Cyber Threat Intelligence</h1></div>
         <div class="card-link">
             <div style="font-size: 48px; margin-bottom: 20px;">🌍</div>
             <h2>Informations détaillées sur la cyber menace</h2>
@@ -334,8 +302,6 @@
     <!-- COMMUNICATION & SUIVI -->
     <section id="communicationSection" class="container s-hide">
         <div class="dashboard-header"><h1>Communication & Suivi</h1></div>
-
-        <!-- Messagerie interne -->
         <div style="margin-bottom: 32px;">
             <h2 style="font-family:'Syne'; margin-bottom: 20px;">📨 Messagerie interne</h2>
             <div class="card-link" style="padding: 24px; text-align: left;">
@@ -349,8 +315,6 @@
                 <div><h3>Boîte de réception</h3><div id="messageList" style="max-height: 400px; overflow-y: auto;"><p>Chargement...</p></div></div>
             </div>
         </div>
-
-        <!-- Fiches produit -->
         <div style="margin-bottom: 32px;">
             <h2 style="font-family:'Syne'; margin-bottom: 20px;">📦 Fiches produit</h2>
             <div class="card-link" style="padding: 24px; text-align: left;">
@@ -364,8 +328,6 @@
                 <div><h3>Liste des produits</h3><div id="productList" style="max-height: 400px; overflow-y: auto;"><p>Chargement...</p></div></div>
             </div>
         </div>
-
-        <!-- Suivi des problèmes -->
         <div style="margin-bottom: 32px;">
             <h2 style="font-family:'Syne'; margin-bottom: 20px;">🐛 Suivi des problèmes</h2>
             <div class="card-link" style="padding: 24px; text-align: left;">
@@ -401,7 +363,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let db = null, user = null;
 let chartMaturity = null, chartTools = null, chartNormeMaturity = null;
-let toolEvaluations = [];
+let toolStatuses = {}; // { toolId: { statut: { date, commentaire, id } } }
+let toolCharts = {};
 
 const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5',
     SERVICE_MANAGER:'#F97316', CEO:'#F5A623', NET:'#0EA5E9', SYS:'#6B7280' };
@@ -497,8 +460,8 @@ async function loadUserProfile(email) {
         const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
         db = (row && row.content) ? row.content : {};
         
-        // Charger les évaluations des outils
-        await loadToolEvaluations();
+        // Charger les statuts des outils
+        await loadToolStatuses();
         
         setScreen('appScreen'); tab('diag'); renderTools(); updateKPI(); renderCharts();
         if (user.role === 'ADMIN') { loadSecurityQuestions(); generateCaptcha(); }
@@ -522,92 +485,107 @@ function tab(which) {
 }
 
 // ============================================================
-// ÉVALUATION DES OUTILS (SLIDER 0-10 + COMMENTAIRES)
+// SUIVI DES STATUTS PAR OUTIL (TABLEAU + GRAPHIQUE)
 // ============================================================
-async function loadToolEvaluations() {
+async function loadToolStatuses() {
     const { data, error } = await sb
-        .from('tool_evaluations')
+        .from('tool_status_history')
         .select('*')
         .eq('user_email', user.email);
     if (error) {
-        console.error('Erreur chargement évaluations:', error);
-        toolEvaluations = [];
-    } else {
-        toolEvaluations = data || [];
+        console.error('Erreur chargement statuts:', error);
+        return;
     }
+    toolStatuses = {};
+    data.forEach(item => {
+        if (!toolStatuses[item.tool_id]) toolStatuses[item.tool_id] = {};
+        toolStatuses[item.tool_id][item.statut] = {
+            date: item.date_statut,
+            commentaire: item.commentaire || '',
+            id: item.id
+        };
+    });
 }
 
-async function saveEvaluation(toolId, niveau, commentaire) {
-    const existing = toolEvaluations.find(e => e.tool_id === toolId);
-    const evaluation = {
-        tool_id: toolId,
-        niveau: niveau,
-        commentaire: commentaire,
-        user_email: user.email,
-        updated_at: new Date().toISOString()
-    };
+async function saveToolStatus(toolId, statut, date, commentaire = '') {
+    const existing = toolStatuses[toolId]?.[statut];
     
-    let error;
     if (existing) {
-        const { error: updateError } = await sb
-            .from('tool_evaluations')
-            .update(evaluation)
+        const { error } = await sb
+            .from('tool_status_history')
+            .update({ date_statut: date, commentaire, updated_at: new Date().toISOString() })
             .eq('id', existing.id);
-        error = updateError;
-        if (!error) {
-            existing.niveau = niveau;
-            existing.commentaire = commentaire;
-        }
+        if (error) { showToast('Erreur mise à jour', 'error'); return; }
+        existing.date = date;
+        existing.commentaire = commentaire;
     } else {
-        const { error: insertError } = await sb
-            .from('tool_evaluations')
-            .insert(evaluation);
-        error = insertError;
-        if (!error) {
-            toolEvaluations.push({ ...evaluation, id: Date.now() });
-        }
+        const { data, error } = await sb
+            .from('tool_status_history')
+            .insert({
+                tool_id: toolId,
+                statut: statut,
+                date_statut: date,
+                user_email: user.email,
+                commentaire: commentaire
+            })
+            .select()
+            .single();
+        if (error) { showToast('Erreur insertion', 'error'); return; }
+        if (!toolStatuses[toolId]) toolStatuses[toolId] = {};
+        toolStatuses[toolId][statut] = {
+            date: date,
+            commentaire: commentaire,
+            id: data.id
+        };
     }
-    
-    if (error) {
-        showToast('Erreur sauvegarde évaluation', 'error');
-    } else {
-        // Mettre à jour les scores des normes
-        await updateNormesMaturityFromTools();
-        showToast('Évaluation enregistrée');
-    }
+    showToast(`Statut "${statut}" enregistré`);
+    renderTools(); // Recharger l'affichage pour mettre à jour le graphique
 }
 
-async function updateNormesMaturityFromTools() {
-    // Récupérer les mappings outil → norme
-    const { data: mappings } = await sb.from('tool_norme_mapping').select('*');
-    if (!mappings || mappings.length === 0) return;
+function getProgressStats(toolId) {
+    const statuses = toolStatuses[toolId] || {};
+    const statutList = ['Prévu', 'À faire', 'En réflexion', 'Fait', 'En production'];
+    const stats = {};
+    for (const s of statutList) {
+        stats[s] = statuses[s] ? 1 : 0;
+    }
+    return stats;
+}
+
+function renderProgressChart(toolId) {
+    const stats = getProgressStats(toolId);
+    const canvasId = `chart_${toolId}`;
     
-    // Grouper par norme
-    const normeScores = {};
-    const normeWeights = {};
-    
-    for (const m of mappings) {
-        const evalTool = toolEvaluations.find(e => e.tool_id === m.tool_id);
-        if (evalTool) {
-            const contribution = evalTool.niveau * m.poids;
-            normeScores[m.norme] = (normeScores[m.norme] || 0) + contribution;
-            normeWeights[m.norme] = (normeWeights[m.norme] || 0) + m.poids;
+    setTimeout(() => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (toolCharts[toolId]) {
+            toolCharts[toolId].destroy();
         }
-    }
-    
-    // Calculer le score pour chaque norme (sur 100)
-    for (const norme of Object.keys(normeScores)) {
-        const score = (normeScores[norme] / normeWeights[norme]) * 10; // ramené sur 10
-        const niveau_maturite = Math.round(score * 10); // sur 100
-        await sb
-            .from('normes_compliance')
-            .update({ niveau_maturite })
-            .eq('norme', norme);
-    }
+        
+        const data = {
+            labels: ['Prévu', 'À faire', 'En réflexion', 'Fait', 'En production'],
+            datasets: [{
+                data: [stats['Prévu'], stats['À faire'], stats['En réflexion'], stats['Fait'], stats['En production']],
+                backgroundColor: ['#9CA3AF', '#F59E0B', '#3B82F6', '#10B981', '#6366F1'],
+                borderWidth: 0
+            }]
+        };
+        toolCharts[toolId] = new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { position: 'bottom', labels: { font: { size: 8 } } } }
+            }
+        });
+    }, 50);
 }
 
 // ============================================================
-// RENDU DES OUTILS AVEC SLIDERS ET COMMENTAIRES
+// RENDU DES OUTILS AVEC TABLEAU DE SUIVI
 // ============================================================
 function renderTools() {
     const grid = document.getElementById('mainContainer');
@@ -615,18 +593,33 @@ function renderTools() {
     
     TOOLS.forEach(tool => {
         const val = db && db[`tool_${tool.id}`] ? db[`tool_${tool.id}`] : '';
-        const evalData = toolEvaluations.find(e => e.tool_id === tool.id) || { niveau: 0, commentaire: '' };
-        const level = evalData.niveau || 0;
-        const comment = evalData.commentaire || '';
+        const statuses = toolStatuses[tool.id] || {};
+        const completedCount = Object.keys(statuses).length;
         
         const card = document.createElement('div');
         card.className = 'vp-card';
         card.style.borderTopColor = COLORS[user.role] || COLORS.ADMIN;
         
-        // Générer les points de niveau
-        let levelDotsHtml = '';
-        for (let i = 1; i <= 10; i++) {
-            levelDotsHtml += `<span class="level-dot ${i <= level ? 'filled' : ''}" data-val="${i}" data-tool="${tool.id}">${i}</span>`;
+        const statutLabels = ['Prévu', 'À faire', 'En réflexion', 'Fait', 'En production'];
+        let tableRows = '';
+        for (const statut of statutLabels) {
+            const existing = statuses[statut];
+            const dateValue = existing?.date || '';
+            const commentValue = existing?.commentaire || '';
+            const badgeClass = `status-badge-${statut.toLowerCase().replace(/ /g, '-')}`;
+            tableRows += `
+                <tr>
+                    <td style="width: 110px;">
+                        <span class="${badgeClass}" style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px;">${statut}</span>
+                    </td>
+                    <td style="width: 110px;">
+                        <input type="date" class="status-date-input" data-tool="${tool.id}" data-statut="${statut}" value="${dateValue}" style="padding: 4px; font-size: 10px; width: 100%; border-radius: 6px; border: 1px solid #ddd;">
+                    </td>
+                    <td>
+                        <input type="text" class="status-comment-input" data-tool="${tool.id}" data-statut="${statut}" value="${esc(commentValue)}" placeholder="Commentaire" style="width: 100%; padding: 4px; font-size: 10px; border-radius: 6px; border: 1px solid #ddd;">
+                    </td>
+                </tr>
+            `;
         }
         
         card.innerHTML = `
@@ -637,58 +630,45 @@ function renderTools() {
                     <div class="vp-id">Outil #${tool.id}</div>
                 </div>
             </div>
-            <div class="evaluation-block">
-                <label>📊 Niveau d'évaluation (0-10) : <span class="level-value" id="level_val_${tool.id}">${level}</span></label>
-                <input type="range" class="tool-level" min="0" max="10" step="1" value="${level}" data-tool="${tool.id}" id="level_slider_${tool.id}">
-                <div class="level-bars" id="level_dots_${tool.id}">
-                    ${levelDotsHtml}
+            <div class="progress-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <strong style="font-size: 12px;">📊 Progression</strong>
+                    <span style="font-size: 10px; color: #666;">Statuts atteints: ${completedCount}/5</span>
                 </div>
-                <textarea class="tool-comment" data-tool="${tool.id}" id="comment_${tool.id}" placeholder="Commentaires sur l'évaluation (alimentera les rapports PDF)...">${esc(comment)}</textarea>
+                <div style="height: 90px;">
+                    <canvas id="chart_${tool.id}" class="progress-chart"></canvas>
+                </div>
             </div>
-            <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes, statut, observations…">${esc(val)}</textarea>
+            <div class="status-table-container" style="margin-top: 8px;">
+                <table class="status-table">
+                    <thead>
+                        <tr><th>Statut</th><th>Date</th><th>Commentaire</th> </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+            <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes complémentaires..." style="margin-top: 12px;">${esc(val)}</textarea>
             <div class="spell-bar" id="spell_${tool.id}"></div>
             <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>
         `;
         grid.appendChild(card);
         
-        // Gestion du slider
-        const slider = card.querySelector(`#level_slider_${tool.id}`);
-        const levelSpan = card.querySelector(`#level_val_${tool.id}`);
-        const dotsContainer = card.querySelector(`#level_dots_${tool.id}`);
-        const commentArea = card.querySelector(`#comment_${tool.id}`);
-        
-        slider.addEventListener('input', async (e) => {
-            const val = parseInt(e.target.value);
-            levelSpan.textContent = val;
-            // Mettre à jour les points
-            for (let i = 1; i <= 10; i++) {
-                const dot = dotsContainer.querySelector(`.level-dot[data-val="${i}"]`);
-                if (dot) {
-                    if (i <= val) dot.classList.add('filled');
-                    else dot.classList.remove('filled');
+        // Attacher les événements de sauvegarde des statuts
+        card.querySelectorAll('.status-date-input, .status-comment-input').forEach(input => {
+            input.addEventListener('change', async () => {
+                const toolId = parseInt(input.dataset.tool);
+                const statut = input.dataset.statut;
+                const dateInput = card.querySelector(`.status-date-input[data-tool="${toolId}"][data-statut="${statut}"]`);
+                const commentInput = card.querySelector(`.status-comment-input[data-tool="${toolId}"][data-statut="${statut}"]`);
+                const date = dateInput ? dateInput.value : '';
+                const comment = commentInput ? commentInput.value : '';
+                if (date) {
+                    await saveToolStatus(toolId, statut, date, comment);
+                } else if (comment && !date) {
+                    // Si seulement un commentaire sans date, on peut quand même sauvegarder avec date vide
+                    showToast('Veuillez renseigner une date', 'error');
                 }
-            }
-            await saveEvaluation(tool.id, val, commentArea.value);
-        });
-        
-        commentArea.addEventListener('blur', async () => {
-            await saveEvaluation(tool.id, slider.value, commentArea.value);
-        });
-        
-        // Gestion des clics sur les points
-        dotsContainer.querySelectorAll('.level-dot').forEach(dot => {
-            dot.addEventListener('click', async () => {
-                const newVal = parseInt(dot.getAttribute('data-val'));
-                slider.value = newVal;
-                levelSpan.textContent = newVal;
-                for (let i = 1; i <= 10; i++) {
-                    const d = dotsContainer.querySelector(`.level-dot[data-val="${i}"]`);
-                    if (d) {
-                        if (i <= newVal) d.classList.add('filled');
-                        else d.classList.remove('filled');
-                    }
-                }
-                await saveEvaluation(tool.id, newVal, commentArea.value);
             });
         });
         
@@ -700,6 +680,9 @@ function renderTools() {
             clearTimeout(deb);
             deb = setTimeout(() => { saveNote(tool.id, ta.value); updateSpell(tool.id, ta.value); }, 700);
         });
+        
+        // Générer le graphique après l'ajout du canvas
+        renderProgressChart(tool.id);
     });
 }
 
@@ -827,24 +810,30 @@ document.getElementById('createUserForm')?.addEventListener('submit', async (e) 
 });
 
 // ============================================================
-// EXPORT PDF COMPLET AVEC ÉVALUATIONS ET COMMENTAIRES
+// EXPORT PDF COMPLET AVEC STATUTS ET COMMENTAIRES
 // ============================================================
 async function exportFullPDF() {
     showToast('📄 Génération du rapport PDF...');
     
-    // Récupérer les évaluations et les normes
-    await loadToolEvaluations();
+    await loadToolStatuses();
     const { data: norms } = await sb.from('normes_compliance').select('*');
     
-    let evaluationsHtml = '';
+    let toolsHtml = '';
     for (const tool of TOOLS) {
-        const evalData = toolEvaluations.find(e => e.tool_id === tool.id) || { niveau: 0, commentaire: '' };
-        evaluationsHtml += `
-            <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
+        const statuses = toolStatuses[tool.id] || {};
+        const note = db[`tool_${tool.id}`] || '';
+        let statusHtml = '<ul>';
+        for (const [statut, data] of Object.entries(statuses)) {
+            statusHtml += `<li><strong>${statut}</strong> : ${data.date}${data.commentaire ? ` – ${data.commentaire}` : ''}</li>`;
+        }
+        statusHtml += '</ul>';
+        
+        toolsHtml += `
+            <div style="margin-bottom: 25px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; page-break-inside: avoid;">
                 <h3 style="color: #1A6CF5;">${tool.t} (Outil #${tool.id})</h3>
-                <p><strong>Niveau d'évaluation:</strong> ${evalData.niveau}/10</p>
-                <p><strong>Commentaire:</strong> ${esc(evalData.commentaire || 'Aucun commentaire')}</p>
-                <p><strong>Notes:</strong> ${esc(db[`tool_${tool.id}`] || 'Aucune note')}</p>
+                <p><strong>Statuts atteints:</strong> ${Object.keys(statuses).length}/5</p>
+                ${statusHtml}
+                <p><strong>Notes complémentaires:</strong> ${esc(note || 'Aucune')}</p>
             </div>
         `;
     }
@@ -869,8 +858,8 @@ async function exportFullPDF() {
             <p>Utilisateur: ${user.nom} (${user.email})</p>
             <hr style="margin: 20px 0;">
             
-            <h2>📊 Synthèse des évaluations par outil</h2>
-            ${evaluationsHtml}
+            <h2>📊 Suivi des outils (statuts et dates)</h2>
+            ${toolsHtml}
             
             <hr style="margin: 20px 0;">
             <h2>⚖️ Scores de conformité par norme</h2>
