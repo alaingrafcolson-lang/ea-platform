@@ -62,9 +62,35 @@
             </div>
 
             <div id="forgotView" class="hidden">
-                <!-- Version simplifiée pour le moment, on pourra l'implémenter plus tard -->
-                <div class="text-white">Fonctionnalité à venir</div>
-                <a href="#" id="backToLoginLink" class="text-white/60 text-sm block text-center mt-4">← Retour à la connexion</a>
+                <!-- Copier le contenu du bloc "Mot de passe oublié" de la version précédente -->
+                <!-- Pour simplifier, je le reprends ci‑dessous -->
+                <div id="forgotErrorMessage" class="bg-red-500/20 border border-red-500 text-red-300 rounded-xl p-3 text-sm mb-4 hidden"></div>
+                <div id="forgotSuccessMessage" class="bg-green-500/20 border border-green-500 text-green-300 rounded-xl p-3 text-sm mb-4 hidden"></div>
+                <div id="forgotLoader" class="flex justify-center items-center gap-2 my-4 hidden">
+                    <div class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    <span class="text-white">Vérification...</span>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-white/80 text-sm font-semibold mb-2">📧 Email professionnel</label>
+                    <input type="email" id="forgotEmail" class="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-white">
+                </div>
+
+                <div class="bg-white/5 rounded-xl p-4 mb-4 border border-white/10">
+                    <div class="text-white/90 text-sm font-semibold mb-2">❓ Question de sécurité</div>
+                    <select id="forgotSecurityQuestion" class="w-full bg-white/10 border border-white/20 rounded-xl p-2 text-white mb-2"></select>
+                    <input type="text" id="forgotSecurityAnswer" class="w-full bg-white/10 border border-white/20 rounded-xl p-2 text-white" placeholder="Votre réponse">
+                </div>
+
+                <div class="bg-white/5 rounded-xl p-4 mb-6 text-center">
+                    <div class="text-2xl font-bold text-blue-400 mb-2" id="forgotCaptchaQuestion">0 + 0 = ?</div>
+                    <input type="number" id="forgotCaptchaAnswer" class="w-full bg-white/10 border border-white/20 rounded-xl p-2 text-white text-center" placeholder="Résultat">
+                </div>
+
+                <button id="resetBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition">Réinitialiser le mot de passe</button>
+                <div class="text-center mt-4">
+                    <a href="#" id="backToLoginLink" class="text-white/60 hover:text-white text-sm">← Retour à la connexion</a>
+                </div>
             </div>
         </div>
     </div>
@@ -78,17 +104,27 @@
         let currentCaptcha = { a: 0, b: 0, answer: 0 };
 
         async function loadSecurityQuestions() {
-            const { data } = await sb.from('security_questions').select('*');
-            securityQuestions = data || [
-                { id: 1, question_text: "Quel est le nom de votre premier animal de compagnie ?" },
-                { id: 2, question_text: "Quelle est votre ville de naissance ?" },
-                { id: 3, question_text: "Quel est le modèle de votre première voiture ?" },
-                { id: 4, question_text: "Quel est le nom de votre meilleur ami d'enfance ?" },
-                { id: 5, question_text: "Quelle est votre couleur préférée ?" }
-            ];
+            const { data, error } = await sb.from('security_questions').select('*');
+            if (error) {
+                console.error('Erreur chargement questions:', error);
+                securityQuestions = [
+                    { id: 1, question_text: "Quel est le nom de votre premier animal de compagnie ?" },
+                    { id: 2, question_text: "Quelle est votre ville de naissance ?" },
+                    { id: 3, question_text: "Quel est le modèle de votre première voiture ?" },
+                    { id: 4, question_text: "Quel est le nom de votre meilleur ami d'enfance ?" },
+                    { id: 5, question_text: "Quelle est votre couleur préférée ?" }
+                ];
+            } else {
+                securityQuestions = data;
+            }
             const select = document.getElementById('securityQuestion');
+            const forgotSelect = document.getElementById('forgotSecurityQuestion');
             if (select) {
                 select.innerHTML = '<option value="">Sélectionnez une question</option>' + 
+                    securityQuestions.map(q => `<option value="${q.id}">${q.question_text}</option>`).join('');
+            }
+            if (forgotSelect) {
+                forgotSelect.innerHTML = '<option value="">Sélectionnez une question</option>' + 
                     securityQuestions.map(q => `<option value="${q.id}">${q.question_text}</option>`).join('');
             }
         }
@@ -102,18 +138,70 @@
 
         function updateCaptchaDisplay() {
             const captchaQuestion = document.getElementById('captchaQuestion');
-            if (captchaQuestion) captchaQuestion.textContent = generateCaptcha();
+            const forgotCaptchaQuestion = document.getElementById('forgotCaptchaQuestion');
+            const question = generateCaptcha();
+            if (captchaQuestion) captchaQuestion.textContent = question;
+            if (forgotCaptchaQuestion) forgotCaptchaQuestion.textContent = `${currentCaptcha.a} + ${currentCaptcha.b} = ?`;
+        }
+
+        function showError(message) {
+            const div = document.getElementById('errorMessage');
+            div.textContent = message;
+            div.classList.remove('hidden');
+            setTimeout(() => div.classList.add('hidden'), 5000);
+        }
+
+        function showSuccess(message) {
+            const div = document.getElementById('successMessage');
+            div.textContent = message;
+            div.classList.remove('hidden');
+            setTimeout(() => div.classList.add('hidden'), 5000);
+        }
+
+        function showForgotError(message) {
+            const div = document.getElementById('forgotErrorMessage');
+            div.textContent = message;
+            div.classList.remove('hidden');
+            setTimeout(() => div.classList.add('hidden'), 5000);
+        }
+
+        function showForgotSuccess(message) {
+            const div = document.getElementById('forgotSuccessMessage');
+            div.textContent = message;
+            div.classList.remove('hidden');
+            setTimeout(() => div.classList.add('hidden'), 5000);
         }
 
         async function hashAnswer(text) {
             const encoder = new TextEncoder();
             const data = encoder.encode(text.toLowerCase().trim());
             const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        async function ensureUserProfile(userId, email, companyId = null) {
-            // Vérifier si l'utilisateur existe déjà dans la table `users`
+        async function verifySecurityQuestion(email, questionId, answer) {
+            // Récupérer l'utilisateur dans la table `users`
+            const { data: userData, error: userError } = await sb
+                .from('users')
+                .select('id')
+                .eq('email', email)
+                .single();
+            if (userError || !userData) return false;
+
+            const hashedAnswer = await hashAnswer(answer);
+            const { data, error } = await sb
+                .from('user_security_answers')
+                .select('*')
+                .eq('user_id', userData.id)
+                .eq('question_id', questionId)
+                .eq('answer_hash', hashedAnswer)
+                .single();
+            return !error && data;
+        }
+
+        async function ensureUserProfile(userId, email) {
+            // Vérifier si l'utilisateur existe déjà
             let { data: existing, error } = await sb
                 .from('users')
                 .select('*')
@@ -122,7 +210,10 @@
 
             if (existing) return existing;
 
-            // Si pas de companyId, on crée une société par défaut
+            // Vérifier si une société existe déjà (pour le multi‑tenant, on prend la première ou on en crée une)
+            let { data: companies } = await sb.from('companies').select('id').limit(1);
+            let companyId = companies && companies[0] ? companies[0].id : null;
+
             if (!companyId) {
                 const { data: newCompany } = await sb
                     .from('companies')
@@ -154,63 +245,113 @@
 
         async function doLogin() {
             const email = document.getElementById('email').value.trim();
-            const pwd = document.getElementById('password').value;
-            const captchaAnswer = parseInt(document.getElementById('captchaAnswer').value);
-            if (!email || !pwd) return showError('Email et mot de passe requis');
-            if (captchaAnswer !== currentCaptcha.answer) {
-                showError('Anti-spam incorrect');
+            const password = document.getElementById('password').value;
+            const captchaInput = document.getElementById('captchaAnswer').value;
+
+            if (!email || !password) {
+                showError('Email et mot de passe requis');
+                return;
+            }
+            if (parseInt(captchaInput) !== currentCaptcha.answer) {
+                showError('Réponse anti-spam incorrecte');
                 updateCaptchaDisplay();
                 return;
             }
 
             const btn = document.getElementById('loginBtn');
             const loader = document.getElementById('loader');
-            btn.disabled = true; loader.style.display = 'flex';
+            btn.disabled = true;
+            loader.classList.remove('hidden');
 
             try {
-                const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
                 if (error) throw error;
 
-                // Créer/mettre à jour le profil dans `users`
                 await ensureUserProfile(data.user.id, email);
 
-                // Stocker le token JWT pour les requêtes API
+                // Stocker le token pour les requêtes API
                 localStorage.setItem('supabase_token', data.session.access_token);
 
                 showSuccess('Connexion réussie ! Redirection...');
-                setTimeout(() => window.location.href = '/dashboard.html', 1500);
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1500);
             } catch (err) {
                 showError('❌ ' + err.message);
                 btn.disabled = false;
-                loader.style.display = 'none';
+                loader.classList.add('hidden');
             }
         }
 
-        function showError(msg) {
-            const div = document.getElementById('errorMessage');
-            div.textContent = msg;
-            div.classList.remove('hidden');
-            setTimeout(() => div.classList.add('hidden'), 5000);
-        }
+        async function doResetPassword() {
+            const email = document.getElementById('forgotEmail').value.trim();
+            const questionId = document.getElementById('forgotSecurityQuestion').value;
+            const answer = document.getElementById('forgotSecurityAnswer').value.trim();
+            const captchaInput = document.getElementById('forgotCaptchaAnswer').value;
 
-        function showSuccess(msg) {
-            const div = document.getElementById('successMessage');
-            div.textContent = msg;
-            div.classList.remove('hidden');
-            setTimeout(() => div.classList.add('hidden'), 5000);
+            if (!email) {
+                showForgotError('Email requis');
+                return;
+            }
+            if (!questionId) {
+                showForgotError('Veuillez sélectionner une question de sécurité');
+                return;
+            }
+            if (!answer) {
+                showForgotError('Veuillez répondre à la question de sécurité');
+                return;
+            }
+            if (parseInt(captchaInput) !== currentCaptcha.answer) {
+                showForgotError('Réponse anti-spam incorrecte');
+                updateCaptchaDisplay();
+                return;
+            }
+
+            const btn = document.getElementById('resetBtn');
+            const loader = document.getElementById('forgotLoader');
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+
+            try {
+                const isValid = await verifySecurityQuestion(email, parseInt(questionId), answer);
+                if (!isValid) throw new Error('Question de sécurité incorrecte');
+
+                // Générer un nouveau mot de passe aléatoire
+                const newPassword = Math.random().toString(36).slice(-12) + 'A1!';
+                const { error: updateError } = await sb.auth.admin.updateUserByEmail(email, { password: newPassword });
+                if (updateError) throw updateError;
+
+                showForgotSuccess(`✅ Nouveau mot de passe envoyé à ${email}`);
+                setTimeout(() => {
+                    document.getElementById('forgotView').style.display = 'none';
+                    document.getElementById('loginView').style.display = 'block';
+                    btn.disabled = false;
+                    loader.classList.add('hidden');
+                }, 3000);
+            } catch (err) {
+                showForgotError('❌ ' + err.message);
+                btn.disabled = false;
+                loader.classList.add('hidden');
+            }
         }
 
         // Événements
         document.getElementById('loginBtn').addEventListener('click', doLogin);
-        document.getElementById('password').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
-        document.getElementById('forgotLink').addEventListener('click', e => {
+        document.getElementById('resetBtn').addEventListener('click', doResetPassword);
+        document.getElementById('forgotLink').addEventListener('click', (e) => {
             e.preventDefault();
-            alert('Fonctionnalité de récupération à implémenter');
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('forgotView').style.display = 'block';
+            updateCaptchaDisplay();
         });
-        document.getElementById('backToLoginLink')?.addEventListener('click', e => {
+        document.getElementById('backToLoginLink').addEventListener('click', (e) => {
             e.preventDefault();
-            document.getElementById('forgotView').classList.add('hidden');
-            document.getElementById('loginView').classList.remove('hidden');
+            document.getElementById('forgotView').style.display = 'none';
+            document.getElementById('loginView').style.display = 'block';
+            updateCaptchaDisplay();
+        });
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') doLogin();
         });
 
         loadSecurityQuestions();
