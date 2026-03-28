@@ -1,1 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI Governance | Tableau de bord</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #F4F7FB; font-family: 'Inter', sans-serif; }
+        .sidebar { background: #0B1829; color: white; }
+        .sidebar a { color: #9ca3af; transition: 0.2s; }
+        .sidebar a:hover { color: white; background: #1A6CF5; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="flex">
+    <!-- Sidebar -->
+    <div class="sidebar w-64 min-h-screen p-5 flex flex-col">
+        <div class="text-2xl font-bold mb-8">SI Governance</div>
+        <nav class="flex-1">
+            <a href="/dashboard.html" class="block py-2 px-4 rounded-lg mb-1 bg-blue-600 text-white">🏠 Tableau de bord</a>
+            <a href="/services.html" class="block py-2 px-4 rounded-lg mb-1">📋 Services</a>
+            <a href="/risques.html" class="block py-2 px-4 rounded-lg mb-1">⚠️ Risques</a>
+            <a href="/cartographie.html" class="block py-2 px-4 rounded-lg mb-1">🗺️ Cartographie</a>
+            <a href="/conformite.html" class="block py-2 px-4 rounded-lg mb-1">⚖️ Conformité</a>
+            <a href="/fournisseurs.html" class="block py-2 px-4 rounded-lg mb-1">🤝 Fournisseurs</a>
+            <a href="/donnees.html" class="block py-2 px-4 rounded-lg mb-1">🗄️ Données</a>
+            <a href="/cyber-mitre.html" class="block py-2 px-4 rounded-lg mb-1">🎯 MITRE ATT&CK</a>
+            <a href="/kpi.html" class="block py-2 px-4 rounded-lg mb-1">📊 KPI</a>
+            <a href="/operations.html" class="block py-2 px-4 rounded-lg mb-1">🔄 Opérations</a>
+            <a href="/admin.html" class="block py-2 px-4 rounded-lg mb-1 mt-4 text-yellow-400">🔧 Admin</a>
+        </nav>
+        <button id="logoutBtn" class="mt-auto bg-red-600 hover:bg-red-700 py-2 rounded-lg text-white">Déconnexion</button>
+    </div>
 
+    <!-- Main content -->
+    <div class="flex-1 p-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Tableau de bord</h1>
+            <p id="userInfo" class="text-gray-500 mt-1">Chargement...</p>
+        </div>
+
+        <!-- Widgets (exemple) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="card p-6">
+                <div class="text-gray-500 text-sm">Services critiques</div>
+                <div class="text-3xl font-bold" id="criticalServicesCount">-</div>
+            </div>
+            <div class="card p-6">
+                <div class="text-gray-500 text-sm">Risques élevés</div>
+                <div class="text-3xl font-bold" id="highRisksCount">-</div>
+            </div>
+            <div class="card p-6">
+                <div class="text-gray-500 text-sm">Non conformités</div>
+                <div class="text-3xl font-bold" id="nonCompliantCount">-</div>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <h2 class="text-xl font-semibold mb-4">Services récents</h2>
+            <div id="recentServices" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { persistSession: true }
+        });
+
+        let user = null;
+        let companyId = null;
+
+        async function loadUserProfile() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                window.location.href = '/index.html';
+                return;
+            }
+            const token = session.access_token;
+            localStorage.setItem('supabase_token', token);
+
+            // Récupérer l'utilisateur dans la table `users`
+            const { data: userData, error: userError } = await sb
+                .from('users')
+                .select('*, companies(name)')
+                .eq('id', session.user.id)
+                .single();
+            if (userError || !userData) {
+                console.error(userError);
+                window.location.href = '/index.html';
+                return;
+            }
+            user = userData;
+            companyId = user.company_id;
+
+            document.getElementById('userInfo').innerHTML = `
+                ${user.email} · Rôle : <span id="userRole">Chargement...</span> · Entreprise : ${user.companies?.name || 'N/A'}
+            `;
+
+            // Charger le rôle
+            const { data: roles } = await sb
+                .from('user_roles')
+                .select('role_id')
+                .eq('user_id', session.user.id);
+            const role = roles?.[0]?.role_id || 'SERVICE_MANAGER';
+            document.getElementById('userRole').innerText = role;
+
+            // Afficher le lien Admin si rôle SUPER_ADMIN ou DSI
+            const adminLink = document.querySelector('a[href="/admin.html"]');
+            if (adminLink) {
+                adminLink.style.display = (role === 'SUPER_ADMIN' || role === 'DSI') ? 'block' : 'none';
+            }
+
+            // Charger les indicateurs
+            loadDashboardStats();
+        }
+
+        async function loadDashboardStats() {
+            // Compter les services critiques (criticity = 'critical')
+            const { count: criticalCount } = await sb
+                .from('services')
+                .select('*', { count: 'exact', head: true })
+                .eq('company_id', companyId)
+                .eq('criticity', 'critical');
+            document.getElementById('criticalServicesCount').innerText = criticalCount || 0;
+
+            // Compter les risques avec score >= 4 (exemple)
+            const { count: highRisks } = await sb
+                .from('risks')
+                .select('*', { count: 'exact', head: true })
+                .eq('company_id', companyId)
+                .gte('score', 4);
+            document.getElementById('highRisksCount').innerText = highRisks || 0;
+
+            // Compter les contrôles non conformes
+            const { count: nonCompliant } = await sb
+                .from('controls')
+                .select('*', { count: 'exact', head: true })
+                .eq('company_id', companyId)
+                .eq('status', 'non_conforme');
+            document.getElementById('nonCompliantCount').innerText = nonCompliant || 0;
+
+            // Derniers services
+            const { data: recentServices } = await sb
+                .from('services')
+                .select('name, criticity, created_at')
+                .eq('company_id', companyId)
+                .order('created_at', { ascending: false })
+                .limit(5);
+            const container = document.getElementById('recentServices');
+            if (recentServices && recentServices.length) {
+                container.innerHTML = recentServices.map(s => `
+                    <div class="border-b pb-2">
+                        <span class="font-medium">${s.name}</span>
+                        <span class="text-xs bg-gray-200 px-2 py-1 rounded ml-2">${s.criticity || 'normal'}</span>
+                        <span class="text-gray-400 text-sm float-right">${new Date(s.created_at).toLocaleDateString()}</span>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p class="text-gray-500">Aucun service enregistré</p>';
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await sb.auth.signOut();
+            localStorage.removeItem('supabase_token');
+            window.location.href = '/index.html';
+        });
+
+        loadUserProfile();
+    </script>
+</body>
+</html>
