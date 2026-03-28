@@ -3,606 +3,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SI Governance | Tableau de bord</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <title>SI Governance | Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --navy:#0B1829; --blue:#1A6CF5; --white:#FFF; --border:rgba(0,0,0,0.1);
-            --violet:#7C5CFC; --teal:#00B49C; --amber:#F5A623; --rose:#E84568; --u-color: var(--blue);
-            --orange:#F97316; --gold:#F5A623; --sky:#0EA5E9; --gray:#6B7280;
+        body {
+            font-family: 'Instrument Sans', sans-serif;
+            background: #F4F7FB;
         }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Instrument Sans', sans-serif; background:#F4F7FB; color:var(--navy); }
-
-        .topbar {
-            background:#fff; padding:0 32px; height:70px;
-            display:flex; align-items:center; justify-content:space-between;
-            width:100%; border-bottom:1px solid var(--border);
-            position:fixed; top:0; z-index:100;
-        }
-        .topbar-left { display:flex; align-items:center; gap:15px; }
-        #uAvatar {
-            width:35px; height:35px; border-radius:10px;
-            background:var(--u-color); color:#fff;
-            display:flex; align-items:center; justify-content:center; font-weight:800;
-        }
-        .topbar-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-
-        .btn {
-            padding:10px 20px; border-radius:10px; border:none; cursor:pointer;
-            font-weight:600; background:var(--u-color); color:#fff;
-            font-family:inherit; font-size:14px; transition:opacity 0.2s;
-        }
-        .btn:hover { opacity:0.85; }
-        .btn-ghost { background:none; color:var(--navy); }
-        .btn-ghost:hover { background:rgba(0,0,0,0.05); opacity:1; }
-        .btn-danger { background:var(--rose); }
-        .btn-sm { padding:6px 12px; font-size:12px; }
-        .btn-success { background:var(--teal); }
-
-        .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
-        .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
-        .dashboard-header h1 { font-family:'Syne'; margin:0; }
-        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(540px, 1fr)); gap:20px; }
-
-        .vp-card {
-            background:#fff; border-radius:16px; padding:20px;
-            border-top:5px solid var(--u-color);
-            box-shadow:0 4px 15px rgba(0,0,0,0.05);
-            transition:transform 0.2s, box-shadow 0.2s;
-        }
-        .vp-card:hover { transform:translateY(-3px); box-shadow:0 8px 25px rgba(0,0,0,0.1); }
-        .vp-card-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
-        .vp-ico { font-size:24px; line-height:1; }
-        .vp-title { font-weight:600; font-size:15px; color:var(--navy); }
-        .vp-id { font-size:11px; color:#999; margin-top:2px; }
-        .vp-notes {
-            width:100%; border:1px solid #eee; border-radius:8px;
-            padding:10px; font-family:inherit; font-size:13px;
-            resize:vertical; min-height:60px; color:var(--navy);
-            transition:border-color 0.2s; outline:none;
-        }
-        .vp-notes:focus { border-color:var(--blue); }
-        .vp-saved { font-size:11px; color:var(--teal); margin-top:6px; display:none; }
-        .spell-bar { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
-        .spell-word { font-size:10px; padding:2px 8px; border-radius:12px; background:#FEF3C7; color:#92400E; cursor:pointer; }
-
-        /* Tableau de suivi des statuts */
-        .status-table {
-            width:100%;
-            border-collapse:collapse;
-            font-size:11px;
-            margin:10px 0;
-        }
-        .status-table th, .status-table td {
-            padding:6px 4px;
-            text-align:left;
-            border-bottom:1px solid #eee;
-        }
-        .status-table th {
-            background:#f8fafc;
-            font-weight:600;
-        }
-        .status-badge-prevu { background:#E2E3E5; color:#4B5563; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
-        .status-badge-a-faire { background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
-        .status-badge-en-reflexion { background:#DBEAFE; color:#1E40AF; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
-        .status-badge-fait { background:#D1FAE5; color:#065F46; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
-        .status-badge-en-production { background:#C7D2FE; color:#3730A3; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
-        .status-date-input, .status-comment-input {
-            padding:4px;
-            font-size:10px;
-            width:100%;
-            border:1px solid #ddd;
-            border-radius:6px;
-        }
-        .progress-chart {
-            width:100%;
-            height:80px;
-            margin:5px 0;
-        }
-        .progress-section {
-            background:#fafcff;
-            border-radius:12px;
-            padding:8px;
-            margin:8px 0;
-        }
-
-        /* Tags dictionnaire */
-        .dict-tag {
-            display:inline-block;
-            background:#eef2ff;
-            color:#1E40AF;
-            padding:4px 12px;
-            border-radius:20px;
-            font-size:11px;
-            margin:4px;
-            cursor:pointer;
-            transition:all 0.2s;
-        }
-        .dict-tag.selected {
-            background:var(--blue);
-            color:white;
-        }
-        .dict-tag:hover { opacity:0.8; }
-
-        .maturity-bar-container { margin-top:8px; }
-        .maturity-bar {
-            background:#e5e7eb;
-            border-radius:10px;
-            height:8px;
-            overflow:hidden;
-        }
-        .maturity-bar-fill {
-            width:0%;
-            height:100%;
-            background:var(--blue);
-            border-radius:10px;
-            transition:width 0.3s ease;
-        }
-        .maturity-score-text {
-            display:flex;
-            justify-content:space-between;
-            font-size:10px;
-            margin-bottom:4px;
-        }
-
-        #toast {
-            position:fixed; bottom:30px; right:30px; z-index:9999;
-            background:var(--navy); color:#fff; padding:14px 22px;
-            border-radius:12px; font-size:14px; font-weight:600;
-            transform:translateY(80px); opacity:0;
-            transition:transform 0.3s, opacity 0.3s;
-            pointer-events:none; max-width:300px;
-        }
-        #toast.show { transform:translateY(0); opacity:1; }
-        #toast.success { border-left:4px solid var(--teal); }
-        #toast.error { border-left:4px solid var(--rose); }
-
-        @media (max-width:600px) {
-            .topbar { padding:0 16px; }
-            .container { padding:90px 16px 30px; }
-            .dashboard-header { flex-direction:column; align-items:flex-start; }
-            .views-grid { grid-template-columns:1fr; }
+        .sidebar {
+            transition: all 0.3s;
         }
     </style>
 </head>
-<body>
-    <nav class="topbar">
-        <div class="topbar-left"><div id="uAvatar"></div><span style="font-family:'Syne'; font-weight:800;">SI MANAGER</span></div>
-        <div class="topbar-right">
-            <button class="btn btn-ghost" onclick="window.location.href='/dashboard.html'">📊 Diagnostic</button>
-            <button class="btn btn-ghost" onclick="window.location.href='/kpi.html'">📈 KPI</button>
-            <button class="btn btn-ghost" onclick="window.location.href='/conformite-couts.html'">⚖️ Conformité</button>
-            <button class="btn btn-ghost" onclick="window.location.href='/cyber-threat-intel.html'">🌍 Cyber Threat</button>
-            <button class="btn btn-ghost" onclick="window.location.href='/messagerie.html'">📬 Messagerie</button>
-            <button class="btn btn-ghost" onclick="window.location.href='/fiches-produit.html'">📦 Produits</button>
-            <button class="btn btn-ghost" id="admLink" style="display:none;" onclick="window.location.href='/admin.html'">🔑 Admin</button>
-            <button class="btn btn-danger btn-sm" onclick="doLogout()">Déconnexion</button>
-        </div>
-    </nav>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 bg-white shadow-lg flex flex-col">
+            <div class="p-6 border-b">
+                <h1 class="text-2xl font-bold text-blue-700 font-['Syne']">SI GOVERNANCE</h1>
+                <p class="text-xs text-gray-500 mt-1">v5.0 · GRC</p>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <a href="/dashboard.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 border-l-4 border-blue-600 bg-blue-50 text-blue-700">
+                    <span class="text-xl mr-3">📊</span>
+                    Tableau de bord
+                </a>
+                <a href="/services.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span class="text-xl mr-3">🖥️</span>
+                    Services
+                </a>
+                <a href="/cartographie.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span class="text-xl mr-3">🗺️</span>
+                    Cartographie
+                </a>
+                <a href="/risques.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span class="text-xl mr-3">⚠️</span>
+                    Risques
+                </a>
+                <a href="/cyber-mitre.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span class="text-xl mr-3">🎯</span>
+                    Cyber & MITRE
+                </a>
+                <a href="/conformite.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span class="text-xl mr-3">⚖️</span>
+                    Conformité
+                </a>
+                <a href="/fournisseurs.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span class="text-xl mr-3">🤝</span>
+                    Fournisseurs
+                </a>
+                <a href="/donnees.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span class="text-xl mr-3">🗄️</span>
+                    Données
+                </a>
+                <a href="/kpi.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span class="text-xl mr-3">📈</span>
+                    KPI
+                </a>
+                <a href="/operations.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span class="text-xl mr-3">🔄</span>
+                    Opérations
+                </a>
+                <a href="/admin.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700" id="adminLink" style="display:none;">
+                    <span class="text-xl mr-3">🔑</span>
+                    Administration
+                </a>
+            </nav>
+            <div class="p-4 border-t flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-semibold" id="userName">Chargement...</p>
+                    <p class="text-xs text-gray-500" id="userRole"></p>
+                </div>
+                <button id="logoutBtn" class="text-red-500 hover:text-red-700">🚪 Déconnexion</button>
+            </div>
+        </aside>
 
-    <main class="container">
-        <div class="dashboard-header">
-            <h1>Dashboard des 25 Outils</h1>
-            <button class="btn" onclick="exportFullPDF()" style="background:var(--navy)">📊 Rapport PDF complet</button>
-        </div>
-        <div id="mainContainer" class="views-grid"></div>
-    </main>
+        <!-- Main content -->
+        <main class="flex-1 overflow-y-auto p-6">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 font-['Syne']">Tableau de bord</h1>
+                <p class="text-gray-600 mt-1">Bienvenue sur votre plateforme de gouvernance SI</p>
+            </div>
 
-    <div id="toast"></div>
+            <!-- Cartes de résumé -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">Services critiques</p>
+                            <p class="text-2xl font-bold mt-1" id="criticalServicesCount">0</p>
+                        </div>
+                        <span class="text-2xl">🖥️</span>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">Risques ouverts</p>
+                            <p class="text-2xl font-bold mt-1" id="openRisksCount">0</p>
+                        </div>
+                        <span class="text-2xl">⚠️</span>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">Conformité globale</p>
+                            <p class="text-2xl font-bold mt-1" id="complianceScore">0%</p>
+                        </div>
+                        <span class="text-2xl">⚖️</span>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">Actifs gérés</p>
+                            <p class="text-2xl font-bold mt-1" id="assetsCount">0</p>
+                        </div>
+                        <span class="text-2xl">🗄️</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sections récentes -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h2 class="text-lg font-semibold mb-4">📋 Services les plus critiques</h2>
+                    <ul id="criticalServicesList" class="space-y-2">
+                        <li class="text-gray-500 text-sm">Chargement...</li>
+                    </ul>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h2 class="text-lg font-semibold mb-4">⚠️ Risques à traiter en priorité</h2>
+                    <ul id="topRisksList" class="space-y-2">
+                        <li class="text-gray-500 text-sm">Chargement...</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
         const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: { persistSession: true },
-            realtime: { enabled: false }
-        });
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let db = null, user = null;
-        let toolStatuses = {};
-        let toolCharts = {};
-        let dictionaryTerms = [];
-        let dictionaryTermsWithWeight = [];
+        let currentUser = null;
+        let currentUserRoles = [];
 
-        const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5',
-            SERVICE_MANAGER:'#F97316', CEO:'#F5A623', NET:'#0EA5E9', SYS:'#6B7280' };
-        const ROLE_LABELS = { ADMIN:'Super Admin', DSI:'DSI', RSSI:'RSSI', DATA:'Expert Data',
-            SERVICE_MANAGER:'Manager de service', CEO:'PDG / CEO', NET:'Admin Réseaux', SYS:'Admin Système' };
-
-        const TOOLS = [
-            {id:1, t:"Capacités Métier", ico:"🧭"},{id:2, t:"Transformation IT",ico:"⚡"},{id:3, t:"Objectifs Strat",ico:"🎯"},
-            {id:4, t:"Écosystème",ico:"🌐"},{id:5, t:"Portefeuille App",ico:"📱"},{id:6, t:"Flux & Interfaces",ico:"🔗"},
-            {id:7, t:"Mapping Cap/App",ico:"🗺️"},{id:8, t:"Obsolescence",ico:"🕰️"},{id:9, t:"Données Métier",ico:"🗄️"},
-            {id:10, t:"Lineage Data",ico:"📉"},{id:11, t:"RGPD",ico:"⚖️"},{id:12, t:"Analytique",ico:"📊"},
-            {id:13, t:"Infrastructure",ico:"🖥️"},{id:14, t:"Sécurité SI",ico:"🛡️"},{id:15, t:"Standards",ico:"📜"},
-            {id:16, t:"Cloud Arch",ico:"☁️"},{id:17, t:"Processus",ico:"🏢"},{id:18, t:"Parties Prenantes",ico:"👥"},
-            {id:19, t:"Gouvernance",ico:"🏛️"},{id:20, t:"Risques SI",ico:"⚠️"},{id:21, t:"Roadmap SI",ico:"🗓️"},
-            {id:22, t:"Impact Projets",ico:"💥"},{id:23, t:"Coût IT",ico:"💰"},{id:24, t:"Innovation",ico:"💡"},
-            {id:25, t:"Référentiels de conformité", ico:"📋"}
-        ];
-
-        function showToast(msg, type='success') {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = `show ${type}`;
-            clearTimeout(t._timer);
-            t._timer = setTimeout(() => t.className = '', 3000);
-        }
-
-        function esc(s) {
-            return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        }
-
+        // Vérifier l'authentification et charger les données
         async function checkAuth() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) {
+            const token = localStorage.getItem('supabase_token');
+            if (!token) {
                 window.location.href = '/index.html';
                 return;
             }
-            await loadUserProfile(session.user.email);
-        }
 
-        async function loadUserProfile(email) {
-            try {
-                const { data: profile, error: pErr } = await sb
-                    .from('ea_users')
-                    .select('*')
-                    .eq('email', email)
-                    .single();
-                if (pErr || !profile) {
-                    await sb.auth.signOut();
-                    window.location.href = '/index.html';
-                    return;
-                }
-                user = profile;
-                const color = COLORS[user.role] || COLORS.ADMIN;
-                document.documentElement.style.setProperty('--u-color', color);
-                const av = document.getElementById('uAvatar');
-                av.style.background = color;
-                av.textContent = (user.nom || 'U').charAt(0).toUpperCase();
-                document.getElementById('admLink').style.display = user.role === 'ADMIN' ? 'inline-flex' : 'none';
-
-                const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
-                db = (row && row.content) ? row.content : {};
-
-                await loadToolStatuses();
-                await loadDictionaryTerms();
-                renderTools();
-            } catch (err) {
-                console.error(err);
+            const { data: { user }, error } = await sb.auth.getUser(token);
+            if (error || !user) {
+                localStorage.removeItem('supabase_token');
                 window.location.href = '/index.html';
+                return;
+            }
+
+            currentUser = user;
+            await loadUserProfile(user.id);
+            await loadDashboardData();
+        }
+
+        async function loadUserProfile(userId) {
+            // Récupérer le profil utilisateur depuis la table `users`
+            const { data: userData, error: userError } = await sb
+                .from('users')
+                .select('*, companies(name)')
+                .eq('id', userId)
+                .single();
+            if (userError) {
+                console.error('Erreur chargement profil:', userError);
+                return;
+            }
+
+            // Récupérer les rôles
+            const { data: roles, error: rolesError } = await sb
+                .from('user_roles')
+                .select('role_id')
+                .eq('user_id', userId);
+            if (!rolesError && roles) {
+                currentUserRoles = roles.map(r => r.role_id);
+            }
+
+            document.getElementById('userName').innerText = userData.email.split('@')[0];
+            document.getElementById('userRole').innerText = currentUserRoles.join(', ') || 'Aucun rôle';
+
+            // Afficher le lien Admin seulement si SUPER_ADMIN ou DSI
+            if (currentUserRoles.includes('SUPER_ADMIN') || currentUserRoles.includes('DSI')) {
+                document.getElementById('adminLink').style.display = 'flex';
             }
         }
 
-        async function doLogout() {
-            await sb.auth.signOut();
-            window.location.href = '/index.html';
-        }
+        async function loadDashboardData() {
+            // Récupérer la company_id de l'utilisateur
+            const { data: userData, error: userErr } = await sb
+                .from('users')
+                .select('company_id')
+                .eq('id', currentUser.id)
+                .single();
+            if (userErr) return;
 
-        // DICTIONNAIRE ET SCORES
-        async function loadDictionaryTerms() {
-            const { data, error } = await sb
-                .from('professional_dict')
-                .select('id, terme, poids')
-                .eq('metier', user.role);
-            if (!error && data) {
-                dictionaryTerms = data;
-                dictionaryTermsWithWeight = data.map(t => ({ id: t.id, poids: t.poids || 1 }));
-            } else {
-                dictionaryTerms = [];
-                dictionaryTermsWithWeight = [];
-            }
-        }
+            const companyId = userData.company_id;
 
-        async function loadToolDictSelections(toolId) {
-            const { data, error } = await sb
-                .from('tool_dict_selections')
-                .select('terme_id')
-                .eq('tool_id', toolId)
-                .eq('user_email', user.email);
-            const selections = {};
-            if (data) data.forEach(item => { selections[item.terme_id] = true; });
-            return selections;
-        }
-
-        async function calculateMaturityScore(toolId, selections) {
-            if (!dictionaryTermsWithWeight.length) return 0;
-            let totalWeight = 0, selectedWeight = 0;
-            for (const term of dictionaryTermsWithWeight) {
-                const weight = term.poids;
-                totalWeight += weight;
-                if (selections[term.id]) selectedWeight += weight;
-            }
-            if (totalWeight === 0) return 0;
-            return Math.round((selectedWeight / totalWeight) * 10 * 10) / 10;
-        }
-
-        async function saveDictSelectionWithMaturity(toolId, termeId, selected) {
-            if (selected) {
-                await sb.from('tool_dict_selections').upsert({
-                    tool_id: toolId,
-                    terme_id: termeId,
-                    user_email: user.email,
-                    selected: true,
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'tool_id, terme_id, user_email' });
-            } else {
-                await sb.from('tool_dict_selections').delete()
-                    .eq('tool_id', toolId)
-                    .eq('terme_id', termeId)
-                    .eq('user_email', user.email);
-            }
-            const newSelections = await loadToolDictSelections(toolId);
-            const newScore = await calculateMaturityScore(toolId, newSelections);
-            await sb.from('tool_maturity_score').upsert({
-                tool_id: toolId,
-                user_email: user.email,
-                score: newScore,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'tool_id, user_email' });
-            // Mettre à jour l'affichage de la barre et de la valeur
-            const fillBar = document.getElementById(`maturity_fill_${toolId}`);
-            const valueSpan = document.getElementById(`maturity_val_${toolId}`);
-            if (fillBar) fillBar.style.width = `${newScore * 10}%`;
-            if (valueSpan) valueSpan.textContent = newScore.toFixed(1);
-        }
-
-        // STATUTS DES OUTILS
-        async function loadToolStatuses() {
-            const { data, error } = await sb
-                .from('tool_status_history')
-                .select('*')
-                .eq('user_email', user.email);
-            if (error) return;
-            toolStatuses = {};
-            if (data) {
-                data.forEach(item => {
-                    if (!toolStatuses[item.tool_id]) toolStatuses[item.tool_id] = {};
-                    toolStatuses[item.tool_id][item.statut] = {
-                        date: item.date_statut,
-                        commentaire: item.commentaire || '',
-                        id: item.id
-                    };
-                });
-            }
-        }
-
-        async function saveToolStatus(toolId, statut, date, commentaire = '') {
-            const existing = toolStatuses[toolId]?.[statut];
-            if (existing) {
-                await sb.from('tool_status_history')
-                    .update({ date_statut: date, commentaire, updated_at: new Date().toISOString() })
-                    .eq('id', existing.id);
-                existing.date = date;
-                existing.commentaire = commentaire;
-            } else {
-                const { data, error } = await sb.from('tool_status_history')
-                    .insert({
-                        tool_id: toolId,
-                        statut: statut,
-                        date_statut: date,
-                        user_email: user.email,
-                        commentaire: commentaire
-                    })
-                    .select()
-                    .single();
-                if (!error && data) {
-                    if (!toolStatuses[toolId]) toolStatuses[toolId] = {};
-                    toolStatuses[toolId][statut] = {
-                        date: date,
-                        commentaire: commentaire,
-                        id: data.id
-                    };
-                }
-            }
-            showToast(`Statut "${statut}" enregistré`);
-            renderTools(); // rafraîchir pour mettre à jour le graphique
-        }
-
-        function getProgressStats(toolId) {
-            const statuses = toolStatuses[toolId] || {};
-            const statutList = ['Prévu', 'À faire', 'En réflexion', 'Fait', 'En production'];
-            const stats = {};
-            for (const s of statutList) stats[s] = statuses[s] ? 1 : 0;
-            return stats;
-        }
-
-        function renderProgressChart(toolId) {
-            const stats = getProgressStats(toolId);
-            const canvasId = `chart_${toolId}`;
-            setTimeout(() => {
-                const canvas = document.getElementById(canvasId);
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-                if (toolCharts[toolId]) toolCharts[toolId].destroy();
-                toolCharts[toolId] = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Prévu', 'À faire', 'En réflexion', 'Fait', 'En production'],
-                        datasets: [{
-                            data: [stats['Prévu'], stats['À faire'], stats['En réflexion'], stats['Fait'], stats['En production']],
-                            backgroundColor: ['#9CA3AF', '#F59E0B', '#3B82F6', '#10B981', '#6366F1'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: { legend: { position: 'bottom', labels: { font: { size: 8 } } } }
-                    }
-                });
-            }, 50);
-        }
-
-        async function saveNote(toolId, value) {
-            if (!db) db = {};
-            db[`tool_${toolId}`] = value;
-            await sb.from('ea_platform_data').upsert({ id: 1, content: db }, { onConflict: 'id' });
-            const el = document.getElementById(`saved_${toolId}`);
-            if (el) {
-                el.style.display = 'block';
-                setTimeout(() => el.style.display = 'none', 2000);
-            }
-        }
-
-        // RENDU PRINCIPAL
-        async function renderTools() {
-            const grid = document.getElementById('mainContainer');
-            grid.innerHTML = '';
-
-            for (const tool of TOOLS) {
-                const val = db && db[`tool_${tool.id}`] ? db[`tool_${tool.id}`] : '';
-                const statuses = toolStatuses[tool.id] || {};
-                const completedCount = Object.keys(statuses).length;
-                const dictSelections = await loadToolDictSelections(tool.id);
-                const currentScore = await calculateMaturityScore(tool.id, dictSelections);
-
-                const card = document.createElement('div');
-                card.className = 'vp-card';
-                card.style.borderTopColor = COLORS[user.role] || COLORS.ADMIN;
-
-                const statutLabels = ['Prévu', 'À faire', 'En réflexion', 'Fait', 'En production'];
-                let tableRows = '';
-                for (const statut of statutLabels) {
-                    const existing = statuses[statut];
-                    const dateValue = existing?.date || '';
-                    const commentValue = existing?.commentaire || '';
-                    const badgeClass = `status-badge-${statut.toLowerCase().replace(/ /g, '-')}`;
-                    tableRows += `
-                        <tr>
-                            <td style="width:100px;"><span class="${badgeClass}" style="display:inline-block; padding:2px 8px; border-radius:12px; font-size:10px;">${statut}</span>${existing ? '' : ''}</td>
-                            <td style="width:110px;"><input type="date" class="status-date-input" data-tool="${tool.id}" data-statut="${statut}" value="${dateValue}" style="padding:4px; font-size:10px; width:100%; border-radius:6px; border:1px solid #ddd;"></td>
-                            <td><input type="text" class="status-comment-input" data-tool="${tool.id}" data-statut="${statut}" value="${esc(commentValue)}" placeholder="Commentaire" style="width:100%; padding:4px; font-size:10px; border-radius:6px; border:1px solid #ddd;"></td>
-                         </tr>
-                    `;
-                }
-
-                let dictHtml = '';
-                if (dictionaryTerms.length) {
-                    dictHtml = `
-                        <div style="margin-top:12px; border-top:1px solid #eee; padding-top:12px;">
-                            <strong style="font-size:11px; display:block; margin-bottom:8px;">📚 Dictionnaire métier (${ROLE_LABELS[user.role] || user.role})</strong>
-                            <div class="dict-tags-container" style="display:flex; flex-wrap:wrap; gap:6px;">
-                                ${dictionaryTerms.map(term => `
-                                    <span class="dict-tag ${dictSelections[term.id] ? 'selected' : ''}" data-term-id="${term.id}" data-term="${term.terme}" style="cursor:pointer; background:${dictSelections[term.id] ? 'var(--blue)' : '#eef2ff'}; color:${dictSelections[term.id] ? 'white' : '#1E40AF'}; padding:4px 12px; border-radius:20px; font-size:11px; transition:all 0.2s;">
-                                        ${term.terme}
-                                    </span>
-                                `).join('')}
-                            </div>
-                            <div style="font-size:10px; color:#888; margin-top:6px;">Cliquez sur un terme pour l'associer à cet outil</div>
-                        </div>
-                    `;
+            // Services critiques (criticity = 'critique')
+            const { data: criticalServices, error: servicesErr } = await sb
+                .from('services')
+                .select('id, name, criticity')
+                .eq('company_id', companyId)
+                .eq('criticity', 'critique');
+            if (!servicesErr && criticalServices) {
+                document.getElementById('criticalServicesCount').innerText = criticalServices.length;
+                const list = document.getElementById('criticalServicesList');
+                if (criticalServices.length === 0) {
+                    list.innerHTML = '<li class="text-gray-500 text-sm">Aucun service critique</li>';
                 } else {
-                    dictHtml = `<div style="margin-top:12px; border-top:1px solid #eee; padding-top:12px;"><strong style="font-size:11px;">📚 Dictionnaire métier</strong><div style="font-size:11px; color:#888; margin-top:4px;">Aucun terme disponible pour votre métier (${ROLE_LABELS[user.role] || user.role})</div></div>`;
+                    list.innerHTML = criticalServices.map(s => `<li class="flex justify-between items-center border-b pb-2"><span>${s.name}</span><span class="text-xs text-red-500">critique</span></li>`).join('');
                 }
+            }
 
-                const maturityHtml = `
-                    <div style="margin-top:12px; border-top:1px solid #eee; padding-top:12px;">
-                        <strong style="font-size:11px; display:block; margin-bottom:6px;">📊 Score de maturité (basé sur les mots clés sélectionnés)</strong>
-                        <div class="maturity-bar-container">
-                            <div class="maturity-score-text">
-                                <span>Progression</span>
-                                <span id="maturity_val_${tool.id}">${currentScore.toFixed(1)}</span>
-                            </div>
-                            <div class="maturity-bar">
-                                <div id="maturity_fill_${tool.id}" class="maturity-bar-fill" style="width: ${currentScore * 10}%;"></div>
-                            </div>
-                            <div style="font-size:9px; color:#666; margin-top:4px;">Score calculé sur ${dictionaryTerms.length} mots clés (pondérés)</div>
-                        </div>
-                    </div>
-                `;
+            // Risques ouverts
+            const { data: openRisks, error: risksErr } = await sb
+                .from('risks')
+                .select('id')
+                .eq('company_id', companyId)
+                .is('validated_by', null);
+            if (!risksErr && openRisks) {
+                document.getElementById('openRisksCount').innerText = openRisks.length;
+                const list = document.getElementById('topRisksList');
+                if (openRisks.length === 0) {
+                    list.innerHTML = '<li class="text-gray-500 text-sm">Aucun risque ouvert</li>';
+                } else {
+                    // Récupérer les risques avec leur service
+                    const { data: risksWithService } = await sb
+                        .from('risks')
+                        .select('id, score, services(name)')
+                        .eq('company_id', companyId)
+                        .is('validated_by', null)
+                        .order('score', { ascending: false })
+                        .limit(5);
+                    list.innerHTML = (risksWithService || []).map(r => `<li class="border-b pb-2"><span class="font-medium">${r.services?.name || 'Service inconnu'}</span> - Score: ${r.score || 'N/A'}</li>`).join('');
+                }
+            }
 
-                card.innerHTML = `
-                    <div class="vp-card-header">
-                        <span class="vp-ico">${tool.ico}</span>
-                        <div>
-                            <div class="vp-title">${tool.t}</div>
-                            <div class="vp-id">Outil #${tool.id}</div>
-                        </div>
-                    </div>
-                    <div class="progress-section">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                            <strong style="font-size:12px;">📊 Progression des statuts</strong>
-                            <span style="font-size:10px; color:#666;">Statuts atteints: ${completedCount}/5</span>
-                        </div>
-                        <div style="height:90px;">
-                            <canvas id="chart_${tool.id}" class="progress-chart"></canvas>
-                        </div>
-                    </div>
-                    <div class="status-table-container" style="margin-top:8px;">
-                        <table class="status-table">
-                            <thead> <th>Statut</th><th>Date</th><th>Commentaire</th> </thead>
-                            <tbody>${tableRows}</tbody>
-                        </table>
-                    </div>
-                    ${dictHtml}
-                    ${maturityHtml}
-                    <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes complémentaires..." style="margin-top:12px;">${esc(val)}</textarea>
-                    <div class="spell-bar" id="spell_${tool.id}"></div>
-                    <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>
-                `;
-                grid.appendChild(card);
+            // Conformité (exemple : pourcentage de contrôles ISO 27001 réalisés)
+            const { data: controls, error: controlsErr } = await sb
+                .from('controls')
+                .select('status')
+                .eq('company_id', companyId)
+                .eq('framework', 'ISO 27001');
+            if (!controlsErr && controls) {
+                const done = controls.filter(c => c.status === 'OK').length;
+                const score = controls.length ? Math.round((done / controls.length) * 100) : 0;
+                document.getElementById('complianceScore').innerText = `${score}%`;
+            }
 
-                // Événements statuts
-                card.querySelectorAll('.status-date-input, .status-comment-input').forEach(input => {
-                    input.addEventListener('change', async () => {
-                        const toolId = parseInt(input.dataset.tool);
-                        const statut = input.dataset.statut;
-                        const dateInput = card.querySelector(`.status-date-input[data-tool="${toolId}"][data-statut="${statut}"]`);
-                        const commentInput = card.querySelector(`.status-comment-input[data-tool="${toolId}"][data-statut="${statut}"]`);
-                        const date = dateInput ? dateInput.value : '';
-                        const comment = commentInput ? commentInput.value : '';
-                        if (date) await saveToolStatus(toolId, statut, date, comment);
-                    });
-                });
-
-                // Événements tags dictionnaire
-                card.querySelectorAll('.dict-tag').forEach(tag => {
-                    tag.addEventListener('click', async () => {
-                        const termId = parseInt(tag.dataset.termId);
-                        const isSelected = tag.classList.contains('selected');
-                        if (isSelected) {
-                            tag.classList.remove('selected');
-                            tag.style.background = '#eef2ff';
-                            tag.style.color = '#1E40AF';
-                            await saveDictSelectionWithMaturity(tool.id, termId, false);
-                        } else {
-                            tag.classList.add('selected');
-                            tag.style.background = 'var(--blue)';
-                            tag.style.color = 'white';
-                            await saveDictSelectionWithMaturity(tool.id, termId, true);
-                        }
-                    });
-                });
-
-                // Sauvegarde note
-                const ta = card.querySelector(`#note_${tool.id}`);
-                let deb;
-                ta.addEventListener('input', () => {
-                    clearTimeout(deb);
-                    deb = setTimeout(() => { saveNote(tool.id, ta.value); }, 700);
-                });
-
-                renderProgressChart(tool.id);
+            // Actifs
+            const { data: assets, error: assetsErr } = await sb
+                .from('assets')
+                .select('id')
+                .eq('company_id', companyId);
+            if (!assetsErr && assets) {
+                document.getElementById('assetsCount').innerText = assets.length;
             }
         }
 
-        function exportFullPDF() {
-            showToast('📄 Génération du rapport...');
-            const el = document.getElementById('mainContainer');
-            html2pdf().set({
-                margin: 10,
-                filename: `SI_Diagnostic_${new Date().toISOString().slice(0,10)}.pdf`,
-                image: { type: 'jpeg', quality: 0.95 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-            }).from(el).save().then(() => showToast('✅ PDF exporté !')).catch(() => showToast('❌ Erreur PDF', 'error'));
-        }
+        // Déconnexion
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await sb.auth.signOut();
+            localStorage.removeItem('supabase_token');
+            window.location.href = '/index.html';
+        });
 
         checkAuth();
     </script>
