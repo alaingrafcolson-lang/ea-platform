@@ -4,96 +4,106 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SI Governance | Tableau de bord</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #F4F7FB;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        h1 {
-            color: #0B1829;
-            margin-top: 0;
-        }
-        button {
-            background: #E84568;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-        button:hover {
-            background: #c73b5e;
-        }
-        .role-badge {
-            background: #1A6CF5;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            display: inline-block;
-        }
-        .info-card {
-            background: #f8f9fa;
-            padding: 16px;
-            border-radius: 12px;
-            margin: 16px 0;
-        }
+        /* ========== VOS STYLES EXISTANTS (à recopier ici) ========== */
+        /* Je ne les recopie pas pour ne pas alourdir, mais reprenez ceux de votre ancien dashboard.html */
+        /* Assurez-vous d’inclure tous les styles (topbar, cards, tables, etc.) */
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>Tableau de bord</h1>
-    <div id="userInfo" class="info-card">Chargement...</div>
-    <button onclick="logout()">Déconnexion</button>
-</div>
+    <!-- Topbar (identique à votre ancienne version) -->
+    <nav class="topbar">...</nav>
 
-<script>
-    const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true } });
+    <!-- Conteneur principal -->
+    <main id="diagSection" class="container">
+        <div class="dashboard-header">
+            <h1>Dashboard des 25 Outils</h1>
+            <button class="btn" onclick="exportFullPDF()" style="background:var(--navy)">📊 Rapport PDF complet</button>
+        </div>
+        <div id="mainContainer" class="views-grid"></div>
+    </main>
 
-    async function loadDashboard() {
-        // Vérifier la session
-        const { data: { user }, error } = await sb.auth.getUser();
-        if (error || !user) {
-            window.location.href = '/index.html';
-            return;
+    <!-- Autres sections (KPI, conformité, etc.) -->
+    <section id="kpiSection" class="container s-hide">...</section>
+    <section id="complianceSection" class="container s-hide">...</section>
+    <!-- etc. -->
+
+    <div id="toast"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true } });
+
+        let db = null, user = null;
+        let toolStatuses = {}, toolCharts = {}, dictionaryTerms = [];
+
+        const TOOLS = [ /* vos 25 outils */ ];
+        const COLORS = { /* vos couleurs */ };
+        const ROLE_LABELS = { /* vos labels */ };
+
+        // --------------------------------------------------------------
+        // VÉRIFICATION DE SESSION (stable)
+        // --------------------------------------------------------------
+        async function checkSession() {
+            const { data: { user: authUser }, error } = await sb.auth.getUser();
+            if (error || !authUser) {
+                window.location.href = '/index.html';
+                return null;
+            }
+            return authUser;
         }
 
-        // Récupérer le rôle depuis user_roles
-        const { data: roles } = await sb
-            .from('user_roles')
-            .select('role_id')
-            .eq('user_id', user.id);
-        const role = roles?.[0]?.role_id || 'SERVICE_MANAGER';
+        // --------------------------------------------------------------
+        // CHARGEMENT DES DONNÉES
+        // --------------------------------------------------------------
+        async function loadUserProfile() {
+            const authUser = await checkSession();
+            if (!authUser) return;
 
-        // Afficher les informations
-        document.getElementById('userInfo').innerHTML = `
-            <p><strong>Email :</strong> ${user.email}</p>
-            <p><strong>Rôle :</strong> <span class="role-badge">${role}</span></p>
-            <p><strong>Statut :</strong> Connecté ✅</p>
-        `;
-    }
+            // Récupérer le profil dans la table `users`
+            const { data: profile } = await sb
+                .from('users')
+                .select('*, companies(name)')
+                .eq('id', authUser.id)
+                .single();
+            user = profile || { email: authUser.email, company_id: null };
 
-    async function logout() {
-        await sb.auth.signOut();
-        window.location.href = '/index.html';
-    }
+            // Appliquer le thème (avatar, couleur)
+            document.getElementById('uAvatar').textContent = (user.email?.charAt(0).toUpperCase() || 'U');
 
-    loadDashboard();
-</script>
+            // Charger les données de la plateforme
+            const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
+            db = row?.content || {};
+
+            // Charger les statuts, dictionnaire, etc.
+            await loadToolStatuses();
+            await loadDictionaryTerms();
+            renderTools();
+            updateKPI();
+            renderCharts();
+            // ... autres appels (messagerie, etc.)
+        }
+
+        // --------------------------------------------------------------
+        // FONCTIONS MÉTIER (à recopier de votre ancien dashboard)
+        // --------------------------------------------------------------
+        async function loadToolStatuses() { /* ... */ }
+        async function loadDictionaryTerms() { /* ... */ }
+        function renderTools() { /* ... */ }
+        function updateKPI() { /* ... */ }
+        function renderCharts() { /* ... */ }
+        // ... toutes vos autres fonctions (saveNote, sendMessage, etc.)
+
+        // --------------------------------------------------------------
+        // INITIALISATION
+        // --------------------------------------------------------------
+        loadUserProfile();
+    </script>
 </body>
 </html>
