@@ -2,43 +2,184 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>SI Governance | Connexion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI Governance | Authentification</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: Arial; background: #0B1829; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .card { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 16px; width: 350px; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; }
-        button { background: #1A6CF5; color: white; cursor: pointer; }
-        .error { color: #ff8fad; margin-top: 10px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0B1829;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #0B1829;
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        button {
+            background: #1A6CF5;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #1558cc;
+        }
+        .error {
+            color: #E84568;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .success {
+            color: #00B49C;
+        }
+        .password-requirements {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        a {
+            color: #1A6CF5;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-<div class="card">
+<div class="container">
     <h2>SI Governance</h2>
-    <input type="email" id="email" placeholder="Email professionnel">
-    <input type="password" id="password" placeholder="Mot de passe">
-    <button onclick="login()">Se connecter</button>
-    <div id="error" class="error"></div>
+    <div id="loginView">
+        <input type="email" id="email" placeholder="Email professionnel">
+        <input type="password" id="password" placeholder="Mot de passe">
+        <div class="password-requirements">
+            🔒 Mot de passe : 8 lettres, 2 caractères spéciaux, 4 chiffres, 1 majuscule minimum
+        </div>
+        <button id="loginBtn">Se connecter</button>
+        <p style="text-align:center; margin-top:16px;">
+            Pas encore de compte ? <a href="#" id="showSignup">Créer un compte</a>
+        </p>
+        <div id="message" class="error"></div>
+    </div>
+    <div id="signupView" style="display:none;">
+        <input type="email" id="signupEmail" placeholder="Email professionnel">
+        <input type="password" id="signupPassword" placeholder="Mot de passe">
+        <div class="password-requirements">
+            🔒 Mot de passe : 8 lettres, 2 caractères spéciaux, 4 chiffres, 1 majuscule minimum
+        </div>
+        <button id="signupBtn">Créer mon compte</button>
+        <p style="text-align:center; margin-top:16px;">
+            <a href="#" id="showLogin">Retour à la connexion</a>
+        </p>
+        <div id="signupMessage" class="error"></div>
+    </div>
 </div>
 
 <script>
-    const supabase = supabase.createClient(
-        'https://rkaymdbyfbmfiutwbjtx.supabase.co',
-        'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH',
-        { auth: { persistSession: true } }
-    );
+    const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true } });
 
-    async function login() {
-        const email = document.getElementById('email').value;
+    // Validation du mot de passe
+    function validatePassword(pwd) {
+        const letters = (pwd.match(/[A-Za-z]/g) || []).length;
+        const specials = (pwd.match(/[^A-Za-z0-9]/g) || []).length;
+        const digits = (pwd.match(/\d/g) || []).length;
+        const hasUpper = /[A-Z]/.test(pwd);
+        return letters >= 8 && specials >= 2 && digits >= 4 && hasUpper;
+    }
+
+    // Créer ou mettre à jour le profil utilisateur dans la table `users` et `user_roles`
+    async function createUserProfile(userId, email) {
+        // Récupérer la première société
+        const { data: company } = await sb.from('companies').select('id').limit(1).single();
+        const companyId = company.id;
+        // Insérer l'utilisateur
+        await sb.from('users').upsert({ id: userId, email, company_id: companyId }, { onConflict: 'id' });
+        // Vérifier si c'est le premier utilisateur -> SUPER_ADMIN
+        const { count } = await sb.from('users').select('*', { count: 'exact', head: true });
+        const role = count === 1 ? 'SUPER_ADMIN' : 'SERVICE_MANAGER';
+        await sb.from('user_roles').upsert({ user_id: userId, role_id: role }, { onConflict: 'user_id, role_id' });
+    }
+
+    // Connexion
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim();
         const pwd = document.getElementById('password').value;
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pwd });
-        if (error) {
-            document.getElementById('error').innerText = error.message;
+        const messageDiv = document.getElementById('message');
+        if (!email || !pwd) {
+            messageDiv.innerText = 'Email et mot de passe requis';
             return;
         }
-        // Redirection simple – Supabase conserve la session automatiquement
+        const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+        if (error) {
+            messageDiv.innerText = error.message;
+            return;
+        }
+        await createUserProfile(data.user.id, email);
         window.location.href = '/dashboard.html';
-    }
+    });
+
+    // Création de compte
+    document.getElementById('signupBtn').addEventListener('click', async () => {
+        const email = document.getElementById('signupEmail').value.trim();
+        const pwd = document.getElementById('signupPassword').value;
+        const messageDiv = document.getElementById('signupMessage');
+        if (!email || !pwd) {
+            messageDiv.innerText = 'Email et mot de passe requis';
+            return;
+        }
+        if (!validatePassword(pwd)) {
+            messageDiv.innerText = 'Le mot de passe ne respecte pas les règles de sécurité.';
+            return;
+        }
+        // Création du compte dans Supabase Auth
+        const { data, error } = await sb.auth.signUp({ email, password: pwd });
+        if (error) {
+            messageDiv.innerText = error.message;
+            return;
+        }
+        // Connexion automatique
+        const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({ email, password: pwd });
+        if (signInError) {
+            messageDiv.innerText = signInError.message;
+            return;
+        }
+        await createUserProfile(signInData.user.id, email);
+        window.location.href = '/dashboard.html';
+    });
+
+    // Afficher/masquer les formulaires
+    document.getElementById('showSignup').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('signupView').style.display = 'block';
+    });
+    document.getElementById('showLogin').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('signupView').style.display = 'none';
+        document.getElementById('loginView').style.display = 'block';
+    });
 </script>
 </body>
 </html>
