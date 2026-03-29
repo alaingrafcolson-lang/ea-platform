@@ -41,7 +41,7 @@
             <p id="userInfo" class="text-gray-500 mt-1">Chargement...</p>
         </div>
 
-        <!-- Widgets (exemple) -->
+        <!-- Widgets -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="card p-6">
                 <div class="text-gray-500 text-sm">Services critiques</div>
@@ -73,103 +73,140 @@
         let user = null;
         let companyId = null;
 
-        async function loadUserProfile() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) {
-                window.location.href = '/index.html';
-                return;
-            }
-            const token = session.access_token;
-            localStorage.setItem('supabase_token', token);
-
-            // Récupérer l'utilisateur dans la table `users`
-            const { data: userData, error: userError } = await sb
-                .from('users')
-                .select('*, companies(name)')
-                .eq('id', session.user.id)
-                .single();
-            if (userError || !userData) {
-                console.error(userError);
-                window.location.href = '/index.html';
-                return;
-            }
-            user = userData;
-            companyId = user.company_id;
-
-            document.getElementById('userInfo').innerHTML = `
-                ${user.email} · Rôle : <span id="userRole">Chargement...</span> · Entreprise : ${user.companies?.name || 'N/A'}
-            `;
-
-            // Charger le rôle
-            const { data: roles } = await sb
-                .from('user_roles')
-                .select('role_id')
-                .eq('user_id', session.user.id);
-            const role = roles?.[0]?.role_id || 'SERVICE_MANAGER';
-            document.getElementById('userRole').innerText = role;
-
-            // Afficher le lien Admin si rôle SUPER_ADMIN ou DSI
-            const adminLink = document.querySelector('a[href="/admin.html"]');
-            if (adminLink) {
-                adminLink.style.display = (role === 'SUPER_ADMIN' || role === 'DSI') ? 'block' : 'none';
-            }
-
-            // Charger les indicateurs
-            loadDashboardStats();
-        }
-
-        async function loadDashboardStats() {
-            // Compter les services critiques (criticity = 'critical')
-            const { count: criticalCount } = await sb
-                .from('services')
-                .select('*', { count: 'exact', head: true })
-                .eq('company_id', companyId)
-                .eq('criticity', 'critical');
-            document.getElementById('criticalServicesCount').innerText = criticalCount || 0;
-
-            // Compter les risques avec score >= 4 (exemple)
-            const { count: highRisks } = await sb
-                .from('risks')
-                .select('*', { count: 'exact', head: true })
-                .eq('company_id', companyId)
-                .gte('score', 4);
-            document.getElementById('highRisksCount').innerText = highRisks || 0;
-
-            // Compter les contrôles non conformes
-            const { count: nonCompliant } = await sb
-                .from('controls')
-                .select('*', { count: 'exact', head: true })
-                .eq('company_id', companyId)
-                .eq('status', 'non_conforme');
-            document.getElementById('nonCompliantCount').innerText = nonCompliant || 0;
-
-            // Derniers services
-            const { data: recentServices } = await sb
-                .from('services')
-                .select('name, criticity, created_at')
-                .eq('company_id', companyId)
-                .order('created_at', { ascending: false })
-                .limit(5);
-            const container = document.getElementById('recentServices');
-            if (recentServices && recentServices.length) {
-                container.innerHTML = recentServices.map(s => `
-                    <div class="border-b pb-2">
-                        <span class="font-medium">${s.name}</span>
-                        <span class="text-xs bg-gray-200 px-2 py-1 rounded ml-2">${s.criticity || 'normal'}</span>
-                        <span class="text-gray-400 text-sm float-right">${new Date(s.created_at).toLocaleDateString()}</span>
-                    </div>
-                `).join('');
-            } else {
-                container.innerHTML = '<p class="text-gray-500">Aucun service enregistré</p>';
-            }
-        }
-
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
+        // Fonction pour forcer la déconnexion propre
+        async function forceLogout() {
             await sb.auth.signOut();
             localStorage.removeItem('supabase_token');
             window.location.href = '/index.html';
+        }
+
+        async function loadUserProfile() {
+            try {
+                // 1. Récupérer la session actuelle
+                const { data: { session }, error: sessionError } = await sb.auth.getSession();
+                if (sessionError) throw sessionError;
+                if (!session) {
+                    console.warn('Aucune session trouvée, redirection vers login');
+                    window.location.href = '/index.html';
+                    return;
+                }
+
+                // Stocker le token pour les appels API ultérieurs
+                localStorage.setItem('supabase_token', session.access_token);
+
+                // 2. Récupérer l'utilisateur dans la table `users`
+                const { data: userData, error: userError } = await sb
+                    .from('users')
+                    .select('*, companies(name)')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (userError) {
+                    console.error('Erreur chargement profil:', userError);
+                    // Si l'utilisateur n'existe pas dans la table, on le redirige vers login
+                    await forceLogout();
+                    return;
+                }
+
+                user = userData;
+                companyId = user.company_id;
+
+                // 3. Récupérer le rôle
+                const { data: roles, error: rolesError } = await sb
+                    .from('user_roles')
+                    .select('role_id')
+                    .eq('user_id', session.user.id);
+
+                if (rolesError) console.error('Erreur récupération rôle:', rolesError);
+                const role = roles?.[0]?.role_id || 'SERVICE_MANAGER';
+
+                // Mettre à jour l'affichage
+                document.getElementById('userInfo').innerHTML = `
+                    ${user.email} · Rôle : <strong>${role}</strong> · Entreprise : ${user.companies?.name || 'N/A'}
+                `;
+
+                // Afficher le lien Admin si rôle SUPER_ADMIN ou DSI
+                const adminLink = document.querySelector('a[href="/admin.html"]');
+                if (adminLink) {
+                    adminLink.style.display = (role === 'SUPER_ADMIN' || role === 'DSI') ? 'block' : 'none';
+                }
+
+                // Charger les indicateurs
+                await loadDashboardStats();
+            } catch (err) {
+                console.error('Erreur fatale:', err);
+                await forceLogout();
+            }
+        }
+
+        async function loadDashboardStats() {
+            if (!companyId) return;
+            try {
+                // Compter les services critiques
+                const { count: criticalCount } = await sb
+                    .from('services')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('company_id', companyId)
+                    .eq('criticity', 'critical');
+                document.getElementById('criticalServicesCount').innerText = criticalCount || 0;
+
+                // Compter les risques avec score >= 4
+                const { count: highRisks } = await sb
+                    .from('risks')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('company_id', companyId)
+                    .gte('score', 4);
+                document.getElementById('highRisksCount').innerText = highRisks || 0;
+
+                // Compter les contrôles non conformes
+                const { count: nonCompliant } = await sb
+                    .from('controls')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('company_id', companyId)
+                    .eq('status', 'non_conforme');
+                document.getElementById('nonCompliantCount').innerText = nonCompliant || 0;
+
+                // Derniers services
+                const { data: recentServices } = await sb
+                    .from('services')
+                    .select('name, criticity, created_at')
+                    .eq('company_id', companyId)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                const container = document.getElementById('recentServices');
+                if (recentServices && recentServices.length) {
+                    container.innerHTML = recentServices.map(s => `
+                        <div class="border-b pb-2">
+                            <span class="font-medium">${s.name}</span>
+                            <span class="text-xs bg-gray-200 px-2 py-1 rounded ml-2">${s.criticity || 'normal'}</span>
+                            <span class="text-gray-400 text-sm float-right">${new Date(s.created_at).toLocaleDateString()}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-gray-500">Aucun service enregistré</p>';
+                }
+            } catch (err) {
+                console.error('Erreur chargement indicateurs:', err);
+            }
+        }
+
+        // Rafraîchir périodiquement la session (toutes les 5 minutes)
+        let refreshInterval = setInterval(async () => {
+            const { error } = await sb.auth.refreshSession();
+            if (error) {
+                console.warn('Impossible de rafraîchir la session', error);
+                clearInterval(refreshInterval);
+                await forceLogout();
+            }
+        }, 5 * 60 * 1000);
+
+        // Écouteur de déconnexion
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            clearInterval(refreshInterval);
+            await forceLogout();
         });
 
+        // Lancer le chargement du profil
         loadUserProfile();
     </script>
 </body>
