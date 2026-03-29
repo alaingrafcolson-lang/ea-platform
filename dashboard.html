@@ -72,29 +72,24 @@
 
         let user = null;
         let companyId = null;
+        let refreshInterval = null;
 
-        // Fonction pour forcer la déconnexion propre
-        async function forceLogout() {
-            await sb.auth.signOut();
-            localStorage.removeItem('supabase_token');
-            window.location.href = '/index.html';
+        async function checkSessionAndRedirect() {
+            const { data: { session }, error } = await sb.auth.getSession();
+            if (error || !session) {
+                console.warn('Session invalide, redirection vers login');
+                window.location.href = '/index.html';
+                return false;
+            }
+            return session;
         }
 
         async function loadUserProfile() {
+            const session = await checkSessionAndRedirect();
+            if (!session) return;
+
             try {
-                // 1. Récupérer la session actuelle
-                const { data: { session }, error: sessionError } = await sb.auth.getSession();
-                if (sessionError) throw sessionError;
-                if (!session) {
-                    console.warn('Aucune session trouvée, redirection vers login');
-                    window.location.href = '/index.html';
-                    return;
-                }
-
-                // Stocker le token pour les appels API ultérieurs
-                localStorage.setItem('supabase_token', session.access_token);
-
-                // 2. Récupérer l'utilisateur dans la table `users`
+                // Récupérer l'utilisateur dans la table `users`
                 const { data: userData, error: userError } = await sb
                     .from('users')
                     .select('*, companies(name)')
@@ -103,7 +98,7 @@
 
                 if (userError) {
                     console.error('Erreur chargement profil:', userError);
-                    // Si l'utilisateur n'existe pas dans la table, on le redirige vers login
+                    // Si l'utilisateur n'existe pas dans la table, déconnexion
                     await forceLogout();
                     return;
                 }
@@ -111,16 +106,13 @@
                 user = userData;
                 companyId = user.company_id;
 
-                // 3. Récupérer le rôle
-                const { data: roles, error: rolesError } = await sb
+                // Récupérer le rôle
+                const { data: roles } = await sb
                     .from('user_roles')
                     .select('role_id')
                     .eq('user_id', session.user.id);
-
-                if (rolesError) console.error('Erreur récupération rôle:', rolesError);
                 const role = roles?.[0]?.role_id || 'SERVICE_MANAGER';
 
-                // Mettre à jour l'affichage
                 document.getElementById('userInfo').innerHTML = `
                     ${user.email} · Rôle : <strong>${role}</strong> · Entreprise : ${user.companies?.name || 'N/A'}
                 `;
@@ -131,7 +123,6 @@
                     adminLink.style.display = (role === 'SUPER_ADMIN' || role === 'DSI') ? 'block' : 'none';
                 }
 
-                // Charger les indicateurs
                 await loadDashboardStats();
             } catch (err) {
                 console.error('Erreur fatale:', err);
@@ -142,7 +133,6 @@
         async function loadDashboardStats() {
             if (!companyId) return;
             try {
-                // Compter les services critiques
                 const { count: criticalCount } = await sb
                     .from('services')
                     .select('*', { count: 'exact', head: true })
@@ -150,7 +140,6 @@
                     .eq('criticity', 'critical');
                 document.getElementById('criticalServicesCount').innerText = criticalCount || 0;
 
-                // Compter les risques avec score >= 4
                 const { count: highRisks } = await sb
                     .from('risks')
                     .select('*', { count: 'exact', head: true })
@@ -158,7 +147,6 @@
                     .gte('score', 4);
                 document.getElementById('highRisksCount').innerText = highRisks || 0;
 
-                // Compter les contrôles non conformes
                 const { count: nonCompliant } = await sb
                     .from('controls')
                     .select('*', { count: 'exact', head: true })
@@ -166,7 +154,6 @@
                     .eq('status', 'non_conforme');
                 document.getElementById('nonCompliantCount').innerText = nonCompliant || 0;
 
-                // Derniers services
                 const { data: recentServices } = await sb
                     .from('services')
                     .select('name, criticity, created_at')
@@ -190,8 +177,14 @@
             }
         }
 
-        // Rafraîchir périodiquement la session (toutes les 5 minutes)
-        let refreshInterval = setInterval(async () => {
+        async function forceLogout() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            await sb.auth.signOut();
+            window.location.href = '/index.html';
+        }
+
+        // Rafraîchir la session toutes les 5 minutes
+        refreshInterval = setInterval(async () => {
             const { error } = await sb.auth.refreshSession();
             if (error) {
                 console.warn('Impossible de rafraîchir la session', error);
@@ -200,13 +193,11 @@
             }
         }, 5 * 60 * 1000);
 
-        // Écouteur de déconnexion
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             clearInterval(refreshInterval);
             await forceLogout();
         });
 
-        // Lancer le chargement du profil
         loadUserProfile();
     </script>
 </body>
