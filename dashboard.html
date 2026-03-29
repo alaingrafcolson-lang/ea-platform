@@ -2,43 +2,98 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Tableau de bord</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI Governance | Tableau de bord</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: Arial; background: #F4F7FB; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 16px; }
-        button { background: #E84568; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #F4F7FB;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #0B1829;
+            margin-top: 0;
+        }
+        button {
+            background: #E84568;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #c73b5e;
+        }
+        .role-badge {
+            background: #1A6CF5;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            display: inline-block;
+        }
+        .info-card {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>Tableau de bord</h2>
-    <div id="userInfo">Chargement...</div>
+    <h1>Tableau de bord</h1>
+    <div id="userInfo" class="info-card">Chargement...</div>
     <button onclick="logout()">Déconnexion</button>
 </div>
 
 <script>
-    const supabase = supabase.createClient(
-        'https://rkaymdbyfbmfiutwbjtx.supabase.co',
-        'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH',
-        { auth: { persistSession: true } }
-    );
+    const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true } });
 
-    async function checkAuth() {
-        const { data: { user }, error } = await supabase.auth.getUser();
+    async function loadDashboard() {
+        // Vérifier la session
+        const { data: { user }, error } = await sb.auth.getUser();
         if (error || !user) {
             window.location.href = '/index.html';
             return;
         }
-        document.getElementById('userInfo').innerHTML = `Connecté : ${user.email}`;
+
+        // Récupérer le rôle depuis user_roles
+        const { data: roles } = await sb
+            .from('user_roles')
+            .select('role_id')
+            .eq('user_id', user.id);
+        const role = roles?.[0]?.role_id || 'SERVICE_MANAGER';
+
+        // Afficher les informations
+        document.getElementById('userInfo').innerHTML = `
+            <p><strong>Email :</strong> ${user.email}</p>
+            <p><strong>Rôle :</strong> <span class="role-badge">${role}</span></p>
+            <p><strong>Statut :</strong> Connecté ✅</p>
+        `;
     }
 
     async function logout() {
-        await supabase.auth.signOut();
+        await sb.auth.signOut();
         window.location.href = '/index.html';
     }
 
-    checkAuth();
+    loadDashboard();
 </script>
 </body>
 </html>
