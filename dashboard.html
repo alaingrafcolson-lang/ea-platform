@@ -2,203 +2,43 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SI Governance | Tableau de bord</title>
+    <title>Tableau de bord</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #F4F7FB; font-family: 'Inter', sans-serif; }
-        .sidebar { background: #0B1829; color: white; }
-        .sidebar a { color: #9ca3af; transition: 0.2s; }
-        .sidebar a:hover { color: white; background: #1A6CF5; }
-        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        body { font-family: Arial; background: #F4F7FB; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 16px; }
+        button { background: #E84568; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
-<body class="flex">
-    <!-- Sidebar -->
-    <div class="sidebar w-64 min-h-screen p-5 flex flex-col">
-        <div class="text-2xl font-bold mb-8">SI Governance</div>
-        <nav class="flex-1">
-            <a href="/dashboard.html" class="block py-2 px-4 rounded-lg mb-1 bg-blue-600 text-white">🏠 Tableau de bord</a>
-            <a href="/services.html" class="block py-2 px-4 rounded-lg mb-1">📋 Services</a>
-            <a href="/risques.html" class="block py-2 px-4 rounded-lg mb-1">⚠️ Risques</a>
-            <a href="/cartographie.html" class="block py-2 px-4 rounded-lg mb-1">🗺️ Cartographie</a>
-            <a href="/conformite.html" class="block py-2 px-4 rounded-lg mb-1">⚖️ Conformité</a>
-            <a href="/fournisseurs.html" class="block py-2 px-4 rounded-lg mb-1">🤝 Fournisseurs</a>
-            <a href="/donnees.html" class="block py-2 px-4 rounded-lg mb-1">🗄️ Données</a>
-            <a href="/cyber-mitre.html" class="block py-2 px-4 rounded-lg mb-1">🎯 MITRE ATT&CK</a>
-            <a href="/kpi.html" class="block py-2 px-4 rounded-lg mb-1">📊 KPI</a>
-            <a href="/operations.html" class="block py-2 px-4 rounded-lg mb-1">🔄 Opérations</a>
-            <a href="/admin.html" class="block py-2 px-4 rounded-lg mb-1 mt-4 text-yellow-400">🔧 Admin</a>
-        </nav>
-        <button id="logoutBtn" class="mt-auto bg-red-600 hover:bg-red-700 py-2 rounded-lg text-white">Déconnexion</button>
-    </div>
+<body>
+<div class="container">
+    <h2>Tableau de bord</h2>
+    <div id="userInfo">Chargement...</div>
+    <button onclick="logout()">Déconnexion</button>
+</div>
 
-    <!-- Main content -->
-    <div class="flex-1 p-8">
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Tableau de bord</h1>
-            <p id="userInfo" class="text-gray-500 mt-1">Chargement...</p>
-        </div>
+<script>
+    const supabase = supabase.createClient(
+        'https://rkaymdbyfbmfiutwbjtx.supabase.co',
+        'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH',
+        { auth: { persistSession: true } }
+    );
 
-        <!-- Widgets -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="card p-6">
-                <div class="text-gray-500 text-sm">Services critiques</div>
-                <div class="text-3xl font-bold" id="criticalServicesCount">-</div>
-            </div>
-            <div class="card p-6">
-                <div class="text-gray-500 text-sm">Risques élevés</div>
-                <div class="text-3xl font-bold" id="highRisksCount">-</div>
-            </div>
-            <div class="card p-6">
-                <div class="text-gray-500 text-sm">Non conformités</div>
-                <div class="text-3xl font-bold" id="nonCompliantCount">-</div>
-            </div>
-        </div>
-
-        <div class="card p-6">
-            <h2 class="text-xl font-semibold mb-4">Services récents</h2>
-            <div id="recentServices" class="space-y-2"></div>
-        </div>
-    </div>
-
-    <script>
-        const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: { persistSession: true }
-        });
-
-        let user = null;
-        let companyId = null;
-        let refreshInterval = null;
-
-        async function checkSessionAndRedirect() {
-            const { data: { session }, error } = await sb.auth.getSession();
-            if (error || !session) {
-                console.warn('Session invalide, redirection vers login');
-                window.location.href = '/index.html';
-                return false;
-            }
-            return session;
-        }
-
-        async function loadUserProfile() {
-            const session = await checkSessionAndRedirect();
-            if (!session) return;
-
-            try {
-                // Récupérer l'utilisateur dans la table `users`
-                const { data: userData, error: userError } = await sb
-                    .from('users')
-                    .select('*, companies(name)')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (userError) {
-                    console.error('Erreur chargement profil:', userError);
-                    // Si l'utilisateur n'existe pas dans la table, déconnexion
-                    await forceLogout();
-                    return;
-                }
-
-                user = userData;
-                companyId = user.company_id;
-
-                // Récupérer le rôle
-                const { data: roles } = await sb
-                    .from('user_roles')
-                    .select('role_id')
-                    .eq('user_id', session.user.id);
-                const role = roles?.[0]?.role_id || 'SERVICE_MANAGER';
-
-                document.getElementById('userInfo').innerHTML = `
-                    ${user.email} · Rôle : <strong>${role}</strong> · Entreprise : ${user.companies?.name || 'N/A'}
-                `;
-
-                // Afficher le lien Admin si rôle SUPER_ADMIN ou DSI
-                const adminLink = document.querySelector('a[href="/admin.html"]');
-                if (adminLink) {
-                    adminLink.style.display = (role === 'SUPER_ADMIN' || role === 'DSI') ? 'block' : 'none';
-                }
-
-                await loadDashboardStats();
-            } catch (err) {
-                console.error('Erreur fatale:', err);
-                await forceLogout();
-            }
-        }
-
-        async function loadDashboardStats() {
-            if (!companyId) return;
-            try {
-                const { count: criticalCount } = await sb
-                    .from('services')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('company_id', companyId)
-                    .eq('criticity', 'critical');
-                document.getElementById('criticalServicesCount').innerText = criticalCount || 0;
-
-                const { count: highRisks } = await sb
-                    .from('risks')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('company_id', companyId)
-                    .gte('score', 4);
-                document.getElementById('highRisksCount').innerText = highRisks || 0;
-
-                const { count: nonCompliant } = await sb
-                    .from('controls')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('company_id', companyId)
-                    .eq('status', 'non_conforme');
-                document.getElementById('nonCompliantCount').innerText = nonCompliant || 0;
-
-                const { data: recentServices } = await sb
-                    .from('services')
-                    .select('name, criticity, created_at')
-                    .eq('company_id', companyId)
-                    .order('created_at', { ascending: false })
-                    .limit(5);
-                const container = document.getElementById('recentServices');
-                if (recentServices && recentServices.length) {
-                    container.innerHTML = recentServices.map(s => `
-                        <div class="border-b pb-2">
-                            <span class="font-medium">${s.name}</span>
-                            <span class="text-xs bg-gray-200 px-2 py-1 rounded ml-2">${s.criticity || 'normal'}</span>
-                            <span class="text-gray-400 text-sm float-right">${new Date(s.created_at).toLocaleDateString()}</span>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<p class="text-gray-500">Aucun service enregistré</p>';
-                }
-            } catch (err) {
-                console.error('Erreur chargement indicateurs:', err);
-            }
-        }
-
-        async function forceLogout() {
-            if (refreshInterval) clearInterval(refreshInterval);
-            await sb.auth.signOut();
+    async function checkAuth() {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) {
             window.location.href = '/index.html';
+            return;
         }
+        document.getElementById('userInfo').innerHTML = `Connecté : ${user.email}`;
+    }
 
-        // Rafraîchir la session toutes les 5 minutes
-        refreshInterval = setInterval(async () => {
-            const { error } = await sb.auth.refreshSession();
-            if (error) {
-                console.warn('Impossible de rafraîchir la session', error);
-                clearInterval(refreshInterval);
-                await forceLogout();
-            }
-        }, 5 * 60 * 1000);
+    async function logout() {
+        await supabase.auth.signOut();
+        window.location.href = '/index.html';
+    }
 
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            clearInterval(refreshInterval);
-            await forceLogout();
-        });
-
-        loadUserProfile();
-    </script>
+    checkAuth();
+</script>
 </body>
 </html>
