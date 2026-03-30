@@ -1,1629 +1,834 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Réorganiser son IT — Vues clés de l'architecture</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;1,400&display=swap');
-:root{
-  --bg:#080a0f;--bg1:#0d1018;--bg2:#121520;--bg3:#1a1f2e;--bg4:#222840;
-  --border:rgba(255,255,255,0.05);--border2:rgba(255,255,255,0.1);--border3:rgba(255,255,255,0.18);
-  --text:#dde2f0;--text2:#7d8599;--text3:#464e68;
-  --c-portfolio:#4f8ef7;--c-tech:#2ec4b6;--c-secu:#f72585;--c-finance:#f4a261;
-  --c-data:#7b61ff;--c-project:#06d6a0;--c-sourcing:#ffd166;
-  --accent:#4f8ef7;--r:10px;--r2:14px;--r3:20px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{font-size:13px}
-body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-
-/* ── LOGIN SCREEN ── */
-.login-screen{
-  position:fixed;inset:0;background:var(--bg);z-index:1000;
-  display:flex;align-items:center;justify-content:center;
-  flex-direction:column;gap:0;
-}
-.login-screen.hidden{display:none}
-.login-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff;letter-spacing:-0.03em;margin-bottom:6px;text-align:center}
-.login-sub{font-size:13px;color:var(--text3);margin-bottom:40px;letter-spacing:0.06em;text-transform:uppercase;text-align:center}
-.role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:580px;padding:0 20px}
-.role-card{
-  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);
-  padding:20px 16px;cursor:pointer;transition:all 0.2s;text-align:center;
-  position:relative;overflow:hidden;
-}
-.role-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity 0.2s}
-.role-card:hover{border-color:var(--border3);transform:translateY(-2px)}
-.role-card.selected{border-width:2px}
-.rc-emoji{font-size:28px;margin-bottom:10px;display:block}
-.rc-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#fff;margin-bottom:4px}
-.rc-sub{font-size:11px;color:var(--text3);line-height:1.4}
-.rc-perms{margin-top:8px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
-.perm-dot{width:6px;height:6px;border-radius:50%}
-.login-btn{
-  margin-top:28px;padding:12px 40px;background:var(--accent);border:none;border-radius:10px;
-  color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;
-  transition:all 0.18s;opacity:0.4;pointer-events:none;
-}
-.login-btn.ready{opacity:1;pointer-events:all}
-.login-btn.ready:hover{background:#3a7ef5;transform:translateY(-1px)}
-
-/* ── ROLE BADGE ── */
-.role-badge{
-  display:flex;align-items:center;gap:8px;padding:6px 12px;
-  background:var(--bg3);border:1px solid var(--border2);border-radius:20px;
-  cursor:pointer;transition:background 0.15s;
-}
-.role-badge:hover{background:var(--bg4)}
-.rb-dot{width:8px;height:8px;border-radius:50%}
-.rb-name{font-size:12px;font-weight:500;color:var(--text)}
-.rb-switch{font-size:10px;color:var(--text3)}
-
-/* ── EDIT BADGE ── */
-.edit-badge{
-  display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
-  background:rgba(255,255,255,0.04);border:1px solid var(--border2);
-  border-radius:6px;font-size:10px;color:var(--text3);cursor:pointer;
-  transition:all 0.15s;margin-left:8px;
-}
-.edit-badge:hover{background:rgba(255,255,255,0.08);color:var(--text);border-color:var(--border3)}
-.edit-badge.locked{cursor:not-allowed;opacity:0.4}
-.edit-badge svg{width:10px;height:10px}
-
-/* ── ACCESS DENIED ── */
-.access-denied{
-  background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);
-  border-radius:var(--r);padding:12px 16px;font-size:12px;color:#ef4444;
-  display:flex;align-items:center;gap:8px;
-}
-
-/* ── SHELL ── */
-.shell{display:flex;min-height:100vh}
-
-/* ── SIDEBAR ── */
-.sidebar{width:230px;flex-shrink:0;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:10}
-.sidebar::-webkit-scrollbar{width:3px}
-.sidebar::-webkit-scrollbar-thumb{background:var(--border3);border-radius:2px}
-.brand{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
-.brand-title{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#fff;letter-spacing:-0.02em;line-height:1.2}
-.brand-sub{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:0.08em;text-transform:uppercase}
-.nav-section{padding:14px 14px 4px;font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em}
-.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;margin:1px 6px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text2);transition:all 0.15s;user-select:none;position:relative}
-.nav-item:hover{background:var(--bg3);color:var(--text)}
-.nav-item.active{background:var(--bg3);color:#fff}
-.nav-item.active::before{content:'';position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:3px;height:60%;border-radius:2px;background:var(--active-color,#4f8ef7)}
-.nav-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.nav-lock{font-size:10px;opacity:0.5;margin-left:auto}
-
-/* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;overflow-x:hidden}
-.topheader{background:var(--bg1);border-bottom:1px solid var(--border);padding:0 28px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:9}
-.th-left{display:flex;align-items:center;gap:10px}
-.th-dot{width:10px;height:10px;border-radius:50%}
-.th-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff}
-.th-sub{font-size:11px;color:var(--text3);margin-top:1px}
-.th-right{display:flex;gap:8px;align-items:center}
-.th-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)}
-
-/* ── BUTTONS ── */
-.btn{padding:6px 13px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;transition:all 0.15s}
-.btn:hover{background:var(--bg4);border-color:var(--border3)}
-.btn-accent{border-color:var(--accent);color:var(--accent)}
-.btn-accent:hover{background:rgba(79,142,247,0.08)}
-.btn-danger{border-color:rgba(239,68,68,0.4);color:#ef4444}
-.btn-danger:hover{background:rgba(239,68,68,0.08)}
-.btn-sm{padding:4px 10px;font-size:11px}
-.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn-primary:hover{background:#3a7ef5}
-
-/* ── CONTENT ── */
-.content{flex:1;padding:22px 28px;overflow-x:hidden}
-.page{display:none;animation:fadeUp 0.18s ease}
-.page.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-
-/* ── SECTION HEADER ── */
-.sec-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
-.sec-title{font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:#fff;letter-spacing:-0.02em}
-.sec-subtitle{font-size:11px;color:var(--text3);margin-top:3px}
-.sec-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-
-/* ── TOOLBAR ── */
-.toolbar{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:12px 16px;margin-bottom:18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.toolbar-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-right:4px}
-.tool-chip{display:flex;align-items:center;gap:5px;padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid;transition:all 0.15s}
-.tool-chip:hover{transform:translateY(-1px)}
-.tc-risk{border-color:rgba(239,68,68,0.3);color:#ef4444;background:rgba(239,68,68,0.07)}
-.tc-cost{border-color:rgba(244,162,97,0.3);color:#f4a261;background:rgba(244,162,97,0.07)}
-.tc-start{border-color:rgba(6,214,160,0.3);color:#06d6a0;background:rgba(6,214,160,0.07)}
-.tc-agile{border-color:rgba(79,142,247,0.3);color:#4f8ef7;background:rgba(79,142,247,0.07)}
-
-/* ── GRID ── */
-.grid{display:grid;gap:14px}
-.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
-.g12{grid-template-columns:1fr 2fr}.g21{grid-template-columns:2fr 1fr}
-.gfull{grid-column:1/-1}
-@media(max-width:1200px){.g3{grid-template-columns:1fr 1fr}.g4{grid-template-columns:1fr 1fr}}
-@media(max-width:900px){.g2,.g3,.g4,.g12,.g21{grid-template-columns:1fr}.content{padding:14px 16px}}
-
-/* ── PANEL ── */
-.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;display:flex;flex-direction:column}
-.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
-.panel-title{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:#fff;letter-spacing:-0.01em}
-.panel-sub{font-size:11px;color:var(--text3);margin-top:1px}
-.chart-wrap{position:relative;width:100%}
-
-/* ── KPI ── */
-.kpi{background:var(--bg3);border-radius:var(--r);padding:14px 15px;border:1px solid var(--border)}
-.kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px}
-.kpi-value{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:500;color:#fff;line-height:1}
-.kpi-delta{font-size:11px;margin-top:4px;color:var(--text3)}
-.kpi-delta.up{color:#06d6a0}.kpi-delta.dn{color:#ef4444}
-.kpi-bar{height:3px;border-radius:2px;background:var(--bg4);margin-top:9px;overflow:hidden}
-.kpi-bar-fill{height:100%;border-radius:2px;transition:width 0.6s ease}
-
-/* ── PROGRESS ── */
-.prog-row{display:flex;align-items:center;gap:9px;margin-bottom:8px}
-.prog-label{font-size:12px;color:var(--text2);min-width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prog-wrap{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
-.prog-fill{height:100%;border-radius:3px;transition:width 0.7s cubic-bezier(.16,1,.3,1)}
-.prog-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);min-width:28px;text-align:right}
-
-/* ── BADGES ── */
-.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
-.b-red{background:rgba(239,68,68,0.1);color:#ef4444}.b-amber{background:rgba(244,162,97,0.1);color:#f4a261}
-.b-green{background:rgba(6,214,160,0.1);color:#06d6a0}.b-blue{background:rgba(79,142,247,0.1);color:#4f8ef7}
-.b-teal{background:rgba(46,196,182,0.1);color:#2ec4b6}.b-violet{background:rgba(123,97,255,0.1);color:#7b61ff}
-.b-pink{background:rgba(247,37,133,0.1);color:#f72585}.b-yellow{background:rgba(255,209,102,0.1);color:#ffd166}
-.b-gray{background:rgba(255,255,255,0.06);color:var(--text2)}
-
-/* ── TABLE ── */
-.tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{text-align:left;padding:7px 10px;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)}
-td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,0.015)}
-
-/* ── EDITABLE CELL ── */
-.editable-cell{
-  display:inline-flex;align-items:center;gap:4px;padding:2px 6px;
-  border-radius:5px;border:1px solid transparent;transition:all 0.15s;cursor:pointer;
-}
-.editable-cell:hover{background:rgba(79,142,247,0.08);border-color:rgba(79,142,247,0.3)}
-.editable-cell.editing{background:rgba(79,142,247,0.12);border-color:rgba(79,142,247,0.5)}
-.edit-icon{opacity:0;transition:opacity 0.15s;font-size:10px;color:var(--accent)}
-.editable-cell:hover .edit-icon{opacity:1}
-
-/* ── INLINE EDIT INPUT ── */
-.inline-input{
-  background:var(--bg4);border:1px solid var(--accent);border-radius:5px;
-  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;
-  padding:2px 6px;width:80px;outline:none;
-}
-.inline-select{
-  background:var(--bg4);border:1px solid var(--accent);border-radius:5px;
-  color:var(--text);font-family:inherit;font-size:11px;padding:2px 6px;outline:none;cursor:pointer;
-}
-
-/* ── GANTT ── */
-.gantt-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
-.gantt-label{font-size:11px;color:var(--text2);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gantt-track{flex:1;height:20px;background:var(--bg3);border-radius:4px;position:relative;overflow:hidden}
-.gantt-bar{position:absolute;top:2px;height:16px;border-radius:3px;display:flex;align-items:center;padding:0 5px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden}
-.gantt-year{font-size:10px;color:var(--text3);min-width:36px;text-align:right;font-family:'JetBrains Mono',monospace}
-
-/* ── QUADRANT LABELS ── */
-.quad-label{position:absolute;font-size:10px;color:var(--text3);font-weight:600;pointer-events:none;letter-spacing:0.05em;text-transform:uppercase}
-
-/* ── REGION CARDS ── */
-.region-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.region-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;transition:border-color 0.15s}
-.region-card:hover{border-color:var(--border3)}
-.rc-name{font-size:11px;font-weight:500;color:#fff;margin-bottom:4px}
-.rc-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500}
-.rc-sub{font-size:10px;color:var(--text3);margin-top:2px}
-
-/* ── ROADMAP ── */
-.roadmap-phase{margin-bottom:14px}
-.rp-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text3);margin-bottom:6px;padding-left:2px}
-.rp-items{display:flex;gap:8px;flex-wrap:wrap}
-.rp-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;min-width:120px;transition:border-color 0.15s}
-.rp-item:hover{border-color:var(--border3)}
-.rp-item-title{font-size:12px;font-weight:500;color:#fff;margin-bottom:2px}
-.rp-item-meta{font-size:11px;color:var(--text3)}
-.rp-stripe{height:3px;border-radius:2px;margin-bottom:6px}
-
-/* ── RING ── */
-.ring-wrap{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
-.ring-wrap:last-child{border-bottom:none}
-.ring{position:relative;width:48px;height:48px;flex-shrink:0}
-.ring svg{transform:rotate(-90deg)}
-.ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ring-num{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;line-height:1}
-.ring-info{flex:1}
-.ring-name{font-size:12px;font-weight:500;color:#fff}
-.ring-detail{font-size:11px;color:var(--text3);margin-top:1px}
-
-/* ── MODAL ── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
-.modal-bg.open{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);padding:24px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;animation:fadeUp 0.2s ease}
-.modal::-webkit-scrollbar{width:4px}.modal::-webkit-scrollbar-thumb{background:var(--border3);border-radius:2px}
-.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
-.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#fff}
-.modal-sub{font-size:12px;color:var(--text3);margin-top:3px}
-.modal-close{cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px;transition:color 0.15s}
-.modal-close:hover{color:#fff}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
-
-/* ── FORM ── */
-.form-section{margin-bottom:16px}
-.form-section-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:10px}
-.form-row{display:flex;gap:10px;flex-wrap:wrap}
-.fgroup{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
-.fgroup label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
-input[type=text],input[type=number],input[type=date],select,textarea{
-  background:var(--bg3);border:1px solid var(--border2);border-radius:7px;
-  color:var(--text);font-family:inherit;font-size:12px;padding:6px 10px;
-  outline:none;transition:border-color 0.15s;width:100%;
-}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
-select{cursor:pointer}
-textarea{resize:vertical;min-height:55px}
-input[type=range]{background:var(--bg4);border:none;height:4px;-webkit-appearance:none;border-radius:2px;padding:0;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg2)}
-.range-row{display:flex;align-items:center;gap:10px}
-.range-row input[type=range]{flex:1}
-.range-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);min-width:28px;text-align:right}
-
-/* ── TOAST ── */
-.toast{position:fixed;bottom:18px;right:18px;background:var(--bg3);border:1px solid var(--border2);border-left:3px solid var(--accent);border-radius:10px;padding:10px 16px;font-size:12px;color:var(--text);transform:translateY(60px);opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
-.toast.show{transform:translateY(0);opacity:1}
-
-/* ── PERM TOOLTIP ── */
-.perm-info{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);padding:3px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)}
-
-/* MISC */
-.mono{font-family:'JetBrains Mono',monospace}
-.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
-.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}
-.divider{height:1px;background:var(--border);margin:14px 0}
-.empty{text-align:center;padding:28px 16px;color:var(--text3);font-size:12px}
-.flex{display:flex}.flex-between{justify-content:space-between}.flex-center{align-items:center}.gap8{gap:8px}.gap12{gap:12px}
-</style>
-
-<!-- ════════ LOGIN SCREEN ════════ -->
-<div class="login-screen" id="login-screen">
-  <div class="login-brand">Réorganiser son IT</div>
-  <div class="login-sub">Vues clés de l'architecture — Sélectionnez votre rôle</div>
-  <div class="role-grid" id="role-grid">
-    <div class="role-card" data-role="DSI" onclick="selectRole(this)">
-      <span class="rc-emoji">🏛️</span>
-      <div class="rc-title">DSI</div>
-      <div class="rc-sub">Direction des Systèmes d'Information</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:#4f8ef7" title="Portfolio"></div>
-        <div class="perm-dot" style="background:#2ec4b6" title="Tech"></div>
-        <div class="perm-dot" style="background:#f72585" title="Sécu"></div>
-        <div class="perm-dot" style="background:#f4a261" title="Finance"></div>
-        <div class="perm-dot" style="background:#7b61ff" title="Data"></div>
-        <div class="perm-dot" style="background:#06d6a0" title="Projet"></div>
-        <div class="perm-dot" style="background:#ffd166" title="Sourcing"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="RSSI" onclick="selectRole(this)">
-      <span class="rc-emoji">🔐</span>
-      <div class="rc-title">RSSI</div>
-      <div class="rc-sub">Responsable Sécurité des SI</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:var(--text3)" title="Portfolio (lecture)"></div>
-        <div class="perm-dot" style="background:#2ec4b6" title="Tech"></div>
-        <div class="perm-dot" style="background:#f72585" title="Sécu"></div>
-        <div class="perm-dot" style="background:var(--text3)" title="Finance (lecture)"></div>
-        <div class="perm-dot" style="background:var(--text3)" title="Data (lecture)"></div>
-        <div class="perm-dot" style="background:var(--text3)" title="Projet (lecture)"></div>
-        <div class="perm-dot" style="background:#ffd166" title="Sourcing (sécu)"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="DAF" onclick="selectRole(this)">
-      <span class="rc-emoji">💰</span>
-      <div class="rc-title">DAF / Contrôle de Gestion</div>
-      <div class="rc-sub">Direction Administrative & Financière</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:#f4a261"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:#06d6a0"></div>
-        <div class="perm-dot" style="background:#ffd166"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="EA" onclick="selectRole(this)">
-      <span class="rc-emoji">🏗️</span>
-      <div class="rc-title">Architecte EA</div>
-      <div class="rc-sub">Enterprise Architecture</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:#4f8ef7"></div>
-        <div class="perm-dot" style="background:#2ec4b6"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:#7b61ff"></div>
-        <div class="perm-dot" style="background:#06d6a0"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="PM" onclick="selectRole(this)">
-      <span class="rc-emoji">📋</span>
-      <div class="rc-title">Chef de Projet</div>
-      <div class="rc-sub">Project Manager / MOE</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:#06d6a0"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="DG" onclick="selectRole(this)">
-      <span class="rc-emoji">👔</span>
-      <div class="rc-title">DG / COMEX</div>
-      <div class="rc-sub">Direction Générale — Lecture seule</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-      </div>
-    </div>
-  </div>
-  <button class="login-btn" id="login-btn" onclick="doLogin()">Accéder au tableau de bord →</button>
-</div>
-
-<!-- ════════ MAIN SHELL ════════ -->
-<div class="shell" id="main-shell" style="display:none">
-<nav class="sidebar">
-  <div class="brand">
-    <div class="brand-title">Réorganiser son IT</div>
-    <div class="brand-sub">Architecture &amp; Gouvernance</div>
-  </div>
-  <div class="nav-section">Architecture</div>
-  <div class="nav-item active" id="nav-portfolio" style="--active-color:var(--c-portfolio)" onclick="nav('portfolio',this,'var(--c-portfolio)')">
-    <div class="nav-dot" style="background:var(--c-portfolio)"></div>
-    <span>Gestion de portefeuille</span>
-    <span class="nav-lock" id="lock-portfolio"></span>
-  </div>
-  <div class="nav-section">Domaines</div>
-  <div class="nav-item" id="nav-tech" style="--active-color:var(--c-tech)" onclick="nav('tech',this,'var(--c-tech)')">
-    <div class="nav-dot" style="background:var(--c-tech)"></div>
-    <span>Technology &amp; Risk</span>
-    <span class="nav-lock" id="lock-tech"></span>
-  </div>
-  <div class="nav-item" id="nav-secu" style="--active-color:var(--c-secu)" onclick="nav('secu',this,'var(--c-secu)')">
-    <div class="nav-dot" style="background:var(--c-secu)"></div>
-    <span>Sécurité &amp; Confidentialité</span>
-    <span class="nav-lock" id="lock-secu"></span>
-  </div>
-  <div class="nav-item" id="nav-finance" style="--active-color:var(--c-finance)" onclick="nav('finance',this,'var(--c-finance)')">
-    <div class="nav-dot" style="background:var(--c-finance)"></div>
-    <span>Gestion financière IT</span>
-    <span class="nav-lock" id="lock-finance"></span>
-  </div>
-  <div class="nav-item" id="nav-data" style="--active-color:var(--c-data)" onclick="nav('data',this,'var(--c-data)')">
-    <div class="nav-dot" style="background:var(--c-data)"></div>
-    <span>Intégration &amp; Données</span>
-    <span class="nav-lock" id="lock-data"></span>
-  </div>
-  <div class="nav-item" id="nav-project" style="--active-color:var(--c-project)" onclick="nav('project',this,'var(--c-project)')">
-    <div class="nav-dot" style="background:var(--c-project)"></div>
-    <span>Project Portfolio Mgmt</span>
-    <span class="nav-lock" id="lock-project"></span>
-  </div>
-  <div class="nav-item" id="nav-sourcing" style="--active-color:var(--c-sourcing)" onclick="nav('sourcing',this,'var(--c-sourcing)')">
-    <div class="nav-dot" style="background:var(--c-sourcing)"></div>
-    <span>Gestion du Sourcing IT</span>
-    <span class="nav-lock" id="lock-sourcing"></span>
-  </div>
-</nav>
-
-<div class="main">
-<div class="topheader">
-  <div class="th-left">
-    <div class="th-dot" id="th-dot" style="background:var(--c-portfolio)"></div>
-    <div>
-      <div class="th-name" id="th-name">Gestion de portefeuille</div>
-      <div class="th-sub" id="th-sub">Capacités · Cycle de vie · Criticité</div>
-    </div>
-  </div>
-  <div class="th-right">
-    <span class="th-date mono" id="th-date"></span>
-    <div class="role-badge" id="role-badge" onclick="switchRole()">
-      <div class="rb-dot" id="rb-dot"></div>
-      <span class="rb-name" id="rb-name"></span>
-      <span class="rb-switch">Changer</span>
-    </div>
-  </div>
-</div>
-<div class="content" id="content">
-
-<!-- ════════ PAGE PORTFOLIO ════════ -->
-<div class="page active" id="page-portfolio">
-  <div class="sec-header">
-    <div><div class="sec-title">Gestion de portefeuille d'applications</div><div class="sec-subtitle">Fonctionnel · Technique · Criticité · Cycle de vie · Successeurs</div></div>
-    <div class="sec-actions">
-      <span class="perm-info" id="perm-portfolio"></span>
-      <button class="btn btn-accent btn-sm" id="btn-add-app" onclick="openAppModal(-1)">+ Application</button>
-    </div>
-  </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="port-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Capacité fonctionnelle</div><div class="panel-sub">Score moyen par domaine</div></div></div>
-      <div class="chart-wrap" style="height:190px"><canvas id="chartFonc"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Capacité technique</div><div class="panel-sub">Score moyen par domaine</div></div></div>
-      <div class="chart-wrap" style="height:190px"><canvas id="chartTech"></canvas></div>
-    </div>
-  </div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Fonctionnel vs Technique</div><div class="panel-sub">Matrice stratégique (taille = coût)</div></div></div>
-      <div style="position:relative">
-        <div class="chart-wrap" style="height:280px"><canvas id="chartQuad"></canvas></div>
-        <div class="quad-label" style="top:6px;right:8px;color:#06d6a0">★ Investir</div>
-        <div class="quad-label" style="top:6px;left:52px;color:#f4a261">⚡ Optimiser</div>
-        <div class="quad-label" style="bottom:14px;right:8px;color:#4f8ef7">⬆ Moderniser</div>
-        <div class="quad-label" style="bottom:14px;left:52px;color:#ef4444">✕ Éliminer</div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Criticité métier</div></div></div>
-      <div class="chart-wrap" style="height:150px"><canvas id="chartCrit"></canvas></div>
-      <div class="mt12" id="crit-detail"></div>
-    </div>
-  </div>
-  <div class="panel" style="margin-bottom:14px">
-    <div class="panel-header"><div><div class="panel-title">Cycle de vie · Explorer successeurs</div></div></div>
-    <div class="chart-wrap" style="height:150px"><canvas id="chartCycle"></canvas></div>
-    <div class="mt12" id="successors-section"></div>
-  </div>
-  <div class="panel">
-    <div class="panel-header">
-      <div><div class="panel-title">Catalogue des applications</div></div>
-      <div class="flex gap8"></div>
-    </div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Application</th><th>Domaine</th><th>Fonct.</th><th>Tech.</th><th>Criticité</th><th>Phase</th><th>Coût/an</th><th>Risque</th><th></th></tr></thead>
-      <tbody id="app-tbody"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ════════ PAGE TECH ════════ -->
-<div class="page" id="page-tech">
-  <div class="sec-header">
-    <div><div class="sec-title">Technology &amp; Risk Management</div><div class="sec-subtitle">Explorateur de relations · Âge · Régions · Risques technologiques</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-tech"></span></div>
-  </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="tech-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Explorateur de relations</div><div class="panel-sub">Dépendances inter-applications</div></div></div>
-      <div class="chart-wrap" style="height:250px"><canvas id="chartRelations"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Cycle de vie et âge des applications</div></div></div>
-      <div id="age-gantt" class="mt8"></div>
-    </div>
-  </div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header">
-        <div><div class="panel-title">Utilisation par régions</div><div class="panel-sub">Pôles techniques</div></div>
-        <button class="btn btn-sm" id="btn-add-region" onclick="openRegionModal(-1)">+ Région</button>
-      </div>
-      <div class="region-grid mt8" id="region-grid"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Risques technologiques</div></div></div>
-      <div class="chart-wrap" style="height:230px"><canvas id="chartRiskTech"></canvas></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Explorer : successeurs technologiques</div></div></div>
-    <div id="tech-successors"></div>
-  </div>
-</div>
-
-<!-- ════════ PAGE SECU ════════ -->
-<div class="page" id="page-secu">
-  <div class="sec-header">
-    <div><div class="sec-title">Sécurité informatique &amp; Confidentialité</div><div class="sec-subtitle">Classification · Risques · Conformité NIS2 / ISO 27001</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-secu"></span></div>
-  </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="secu-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Cycle de vie sécurité</div></div></div>
-      <div class="chart-wrap" style="height:210px"><canvas id="chartSecuLife"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Classification des objets de données</div></div></div>
-      <div class="chart-wrap" style="height:150px"><canvas id="chartDataClass"></canvas></div>
-      <div class="mt10" id="data-class-detail"></div>
-    </div>
-  </div>
-  <div class="panel" style="margin-bottom:14px">
-    <div class="panel-header"><div><div class="panel-title">Risques technologiques de sécurité</div><div class="panel-sub">Radar NIS2 / ISO 27001</div></div></div>
-    <div class="chart-wrap" style="height:210px"><canvas id="chartSecuRisk"></canvas></div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Inventaire sécurité par application</div></div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Application</th><th>Données perso.</th><th>Type données</th><th>Chiffrement</th><th>RGPD</th><th>Score risque</th><th></th></tr></thead>
-      <tbody id="secu-tbody"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ════════ PAGE FINANCE ════════ -->
-<div class="page" id="page-finance">
-  <div class="sec-header">
-    <div><div class="sec-title">Gestion financière de l'IT</div><div class="sec-subtitle">Coût annuel total · Investissements fournisseurs · Coûts interventions</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-finance"></span></div>
-  </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="finance-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Coût annuel total par domaine</div></div></div>
-      <div class="chart-wrap" style="height:210px"><canvas id="chartFinDomaine"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Investissements par fournisseur</div><div class="panel-sub">Logiciel &amp; Matériel</div></div></div>
-      <div class="chart-wrap" style="height:210px"><canvas id="chartFournisseurs"></canvas></div>
-    </div>
-  </div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Coût des interventions</div></div></div>
-      <div class="chart-wrap" style="height:190px"><canvas id="chartInterventions"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Projection budgétaire 3 ans</div></div></div>
-      <div class="chart-wrap" style="height:190px"><canvas id="chartFinProj"></canvas></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Détail coûts par application</div></div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Application</th><th>Licences</th><th>Infra</th><th>Maintenance</th><th>RH/Support</th><th>Total/an</th><th>Tendance</th><th></th></tr></thead>
-      <tbody id="finance-tbody"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ════════ PAGE DATA ════════ -->
-<div class="page" id="page-data">
-  <div class="sec-header">
-    <div><div class="sec-title">Intégration &amp; Données</div><div class="sec-subtitle">Carte circulaire des interfaces · Maps · Inventaire des flux</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-data"></span>
-    <button class="btn btn-sm" id="btn-add-interface" onclick="openInterfaceModal(-1)">+ Interface</button></div>
-  </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="data-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Carte circulaire des interfaces</div><div class="panel-sub">Flux inter-applications</div></div></div>
-      <div style="display:flex;justify-content:center;padding:8px 0"><canvas id="chartChord" width="290" height="290"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Inventaire des interfaces</div></div></div>
-      <div class="chart-wrap" style="height:160px"><canvas id="chartInterfaces"></canvas></div>
-      <div class="mt10" id="interface-list"></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Map des flux de données</div></div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Source</th><th>Cible</th><th>Type</th><th>Fréquence</th><th>Criticité</th><th>Statut</th><th></th></tr></thead>
-      <tbody id="data-tbody"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ════════ PAGE PROJECT ════════ -->
-<div class="page" id="page-project">
-  <div class="sec-header">
-    <div><div class="sec-title">Project Portfolio Management</div><div class="sec-subtitle">Feuille de route · Risque vs Valeur métier</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-project"></span>
-    <button class="btn btn-sm" id="btn-add-project" onclick="openProjectModal(-1)">+ Projet</button></div>
-  </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="project-kpis" style="margin-bottom:14px"></div>
-  <div class="panel" style="margin-bottom:14px">
-    <div class="panel-header"><div><div class="panel-title">Feuille de route des projets</div><div class="panel-sub">Roadmap par trimestre</div></div></div>
-    <div id="roadmap-content" class="mt8"></div>
-  </div>
-  <div class="grid g2">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Risque projet vs Valeur métier</div></div></div>
-      <div style="position:relative">
-        <div class="chart-wrap" style="height:270px"><canvas id="chartProjBubble"></canvas></div>
-        <div class="quad-label" style="top:6px;right:8px;color:#06d6a0;font-size:9px">Priorité haute</div>
-        <div class="quad-label" style="top:6px;left:52px;color:#f4a261;font-size:9px">Challenger</div>
-        <div class="quad-label" style="bottom:14px;right:8px;color:#4f8ef7;font-size:9px">Opportunité</div>
-        <div class="quad-label" style="bottom:14px;left:52px;color:#ef4444;font-size:9px">Reconsidérer</div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Budget par statut</div></div></div>
-      <div class="chart-wrap" style="height:160px"><canvas id="chartProjBudget"></canvas></div>
-      <div class="mt12" id="proj-list"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ════════ PAGE SOURCING ════════ -->
-<div class="page" id="page-sourcing">
-  <div class="sec-header">
-    <div><div class="sec-title">Gestion du Sourcing IT</div><div class="sec-subtitle">Qualité fournisseur · Criticité · Matrice de dépendance</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-sourcing"></span>
-    <button class="btn btn-sm" id="btn-add-fourn" onclick="openFournModal(-1)">+ Fournisseur</button></div>
-  </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="sourcing-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Qualité vs Criticité fournisseur</div></div></div>
-      <div style="position:relative">
-        <div class="chart-wrap" style="height:270px"><canvas id="chartSourcingBubble"></canvas></div>
-        <div class="quad-label" style="top:6px;right:8px;color:#06d6a0;font-size:9px">Partenaire strat.</div>
-        <div class="quad-label" style="top:6px;left:52px;color:#ffd166;font-size:9px">À surveiller</div>
-        <div class="quad-label" style="bottom:14px;right:8px;color:#4f8ef7;font-size:9px">Fiable sec.</div>
-        <div class="quad-label" style="bottom:14px;left:52px;color:#ef4444;font-size:9px">Risque élevé</div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Criticité fournisseur</div></div></div>
-      <div id="sourcing-rings" class="mt4"></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Inventaire des fournisseurs</div></div></div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Fournisseur</th><th>Catégorie</th><th>Criticité</th><th>Qualité</th><th>Contrat fin</th><th>Coût annuel</th><th>Risque</th><th></th></tr></thead>
-      <tbody id="sourcing-tbody"></tbody>
-    </table></div>
-  </div>
-</div>
-
-</div><!-- /content -->
-</div><!-- /main -->
-</div><!-- /shell -->
-
-<!-- ════════ MODALS ════════ -->
-<div class="modal-bg" id="modal-app"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title" id="modal-app-title">Application</div><div class="modal-sub">Modifier les données de l'application</div></div><span class="modal-close" onclick="closeModal('modal-app')">✕</span></div>
-  <div class="form-section">
-    <div class="form-row">
-      <div class="fgroup"><label>Nom</label><input id="ma-nom" type="text"></div>
-      <div class="fgroup"><label>Domaine</label><select id="ma-domaine"><option>Finance</option><option>RH</option><option>Production</option><option>Logistique</option><option>Commercial</option><option>IT</option><option>Bureautique</option><option>Autre</option></select></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Fournisseur</label><input id="ma-fourn" type="text"></div>
-      <div class="fgroup"><label>Région</label><input id="ma-region" type="text" placeholder="Paris, Lyon..."></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Coût annuel (€)</label><input id="ma-cout" type="number" min="0"></div>
-      <div class="fgroup"><label>Utilisateurs</label><input id="ma-users" type="number" min="0"></div>
-      <div class="fgroup"><label>Mise en service (année)</label><input id="ma-mise" type="number" min="1990" max="2030"></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Criticité</label><select id="ma-crit"><option value="critique">Critique</option><option value="haute">Haute</option><option value="moyenne">Moyenne</option><option value="basse">Basse</option></select></div>
-      <div class="fgroup"><label>Phase</label><select id="ma-phase"><option value="introduction">Introduction</option><option value="croissance">Croissance</option><option value="maturite">Maturité</option><option value="declin">Déclin</option><option value="elimination">Élimination</option></select></div>
-    </div>
-    <div class="form-row mt8">
-      <div class="fgroup"><label>Cap. fonctionnelle <span id="ma-fonc-v">70</span>/100</label><div class="range-row"><input type="range" id="ma-fonc" min="0" max="100" value="70" oninput="document.getElementById('ma-fonc-v').textContent=this.value"></div></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Cap. technique <span id="ma-tech-v">60</span>/100</label><div class="range-row"><input type="range" id="ma-tech" min="0" max="100" value="60" oninput="document.getElementById('ma-tech-v').textContent=this.value"></div></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Score risque <span id="ma-risque-v">30</span>/100</label><div class="range-row"><input type="range" id="ma-risque" min="0" max="100" value="30" oninput="document.getElementById('ma-risque-v').textContent=this.value"></div></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Notes / successeur</label><textarea id="ma-notes"></textarea></div>
-    </div>
-  </div>
-  <input type="hidden" id="ma-idx" value="-1">
-  <div class="modal-footer">
-    <button class="btn btn-danger btn-sm" id="ma-delete-btn" onclick="deleteApp()" style="margin-right:auto;display:none">Supprimer</button>
-    <button class="btn btn-sm" onclick="closeModal('modal-app')">Annuler</button>
-    <button class="btn btn-primary btn-sm" onclick="saveApp()">Enregistrer</button>
-  </div>
-</div></div>
-
-<div class="modal-bg" id="modal-project"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title" id="modal-proj-title">Projet</div><div class="modal-sub">Modifier les données du projet</div></div><span class="modal-close" onclick="closeModal('modal-project')">✕</span></div>
-  <div class="form-row">
-    <div class="fgroup"><label>Nom du projet</label><input id="mp-nom" type="text"></div>
-    <div class="fgroup"><label>Phase (ex: Q3 2025)</label><input id="mp-phase" type="text"></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Budget (€)</label><input id="mp-budget" type="number" min="0"></div>
-    <div class="fgroup"><label>Statut</label><select id="mp-statut"><option value="planifié">Planifié</option><option value="en cours">En cours</option><option value="terminé">Terminé</option><option value="en attente">En attente</option></select></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Risque projet <span id="mp-risque-v">40</span>/100</label><div class="range-row"><input type="range" id="mp-risque" min="0" max="100" value="40" oninput="document.getElementById('mp-risque-v').textContent=this.value"></div></div>
-  </div>
-  <div class="form-row">
-    <div class="fgroup"><label>Valeur métier <span id="mp-valeur-v">70</span>/100</label><div class="range-row"><input type="range" id="mp-valeur" min="0" max="100" value="70" oninput="document.getElementById('mp-valeur-v').textContent=this.value"></div></div>
-  </div>
-  <input type="hidden" id="mp-idx" value="-1">
-  <div class="modal-footer">
-    <button class="btn btn-danger btn-sm" id="mp-delete-btn" onclick="deleteProjet()" style="margin-right:auto;display:none">Supprimer</button>
-    <button class="btn btn-sm" onclick="closeModal('modal-project')">Annuler</button>
-    <button class="btn btn-primary btn-sm" onclick="saveProjet()">Enregistrer</button>
-  </div>
-</div></div>
-
-<div class="modal-bg" id="modal-fourn"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title" id="modal-fourn-title">Fournisseur</div><div class="modal-sub">Modifier les données fournisseur</div></div><span class="modal-close" onclick="closeModal('modal-fourn')">✕</span></div>
-  <div class="form-row">
-    <div class="fgroup"><label>Nom</label><input id="mf-nom" type="text"></div>
-    <div class="fgroup"><label>Catégorie</label><input id="mf-cat" type="text" placeholder="ERP, CRM, Cloud..."></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Coût annuel (€)</label><input id="mf-cout" type="number" min="0"></div>
-    <div class="fgroup"><label>Fin de contrat</label><input id="mf-contrat" type="date"></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Criticité <span id="mf-crit-v">70</span>/100</label><div class="range-row"><input type="range" id="mf-crit" min="0" max="100" value="70" oninput="document.getElementById('mf-crit-v').textContent=this.value"></div></div>
-  </div>
-  <div class="form-row">
-    <div class="fgroup"><label>Qualité <span id="mf-qual-v">75</span>/100</label><div class="range-row"><input type="range" id="mf-qual" min="0" max="100" value="75" oninput="document.getElementById('mf-qual-v').textContent=this.value"></div></div>
-  </div>
-  <div class="form-row">
-    <div class="fgroup"><label>Risque <span id="mf-risque-v">30</span>/100</label><div class="range-row"><input type="range" id="mf-risque" min="0" max="100" value="30" oninput="document.getElementById('mf-risque-v').textContent=this.value"></div></div>
-  </div>
-  <input type="hidden" id="mf-idx" value="-1">
-  <div class="modal-footer">
-    <button class="btn btn-danger btn-sm" id="mf-delete-btn" onclick="deleteFourn()" style="margin-right:auto;display:none">Supprimer</button>
-    <button class="btn btn-sm" onclick="closeModal('modal-fourn')">Annuler</button>
-    <button class="btn btn-primary btn-sm" onclick="saveFourn()">Enregistrer</button>
-  </div>
-</div></div>
-
-<div class="modal-bg" id="modal-interface"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title">Interface</div><div class="modal-sub">Flux d'intégration entre applications</div></div><span class="modal-close" onclick="closeModal('modal-interface')">✕</span></div>
-  <div class="form-row">
-    <div class="fgroup"><label>Application source</label><input id="mi-src" type="text"></div>
-    <div class="fgroup"><label>Application cible</label><input id="mi-dst" type="text"></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Type</label><select id="mi-type"><option>API REST</option><option>ETL</option><option>Webhook</option><option>LDAP</option><option>Fichier</option><option>Batch</option><option>Autre</option></select></div>
-    <div class="fgroup"><label>Fréquence</label><select id="mi-freq"><option>Temps réel</option><option>Événement</option><option>Horaire</option><option>Quotidien</option><option>Hebdo</option><option>Mensuel</option></select></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Criticité</label><select id="mi-crit"><option value="critique">Critique</option><option value="haute">Haute</option><option value="moyenne">Moyenne</option><option value="basse">Basse</option></select></div>
-    <div class="fgroup"><label>Statut</label><select id="mi-statut"><option value="actif">Actif</option><option value="dégradé">Dégradé</option><option value="obsolète">Obsolète</option><option value="planifié">Planifié</option></select></div>
-  </div>
-  <input type="hidden" id="mi-idx" value="-1">
-  <div class="modal-footer">
-    <button class="btn btn-danger btn-sm" id="mi-delete-btn" onclick="deleteInterface()" style="margin-right:auto;display:none">Supprimer</button>
-    <button class="btn btn-sm" onclick="closeModal('modal-interface')">Annuler</button>
-    <button class="btn btn-primary btn-sm" onclick="saveInterface()">Enregistrer</button>
-  </div>
-</div></div>
-
-<div class="modal-bg" id="modal-tool"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title" id="tool-modal-title">Analyse</div><div class="modal-sub" id="tool-modal-sub"></div></div><span class="modal-close" onclick="closeModal('modal-tool')">✕</span></div>
-  <div id="tool-modal-body"></div>
-  <div class="modal-footer"><button class="btn btn-sm" onclick="closeModal('modal-tool')">Fermer</button></div>
-</div></div>
-
-<div class="toast" id="toast"></div>
-<script>
-// ══════════════════════════════════════════════════════════
-// PERMISSIONS MATRIX
-// ══════════════════════════════════════════════════════════
-const ROLES = {
-  DSI:  {label:'DSI',color:'#4f8ef7',emoji:'🏛️',
-    edit:{portfolio:true,tech:true,secu:true,finance:true,data:true,project:true,sourcing:true}},
-  RSSI: {label:'RSSI',color:'#f72585',emoji:'🔐',
-    edit:{portfolio:false,tech:true,secu:true,finance:false,data:false,project:false,sourcing:true}},
-  DAF:  {label:'DAF',color:'#f4a261',emoji:'💰',
-    edit:{portfolio:false,tech:false,secu:false,finance:true,data:false,project:true,sourcing:true}},
-  EA:   {label:'Architecte EA',color:'#7b61ff',emoji:'🏗️',
-    edit:{portfolio:true,tech:true,secu:false,finance:false,data:true,project:true,sourcing:false}},
-  PM:   {label:'Chef de Projet',color:'#06d6a0',emoji:'📋',
-    edit:{portfolio:false,tech:false,secu:false,finance:false,data:false,project:true,sourcing:false}},
-  DG:   {label:'DG / COMEX',color:'#ffd166',emoji:'👔',
-    edit:{portfolio:false,tech:false,secu:false,finance:false,data:false,project:false,sourcing:false}},
-};
-
-let currentRole = null;
-let selectedRoleKey = null;
-
-// ══════════════════════════════════════════════════════════
-// LOGIN
-// ══════════════════════════════════════════════════════════
-function selectRole(el) {
-  document.querySelectorAll('.role-card').forEach(c => {
-    c.classList.remove('selected');
-    c.style.borderColor = '';
-  });
-  el.classList.add('selected');
-  selectedRoleKey = el.dataset.role;
-  const r = ROLES[selectedRoleKey];
-  el.style.borderColor = r.color;
-  el.style.borderWidth = '2px';
-  document.getElementById('login-btn').classList.add('ready');
-}
-
-function doLogin() {
-  if (!selectedRoleKey) return;
-  currentRole = selectedRoleKey;
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('main-shell').style.display = 'flex';
-  updateRoleBadge();
-  updateNavLocks();
-  renderModule('portfolio');
-}
-
-function switchRole() {
-  document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('main-shell').style.display = 'none';
-  document.querySelectorAll('.role-card').forEach(c => {
-    c.classList.remove('selected');
-    c.style.borderColor = '';
-    c.style.borderWidth = '';
-  });
-  document.getElementById('login-btn').classList.remove('ready');
-  selectedRoleKey = null;
-}
-
-function updateRoleBadge() {
-  const r = ROLES[currentRole];
-  document.getElementById('rb-dot').style.background = r.color;
-  document.getElementById('rb-name').textContent = r.emoji + ' ' + r.label;
-  document.documentElement.style.setProperty('--accent', r.color);
-}
-
-function updateNavLocks() {
-  const r = ROLES[currentRole];
-  ['portfolio','tech','secu','finance','data','project','sourcing'].forEach(m => {
-    document.getElementById('lock-' + m).textContent = r.edit[m] ? '' : '🔒';
-  });
-}
-
-function canEdit(module) {
-  return currentRole && ROLES[currentRole].edit[module];
-}
-
-function permLabel(module) {
-  return canEdit(module)
-    ? `<span style="color:#06d6a0">✓ Édition autorisée</span>`
-    : `<span style="color:var(--text3)">🔒 Lecture seule — ${ROLES[currentRole]?.label}</span>`;
-}
-
-// ══════════════════════════════════════════════════════════
-// DATA STORE
-// ══════════════════════════════════════════════════════════
-const SK = 'ea_gov_v2';
-let D = {};
-
-function defaultData() {
-  return {
-    apps: [
-      {nom:'SAP ERP',domaine:'Finance',fourn:'SAP SE',cout:120000,users:450,mise:2015,tech:65,fonc:85,crit:'critique',phase:'maturite',risque:35,region:'Paris',notes:'Successeur: SAP S/4HANA'},
-      {nom:'Salesforce CRM',domaine:'Commercial',fourn:'Salesforce',cout:80000,users:120,mise:2019,tech:88,fonc:90,crit:'haute',phase:'croissance',risque:20,region:'Lyon',notes:''},
-      {nom:'Oracle HRMS',domaine:'RH',fourn:'Oracle',cout:55000,users:80,mise:2012,tech:40,fonc:55,crit:'haute',phase:'declin',risque:72,region:'Paris',notes:'Successeur: Workday / SAP SF'},
-      {nom:'Sage Compta',domaine:'Finance',fourn:'Sage',cout:18000,users:15,mise:2010,tech:30,fonc:45,crit:'moyenne',phase:'elimination',risque:88,region:'Paris',notes:'Intégrer dans SAP ERP'},
-      {nom:'ServiceNow',domaine:'IT',fourn:'ServiceNow',cout:95000,users:200,mise:2021,tech:92,fonc:82,crit:'critique',phase:'croissance',risque:15,region:'Bordeaux',notes:''},
-      {nom:'Tableau BI',domaine:'IT',fourn:'Salesforce',cout:35000,users:60,mise:2020,tech:80,fonc:78,crit:'moyenne',phase:'maturite',risque:25,region:'Lyon',notes:''},
-      {nom:'JD Edwards WMS',domaine:'Logistique',fourn:'Oracle',cout:42000,users:90,mise:2014,tech:38,fonc:60,crit:'haute',phase:'declin',risque:68,region:'Bordeaux',notes:'Successeur: SAP EWM'},
-      {nom:'Microsoft 365',domaine:'Bureautique',fourn:'Microsoft',cout:65000,users:800,mise:2018,tech:90,fonc:88,crit:'critique',phase:'croissance',risque:12,region:'Paris',notes:''},
-    ],
-    fournisseurs: [
-      {nom:'SAP SE',cat:'ERP',crit:90,qualite:80,contrat:'2028-12-31',cout:120000,risque:35},
-      {nom:'Salesforce',cat:'CRM/BI',crit:75,qualite:88,contrat:'2026-06-30',cout:115000,risque:20},
-      {nom:'Oracle',cat:'ERP/WMS',crit:80,qualite:60,contrat:'2025-12-31',cout:97000,risque:65},
-      {nom:'ServiceNow',cat:'ITSM',crit:85,qualite:92,contrat:'2026-09-30',cout:95000,risque:15},
-      {nom:'Microsoft',cat:'Bureautique',crit:95,qualite:90,contrat:'2027-06-30',cout:65000,risque:12},
-      {nom:'Sage',cat:'Finance',crit:40,qualite:55,contrat:'2024-12-31',cout:18000,risque:75},
-    ],
-    projets: [
-      {nom:'Migration SAP S/4HANA',phase:'Q3 2025',budget:850000,statut:'en cours',risque:75,valeur:90,color:'#4f8ef7'},
-      {nom:'Déploiement CRM Mobile',phase:'Q1 2025',budget:120000,statut:'terminé',risque:20,valeur:70,color:'#06d6a0'},
-      {nom:'Modernisation WMS',phase:'Q4 2025',budget:380000,statut:'planifié',risque:60,valeur:75,color:'#f4a261'},
-      {nom:'Refonte SIRH',phase:'Q2 2026',budget:500000,statut:'planifié',risque:55,valeur:80,color:'#f72585'},
-      {nom:'Data Lake BI',phase:'Q1 2026',budget:280000,statut:'planifié',risque:40,valeur:85,color:'#7b61ff'},
-      {nom:'Zero Trust Sécurité',phase:'Q3 2025',budget:200000,statut:'en cours',risque:30,valeur:95,color:'#2ec4b6'},
-    ],
-    interfaces: [
-      {src:'SAP ERP',dst:'Salesforce CRM',type:'API REST',freq:'Temps réel',crit:'haute',statut:'actif'},
-      {src:'SAP ERP',dst:'Tableau BI',type:'ETL',freq:'Quotidien',crit:'moyenne',statut:'actif'},
-      {src:'ServiceNow',dst:'Microsoft 365',type:'Webhook',freq:'Événement',crit:'haute',statut:'actif'},
-      {src:'Oracle HRMS',dst:'Microsoft 365',type:'LDAP',freq:'Horaire',crit:'critique',statut:'dégradé'},
-      {src:'JD Edwards WMS',dst:'SAP ERP',type:'Fichier',freq:'Quotidien',crit:'haute',statut:'actif'},
-      {src:'Sage Compta',dst:'SAP ERP',type:'Batch',freq:'Mensuel',crit:'moyenne',statut:'obsolète'},
-    ],
-    regions: [
-      {nom:'Paris',color:'#4f8ef7'},{nom:'Lyon',color:'#2ec4b6'},{nom:'Bordeaux',color:'#f4a261'}
-    ]
-  };
-}
-
-function loadData() {
-  try { const s=localStorage.getItem(SK); if(s){D=JSON.parse(s);if(!D.regions)D.regions=defaultData().regions;} else D=defaultData(); }
-  catch(e){D=defaultData();}
-}
-function saveData() { localStorage.setItem(SK,JSON.stringify(D)); }
-function resetData() { D=defaultData(); saveData(); renderModule(currentModule); toast('Données réinitialisées'); }
-
-// ══════════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════════
-const CI = {};
-function dc(id){if(CI[id]){CI[id].destroy();delete CI[id]}}
-function fmt(n){return new Intl.NumberFormat('fr-FR').format(Math.round(n))}
-function fmtEur(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Math.round(n))}
-function phaseCol(p){return{introduction:'#4f8ef7',croissance:'#06d6a0',maturite:'#2ec4b6',declin:'#f4a261',elimination:'#ef4444'}[p]||'#888'}
-function badgeC(v,type){
-  if(type==='crit'){return{critique:'b-red',haute:'b-amber',moyenne:'b-blue',basse:'b-teal'}[v]||'b-gray'}
-  if(type==='phase'){return{introduction:'b-blue',croissance:'b-green',maturite:'b-teal',declin:'b-amber',elimination:'b-red'}[v]||'b-gray'}
-  if(type==='statut'){return{actif:'b-green',dégradé:'b-amber',obsolète:'b-red',planifié:'b-blue'}[v]||'b-gray'}
-  return 'b-gray';
-}
-function kpi(label,value,delta,dc,barV,barC){
-  return`<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-delta ${dc||''}">${delta}</div>${barV!==undefined?`<div class="kpi-bar"><div class="kpi-bar-fill" style="width:${barV}%;background:${barC||'#4f8ef7'}"></div></div>`:''}</div>`;
-}
-function editBtn(module,onclick,label='✏️'){
-  if(!canEdit(module)) return `<span title="Accès en lecture seule" style="opacity:0.3;font-size:11px;cursor:not-allowed">🔒</span>`;
-  return `<button class="btn btn-sm" onclick="${onclick}" style="padding:3px 8px;font-size:11px">${label}</button>`;
-}
-function toast(msg,type='ok'){
-  const t=document.getElementById('toast');
-  t.textContent=msg;
-  t.style.borderLeftColor=type==='err'?'#ef4444':'var(--accent)';
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2600);
-}
-let currentModule='portfolio';
-
-// ══════════════════════════════════════════════════════════
-// NAVIGATION
-// ══════════════════════════════════════════════════════════
-const MODULE_META={
-  portfolio:{name:'Gestion de portefeuille',sub:'Fonctionnel · Technique · Criticité · Cycle de vie',dot:'var(--c-portfolio)'},
-  tech:{name:'Technology & Risk Management',sub:'Relations · Âge · Régions · Risques',dot:'var(--c-tech)'},
-  secu:{name:'Sécurité & Confidentialité',sub:'Classification · Risques · Conformité NIS2',dot:'var(--c-secu)'},
-  finance:{name:'Gestion financière IT',sub:'TCO · Fournisseurs · Interventions',dot:'var(--c-finance)'},
-  data:{name:'Intégration & Données',sub:'Interfaces · Maps · Flux',dot:'var(--c-data)'},
-  project:{name:'Project Portfolio Management',sub:'Roadmap · Risque vs Valeur métier',dot:'var(--c-project)'},
-  sourcing:{name:'Gestion du Sourcing IT',sub:'Qualité · Criticité fournisseur',dot:'var(--c-sourcing)'},
-};
-function nav(id,el,color){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  el.classList.add('active');
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  currentModule=id;
-  const m=MODULE_META[id];
-  document.getElementById('th-name').textContent=m.name;
-  document.getElementById('th-sub').textContent=m.sub;
-  document.getElementById('th-dot').style.background=m.dot;
-  renderModule(id);
-}
-function renderModule(id){
-  const fn={portfolio:renderPortfolio,tech:renderTech,secu:renderSecu,finance:renderFinance,data:renderData,project:renderProject,sourcing:renderSourcing};
-  if(fn[id])fn[id]();
-}
-
-// ══════════════════════════════════════════════════════════
-// PORTFOLIO
-// ══════════════════════════════════════════════════════════
-function renderPortfolio(){
-  document.getElementById('perm-portfolio').innerHTML=permLabel('portfolio');
-  const A=D.apps, n=A.length;
-  if(!n){document.getElementById('port-kpis').innerHTML='<div class="empty" style="grid-column:1/-1">Aucune application</div>';return;}
-  const avgF=Math.round(A.reduce((s,a)=>s+a.fonc,0)/n);
-  const avgT=Math.round(A.reduce((s,a)=>s+a.tech,0)/n);
-  const crit=A.filter(a=>a.crit==='critique').length;
-  document.getElementById('port-kpis').innerHTML=
-    kpi('Applications',n,'dans le portefeuille','',n*5,'#4f8ef7')+
-    kpi('Cap. fonctionnelle moy.',avgF+'/100','score portfolio',avgF>=70?'up':'dn',avgF,'#2ec4b6')+
-    kpi('Cap. technique moy.',avgT+'/100','score technique',avgT>=70?'up':'dn',avgT,'#06d6a0')+
-    kpi('Apps critiques',crit,'criticité critique','dn',crit/n*100,'#ef4444');
-
-  const dom=[...new Set(A.map(a=>a.domaine))];
-  const avgFD=dom.map(d=>{const a=A.filter(x=>x.domaine===d);return Math.round(a.reduce((s,x)=>s+x.fonc,0)/a.length)});
-  const avgTD=dom.map(d=>{const a=A.filter(x=>x.domaine===d);return Math.round(a.reduce((s,x)=>s+x.tech,0)/a.length)});
-  const COLS=['#4f8ef7','#2ec4b6','#f4a261','#06d6a0','#f72585','#7b61ff','#ffd166','#ef4444'];
-
-  dc('chartFonc');CI.chartFonc=new Chart(document.getElementById('chartFonc'),{type:'bar',indexAxis:'y',
-    data:{labels:dom,datasets:[{data:avgFD,backgroundColor:'rgba(46,196,182,0.7)',borderRadius:4,barThickness:14}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#7d8599'},grid:{display:false}}}}});
-  dc('chartTech');CI.chartTech=new Chart(document.getElementById('chartTech'),{type:'bar',indexAxis:'y',
-    data:{labels:dom,datasets:[{data:avgTD,backgroundColor:'rgba(79,142,247,0.7)',borderRadius:4,barThickness:14}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#7d8599'},grid:{display:false}}}}});
-
-  dc('chartQuad');CI.chartQuad=new Chart(document.getElementById('chartQuad'),{type:'bubble',
-    data:{datasets:A.map((a,i)=>({label:a.nom,data:[{x:a.tech,y:a.fonc,r:6+a.cout/28000}],
-      backgroundColor:(a.fonc>=50&&a.tech>=50?'rgba(6,214,160,0.55)':a.fonc>=50?'rgba(244,162,97,0.55)':a.tech>=50?'rgba(79,142,247,0.55)':'rgba(239,68,68,0.55)'),
-      borderColor:(a.fonc>=50&&a.tech>=50?'#06d6a0':a.fonc>=50?'#f4a261':a.tech>=50?'#4f8ef7':'#ef4444'),borderWidth:1.5}))},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:20},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: F=${ctx.parsed.y} T=${ctx.parsed.x}`}}},
-      scales:{x:{min:-5,max:105,ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.04)'}},y:{min:-5,max:105,ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.04)'}}}}});
-
-  const cm={critique:0,haute:0,moyenne:0,basse:0};A.forEach(a=>{if(cm[a.crit]!==undefined)cm[a.crit]++});
-  dc('chartCrit');CI.chartCrit=new Chart(document.getElementById('chartCrit'),{type:'doughnut',
-    data:{labels:['Critique','Haute','Moyenne','Basse'],datasets:[{data:Object.values(cm),backgroundColor:['#ef4444','#f4a261','#4f8ef7','#2ec4b6'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#7d8599',font:{size:11},padding:6}}}}});
-  document.getElementById('crit-detail').innerHTML=Object.entries(cm).map(([k,v])=>`<div class="prog-row"><span class="prog-label">${k}</span><div class="prog-wrap"><div class="prog-fill" style="width:${n?v/n*100:0}%;background:${{critique:'#ef4444',haute:'#f4a261',moyenne:'#4f8ef7',basse:'#2ec4b6'}[k]}"></div></div><span class="prog-val">${v}</span></div>`).join('');
-
-  const phases=['introduction','croissance','maturite','declin','elimination'];
-  dc('chartCycle');CI.chartCycle=new Chart(document.getElementById('chartCycle'),{type:'bar',
-    data:{labels:['Introduction','Croissance','Maturité','Déclin','Élimination'],datasets:[{data:phases.map(p=>A.filter(a=>a.phase===p).length),backgroundColor:phases.map(phaseCol),borderRadius:5,barThickness:28}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#464e68',stepSize:1},grid:{color:'rgba(255,255,255,0.03)'}},x:{ticks:{color:'#7d8599'},grid:{display:false}}}}});
-  const suc=A.filter(a=>a.phase==='declin'||a.phase==='elimination');
-  document.getElementById('successors-section').innerHTML=suc.length===0?'<div class="empty" style="padding:12px">Aucune application en déclin</div>':
-    `<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Successeurs à identifier</div>
-     <div class="grid g2" style="gap:8px">${suc.map((a,i)=>`<div style="background:var(--bg3);border:1px solid var(--border);border-left:3px solid ${phaseCol(a.phase)};border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:center">
-       <div style="flex:1"><div style="font-size:12px;font-weight:500;color:#fff">${a.nom}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${a.notes||'Aucune note successeur'}</div></div>
-       <span class="badge ${a.phase==='elimination'?'b-red':'b-amber'}">${a.phase}</span>
-       ${editBtn('portfolio',`openAppModal(${D.apps.indexOf(a)})`)}
-     </div>`).join('')}</div>`;
-
-  // Table
-  document.getElementById('app-tbody').innerHTML=A.map((a,i)=>`<tr>
-    <td><strong>${a.nom}</strong><br><span style="font-size:11px;color:var(--text3)">${a.fourn}</span></td>
-    <td><span class="badge b-gray">${a.domaine}</span></td>
-    <td><div style="display:flex;align-items:center;gap:5px"><div style="width:40px;height:4px;border-radius:2px;background:var(--bg4)"><div style="width:${a.fonc}%;height:100%;border-radius:2px;background:#2ec4b6"></div></div><span class="mono" style="font-size:11px">${a.fonc}</span></div></td>
-    <td><div style="display:flex;align-items:center;gap:5px"><div style="width:40px;height:4px;border-radius:2px;background:var(--bg4)"><div style="width:${a.tech}%;height:100%;border-radius:2px;background:#4f8ef7"></div></div><span class="mono" style="font-size:11px">${a.tech}</span></div></td>
-    <td><span class="badge ${badgeC(a.crit,'crit')}">${a.crit}</span></td>
-    <td><span class="badge ${badgeC(a.phase,'phase')}">${a.phase}</span></td>
-    <td class="mono">${fmtEur(a.cout)}</td>
-    <td class="mono" style="color:${a.risque>=70?'#ef4444':a.risque>=40?'#f4a261':'#06d6a0'}">${a.risque}</td>
-    <td>${editBtn('portfolio',`openAppModal(${i})`)}</td>
-  </tr>`).join('');
-  document.getElementById('btn-add-app').style.display=canEdit('portfolio')?'inline-flex':'none';
-}
-
-// ══════════════════════════════════════════════════════════
-// TECH
-// ══════════════════════════════════════════════════════════
-function renderTech(){
-  document.getElementById('perm-tech').innerHTML=permLabel('tech');
-  const A=D.apps,n=A.length;
-  if(!n) return;
-  const avgR=Math.round(A.reduce((s,a)=>s+a.risque,0)/n);
-  const vieux=A.filter(a=>2025-a.mise>=10).length;
-  document.getElementById('tech-kpis').innerHTML=
-    kpi('Risque moyen',avgR+'/100','score portfolio',avgR>50?'dn':'up',avgR,'#ef4444')+
-    kpi('Apps > 10 ans',vieux,'depuis mise en service','dn',vieux/n*100,'#f4a261')+
-    kpi('Score tech moyen',Math.round(A.reduce((s,a)=>s+a.tech,0)/n)+'/100','capacité technique','up',Math.round(A.reduce((s,a)=>s+a.tech,0)/n),'#2ec4b6')+
-    kpi('Apps risque critique',A.filter(a=>a.risque>=70).length,'score ≥ 70','dn',A.filter(a=>a.risque>=70).length/n*100,'#ef4444');
-
-  dc('chartRelations');CI.chartRelations=new Chart(document.getElementById('chartRelations'),{type:'bubble',
-    data:{datasets:A.map((a,i)=>({label:a.nom,data:[{x:Math.cos(i/n*2*Math.PI)*38+50,y:Math.sin(i/n*2*Math.PI)*33+50,r:4+a.users/100}],backgroundColor:phaseCol(a.phase)+'88',borderColor:phaseCol(a.phase),borderWidth:1.5}))},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:14},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${A.find(a=>a.nom===ctx.dataset.label)?.users} users`}}},scales:{x:{min:0,max:100,display:false},y:{min:0,max:100,display:false}}}});
-
-  const sorted=[...A].sort((a,b)=>a.mise-b.mise);
-  const minY=Math.min(...sorted.map(a=>a.mise))-1,maxY=2026,range=maxY-minY;
-  document.getElementById('age-gantt').innerHTML=sorted.map(a=>{
-    const s=(a.mise-minY)/range*100,w=Math.min((2025-a.mise)/range*100+2,99-s),age=2025-a.mise;
-    return `<div class="gantt-row"><span class="gantt-label">${a.nom}</span><div class="gantt-track"><div class="gantt-bar" style="left:${s}%;width:${w}%;background:${phaseCol(a.phase)}">${age}a</div></div><span class="gantt-year">${a.mise}</span></div>`;
-  }).join('');
-
-  const regions=[...new Set(A.map(a=>a.region).filter(Boolean))];
-  const rColors={'Paris':'#4f8ef7','Lyon':'#2ec4b6','Bordeaux':'#f4a261','Strasbourg':'#7b61ff','Toulouse':'#f72585','Nantes':'#06d6a0'};
-  document.getElementById('region-grid').innerHTML=regions.map(r=>{
-    const ra=A.filter(a=>a.region===r),col=rColors[r]||'#888';
-    return `<div class="region-card"><div class="rc-name">${r}</div><div class="rc-val" style="color:${col}">${ra.length}</div><div class="rc-sub">${fmt(ra.reduce((s,a)=>s+a.users,0))} users</div></div>`;
-  }).join('');
-  document.getElementById('btn-add-region').style.display=canEdit('tech')?'inline-flex':'none';
-
-  dc('chartRiskTech');CI.chartRiskTech=new Chart(document.getElementById('chartRiskTech'),{type:'bar',indexAxis:'y',
-    data:{labels:A.map(a=>a.nom),datasets:[{data:A.map(a=>a.risque),backgroundColor:A.map(a=>a.risque>=70?'rgba(239,68,68,0.7)':a.risque>=40?'rgba(244,162,97,0.7)':'rgba(6,214,160,0.7)'),borderRadius:4,barThickness:12}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#7d8599'},grid:{display:false}}}}});
-
-  const suc=A.filter(a=>a.phase==='declin'||a.phase==='elimination');
-  document.getElementById('tech-successors').innerHTML=suc.length===0?'<div class="empty">Aucune application en déclin</div>':
-    `<div class="grid g2" style="gap:8px">${suc.map((a,i)=>`<div style="background:var(--bg3);border:1px solid var(--border);border-left:3px solid ${phaseCol(a.phase)};border-radius:8px;padding:10px 12px">
-      <div style="font-size:12px;font-weight:500;color:#fff">${a.nom}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px">${a.domaine} · ${a.fourn} · Mis en service: ${a.mise}</div>
-      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-        <span class="badge b-amber">Tech: ${a.tech}</span><span class="badge b-red">Risque: ${a.risque}</span>
-        <span class="badge ${badgeC(a.phase,'phase')}">${a.phase}</span>
-      </div>
-      <div style="margin-top:6px">${editBtn('tech',`openAppModal(${D.apps.indexOf(a)})`)}</div>
-    </div>`).join('')}</div>`;
-}
-
-// ══════════════════════════════════════════════════════════
-// SECU
-// ══════════════════════════════════════════════════════════
-function renderSecu(){
-  document.getElementById('perm-secu').innerHTML=permLabel('secu');
-  const A=D.apps,n=A.length;
-  if(!n) return;
-  document.getElementById('secu-kpis').innerHTML=
-    kpi('Apps vulnérables',A.filter(a=>a.risque>=60).length,'risque ≥ 60','dn',A.filter(a=>a.risque>=60).length/n*100,'#ef4444')+
-    kpi('Conformité RGPD','68%','applications conformes','up',68,'#06d6a0')+
-    kpi('Score sécu moyen',Math.round(100-A.reduce((s,a)=>s+a.risque,0)/n)+'/100','indice sécurité','up',Math.round(100-A.reduce((s,a)=>s+a.risque,0)/n),'#f72585')+
-    kpi('Incidents ouverts','4','incidents actifs','dn',20,'#f72585');
-
-  const phases=['introduction','croissance','maturite','declin','elimination'];
-  const avgRP=phases.map(p=>{const a=A.filter(x=>x.phase===p);return a.length?Math.round(a.reduce((s,x)=>s+x.risque,0)/a.length):0});
-  dc('chartSecuLife');CI.chartSecuLife=new Chart(document.getElementById('chartSecuLife'),{type:'bar',
-    data:{labels:['Intro','Croiss.','Maturité','Déclin','Élim.'],datasets:[
-      {label:'Sécurité',data:avgRP.map(r=>100-r),backgroundColor:'rgba(247,37,133,0.6)',borderRadius:4,barThickness:20},
-      {label:'Risque',data:avgRP,backgroundColor:'rgba(239,68,68,0.4)',borderRadius:4,barThickness:20}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7d8599'}}},scales:{y:{max:100,ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.03)'}},x:{ticks:{color:'#7d8599'},grid:{display:false}}}}});
-
-  dc('chartDataClass');CI.chartDataClass=new Chart(document.getElementById('chartDataClass'),{type:'doughnut',
-    data:{labels:['Public','Interne','Confidentiel','Secret'],datasets:[{data:[15,40,30,15],backgroundColor:['#06d6a0','#4f8ef7','#f4a261','#ef4444'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#7d8599',font:{size:11},padding:6}}}}});
-  document.getElementById('data-class-detail').innerHTML=[
-    {l:'Public',v:15,c:'#06d6a0'},{l:'Interne',v:40,c:'#4f8ef7'},{l:'Confidentiel',v:30,c:'#f4a261'},{l:'Secret',v:15,c:'#ef4444'}
-  ].map(d=>`<div class="prog-row"><span class="prog-label">${d.l}</span><div class="prog-wrap"><div class="prog-fill" style="width:${d.v}%;background:${d.c}"></div></div><span class="prog-val">${d.v}%</span></div>`).join('');
-
-  dc('chartSecuRisk');CI.chartSecuRisk=new Chart(document.getElementById('chartSecuRisk'),{type:'radar',
-    data:{labels:['Auth.','Chiffrement','Patchs','Accès','Réseau','Données','Audit'],datasets:[
-      {label:'Niveau actuel',data:[72,80,55,68,75,60,82],borderColor:'#f72585',backgroundColor:'rgba(247,37,133,0.08)',pointBackgroundColor:'#f72585'},
-      {label:'Cible NIS2',data:[90,85,90,85,90,80,85],borderColor:'#7d8599',backgroundColor:'rgba(125,133,153,0.04)',borderDash:[4,4],pointBackgroundColor:'#7d8599'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7d8599'}}},scales:{r:{min:0,max:100,ticks:{color:'#464e68',stepSize:25},grid:{color:'rgba(255,255,255,0.06)'},pointLabels:{color:'#7d8599'},angleLines:{color:'rgba(255,255,255,0.04)'}}}}});
-
-  const secuRows=[
-    {nom:'SAP ERP',pd:'Oui',ds:'Financières',chif:'AES-256',rgpd:'Conforme',risque:35},
-    {nom:'Salesforce CRM',pd:'Oui',ds:'Commerciales',chif:'TLS 1.3',rgpd:'Conforme',risque:20},
-    {nom:'Oracle HRMS',pd:'Oui',ds:'RH·Paie',chif:'AES-128',rgpd:'Partiel',risque:72},
-    {nom:'Sage Compta',pd:'Non',ds:'Financières',chif:'Aucun',rgpd:'Non conforme',risque:88},
-    {nom:'ServiceNow',pd:'Non',ds:'IT',chif:'TLS 1.3',rgpd:'Conforme',risque:15},
-    {nom:'Microsoft 365',pd:'Oui',ds:'Bureautique',chif:'E2E',rgpd:'Conforme',risque:12},
-  ];
-  document.getElementById('secu-tbody').innerHTML=secuRows.map((r,i)=>`<tr>
-    <td><strong>${r.nom}</strong></td>
-    <td><span class="badge ${r.pd==='Oui'?'b-amber':'b-gray'}">${r.pd}</span></td>
-    <td style="font-size:11px;color:var(--text2)">${r.ds}</td>
-    <td><span class="mono" style="font-size:11px">${r.chif}</span></td>
-    <td><span class="badge ${r.rgpd==='Conforme'?'b-green':r.rgpd==='Partiel'?'b-amber':'b-red'}">${r.rgpd}</span></td>
-    <td class="mono" style="color:${r.risque>=70?'#ef4444':r.risque>=40?'#f4a261':'#06d6a0'}">${r.risque}</td>
-    <td>${editBtn('secu',`openAppModal(${i%D.apps.length})`)}</td>
-  </tr>`).join('');
-}
-
-// ══════════════════════════════════════════════════════════
-// FINANCE
-// ══════════════════════════════════════════════════════════
-function renderFinance(){
-  document.getElementById('perm-finance').innerHTML=permLabel('finance');
-  const A=D.apps,F=D.fournisseurs;
-  if(!A.length) return;
-  const totalCout=A.reduce((s,a)=>s+a.cout,0);
-  const topApp=A.sort((a,b)=>b.cout-a.cout)[0];
-  document.getElementById('finance-kpis').innerHTML=
-    kpi('Coût annuel total',fmtEur(totalCout),'budget IT annuel','',90,'#f4a261')+
-    kpi('Coût / utilisateur',fmtEur(totalCout/Math.max(1,A.reduce((s,a)=>s+a.users,0))),'coût moyen par user','',60,'#4f8ef7')+
-    kpi('Top coût',topApp?.nom||'—','application la plus coûteuse','dn',100,'#ef4444')+
-    kpi('Économies potentielles',fmtEur(totalCout*0.18),'optimisation estimée 18%','up',18,'#06d6a0');
-
-  const dom=[...new Set(A.map(a=>a.domaine))];
-  dc('chartFinDomaine');CI.chartFinDomaine=new Chart(document.getElementById('chartFinDomaine'),{type:'bar',
-    data:{labels:dom,datasets:[{data:dom.map(d=>A.filter(a=>a.domaine===d).reduce((s,a)=>s+a.cout,0)),backgroundColor:['#4f8ef7','#2ec4b6','#f4a261','#06d6a0','#f72585','#7b61ff','#ffd166'],borderRadius:5,barThickness:22}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#464e68',callback:v=>fmtEur(v)},grid:{color:'rgba(255,255,255,0.03)'}},x:{ticks:{color:'#7d8599'},grid:{display:false}}}}});
-
-  const fourn=[...new Set(A.map(a=>a.fourn))];
-  const cF=fourn.map(f=>A.filter(a=>a.fourn===f).reduce((s,a)=>s+a.cout,0));
-  dc('chartFournisseurs');CI.chartFournisseurs=new Chart(document.getElementById('chartFournisseurs'),{type:'doughnut',
-    data:{labels:fourn,datasets:[{data:cF,backgroundColor:['#4f8ef7','#2ec4b6','#f4a261','#06d6a0','#f72585','#7b61ff'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{color:'#7d8599',font:{size:11},padding:6}}}}});
-
-  dc('chartInterventions');CI.chartInterventions=new Chart(document.getElementById('chartInterventions'),{type:'bar',
-    data:{labels:['Maint. corrective','Maint. évolutive','Incidents','Support','Formation'],datasets:[{data:[85000,120000,45000,62000,28000],backgroundColor:['#ef4444','#4f8ef7','#f72585','#f4a261','#2ec4b6'],borderRadius:5}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#464e68',callback:v=>fmtEur(v)},grid:{color:'rgba(255,255,255,0.03)'}},x:{ticks:{color:'#7d8599',font:{size:10}},grid:{display:false}}}}});
-
-  dc('chartFinProj');CI.chartFinProj=new Chart(document.getElementById('chartFinProj'),{type:'line',
-    data:{labels:['2025','2026','2027'],datasets:[
-      {label:'Sans optim.',data:[totalCout,totalCout*1.04,totalCout*1.08],borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.06)',fill:true,tension:0.4},
-      {label:'Avec optim.',data:[totalCout,totalCout*0.97,totalCout*0.93],borderColor:'#06d6a0',backgroundColor:'rgba(6,214,160,0.06)',fill:true,tension:0.4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7d8599'}}},scales:{y:{ticks:{color:'#464e68',callback:v=>fmtEur(v)},grid:{color:'rgba(255,255,255,0.03)'}},x:{ticks:{color:'#7d8599'},grid:{display:false}}}}});
-
-  document.getElementById('finance-tbody').innerHTML=[...A].sort((a,b)=>b.cout-a.cout).map((a,i)=>{
-    const lic=Math.round(a.cout*.45),inf=Math.round(a.cout*.2),mai=Math.round(a.cout*.15),rh=Math.round(a.cout*.2);
-    const t=a.tech>70;
-    return `<tr><td><strong>${a.nom}</strong></td><td class="mono">${fmtEur(lic)}</td><td class="mono">${fmtEur(inf)}</td><td class="mono">${fmtEur(mai)}</td><td class="mono">${fmtEur(rh)}</td><td class="mono" style="color:#f4a261;font-weight:500">${fmtEur(a.cout)}</td><td style="color:${t?'#06d6a0':'#ef4444'}">${t?'▲':'▼'}</td><td>${editBtn('finance',`openAppModal(${D.apps.indexOf(a)})`)}</td></tr>`;
-  }).join('');
-}
-
-// ══════════════════════════════════════════════════════════
-// DATA
-// ══════════════════════════════════════════════════════════
-function renderData(){
-  document.getElementById('perm-data').innerHTML=permLabel('data');
-  const I=D.interfaces;
-  document.getElementById('data-kpis').innerHTML=
-    kpi('Interfaces actives',I.filter(i=>i.statut==='actif').length,'en production','',I.filter(i=>i.statut==='actif').length/Math.max(1,I.length)*100,'#7b61ff')+
-    kpi('Interfaces dégradées',I.filter(i=>i.statut==='dégradé'||i.statut==='obsolète').length,'à traiter','dn',30,'#ef4444')+
-    kpi('Flux critiques',I.filter(i=>i.crit==='critique').length,'criticité critique','dn',40,'#f72585')+
-    kpi('Applications connectées',D.apps.length,'dans le périmètre','',100,'#7b61ff');
-
-  drawChordDiagram();
-
-  dc('chartInterfaces');CI.chartInterfaces=new Chart(document.getElementById('chartInterfaces'),{type:'doughnut',
-    data:{labels:['Actif','Dégradé','Obsolète','Planifié'],datasets:[{data:[I.filter(i=>i.statut==='actif').length,I.filter(i=>i.statut==='dégradé').length,I.filter(i=>i.statut==='obsolète').length,I.filter(i=>i.statut==='planifié').length],backgroundColor:['#06d6a0','#f4a261','#ef4444','#4f8ef7'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#7d8599',font:{size:11}}}}}});
-  document.getElementById('interface-list').innerHTML=I.slice(0,4).map((i,idx)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text2)">${i.src} → ${i.dst}</span><div style="display:flex;gap:6px;align-items:center"><span class="badge ${badgeC(i.statut,'statut')}">${i.statut}</span>${editBtn('data',`openInterfaceModal(${idx})`)}</div></div>`).join('');
-
-  document.getElementById('data-tbody').innerHTML=I.map((i,idx)=>`<tr>
-    <td><strong>${i.src}</strong></td><td>${i.dst}</td>
-    <td><span class="mono" style="font-size:11px;color:var(--text2)">${i.type}</span></td>
-    <td style="font-size:11px">${i.freq}</td>
-    <td><span class="badge ${badgeC(i.crit,'crit')}">${i.crit}</span></td>
-    <td><span class="badge ${badgeC(i.statut,'statut')}">${i.statut}</span></td>
-    <td>${editBtn('data',`openInterfaceModal(${idx})`)}</td>
-  </tr>`).join('');
-  document.getElementById('btn-add-interface').style.display=canEdit('data')?'inline-flex':'none';
-}
-
-function drawChordDiagram(){
-  const canvas=document.getElementById('chartChord');
-  if(!canvas) return;
-  const ctx=canvas.getContext('2d');
-  const sz=canvas.width,cx=sz/2,cy=sz/2,R=110,r=22;
-  ctx.clearRect(0,0,sz,sz);
-  const A=D.apps.slice(0,6);
-  const n=A.length;
-  const cols=['#4f8ef7','#2ec4b6','#f72585','#f4a261','#7b61ff','#06d6a0'];
-  const nodes=A.map((a,i)=>{const ang=(i/n)*2*Math.PI-Math.PI/2;return{x:cx+R*Math.cos(ang),y:cy+R*Math.sin(ang),color:cols[i],name:a.nom.slice(0,7)};});
-  const links=[[0,1],[0,2],[1,4],[2,3],[3,0],[4,5],[1,3]];
-  links.forEach(([a,b])=>{
-    ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);
-    const mx=(nodes[a].x+nodes[b].x)/2+(nodes[b].y-nodes[a].y)*0.18,my=(nodes[a].y+nodes[b].y)/2-(nodes[b].x-nodes[a].x)*0.18;
-    ctx.quadraticCurveTo(mx,my,nodes[b].x,nodes[b].y);
-    ctx.strokeStyle=nodes[a].color+'44';ctx.lineWidth=2;ctx.stroke();
-  });
-  nodes.forEach(nd=>{
-    ctx.beginPath();ctx.arc(nd.x,nd.y,r,0,2*Math.PI);
-    ctx.fillStyle=nd.color+'bb';ctx.fill();ctx.strokeStyle=nd.color;ctx.lineWidth=1.5;ctx.stroke();
-    ctx.fillStyle='#fff';ctx.font='bold 8px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(nd.name,nd.x,nd.y);
-  });
-}
-
-// ══════════════════════════════════════════════════════════
-// PROJECT
-// ══════════════════════════════════════════════════════════
-function renderProject(){
-  document.getElementById('perm-project').innerHTML=permLabel('project');
-  const P=D.projets,n=P.length;
-  if(!n) return;
-  const totalB=P.reduce((s,p)=>s+p.budget,0);
-  document.getElementById('project-kpis').innerHTML=
-    kpi('Projets actifs',P.filter(p=>p.statut==='en cours').length,'en cours','',P.filter(p=>p.statut==='en cours').length/n*100,'#06d6a0')+
-    kpi('Budget total',fmtEur(totalB),'tous projets','',80,'#f4a261')+
-    kpi('Risque moyen',Math.round(P.reduce((s,p)=>s+p.risque,0)/n)+'/100','risque portfolio',Math.round(P.reduce((s,p)=>s+p.risque,0)/n)>60?'dn':'up',Math.round(P.reduce((s,p)=>s+p.risque,0)/n),'#ef4444')+
-    kpi('Valeur métier moy.',Math.round(P.reduce((s,p)=>s+p.valeur,0)/n)+'/100','score valeur','up',Math.round(P.reduce((s,p)=>s+p.valeur,0)/n),'#06d6a0');
-
-  const phases=['Q1 2025','Q2 2025','Q3 2025','Q4 2025','Q1 2026','Q2 2026'];
-  const byPh={};phases.forEach(p=>byPh[p]=[]);
-  P.forEach(p=>{if(byPh[p.phase])byPh[p.phase].push(p)});
-  const PCOLS=['#4f8ef7','#06d6a0','#f4a261','#f72585','#7b61ff','#2ec4b6'];
-  document.getElementById('roadmap-content').innerHTML=phases.map(ph=>`<div class="roadmap-phase">
-    <div class="rp-title">${ph}</div>
-    <div class="rp-items">${(byPh[ph]||[]).length===0?`<span style="font-size:11px;color:var(--text3)">Aucun projet</span>`:byPh[ph].map(p=>`<div class="rp-item">
-      <div class="rp-stripe" style="background:${p.color||PCOLS[P.indexOf(p)%6]}"></div>
-      <div class="rp-item-title">${p.nom}</div>
-      <div class="rp-item-meta">${fmtEur(p.budget)}</div>
-      <div style="margin-top:5px;display:flex;gap:5px;align-items:center">
-        <span class="badge ${p.statut==='terminé'?'b-green':p.statut==='en cours'?'b-blue':'b-gray'}">${p.statut}</span>
-        ${editBtn('project',`openProjectModal(${P.indexOf(p)})`)}
-      </div>
-    </div>`).join('')}</div></div>`).join('');
-
-  dc('chartProjBubble');CI.chartProjBubble=new Chart(document.getElementById('chartProjBubble'),{type:'bubble',
-    data:{datasets:P.map(p=>({label:p.nom,data:[{x:p.risque,y:p.valeur,r:5+p.budget/120000}],backgroundColor:(p.color||'#888')+'77',borderColor:p.color||'#888',borderWidth:1.5}))},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:20},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: R=${ctx.parsed.x} V=${ctx.parsed.y}`}}},scales:{x:{min:-5,max:105,title:{display:true,text:'Risque',color:'#464e68'},ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.04)'}},y:{min:-5,max:105,title:{display:true,text:'Valeur métier',color:'#464e68'},ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.04)'}}}}});
-
-  const sts=['en cours','planifié','terminé','en attente'];
-  dc('chartProjBudget');CI.chartProjBudget=new Chart(document.getElementById('chartProjBudget'),{type:'doughnut',
-    data:{labels:sts,datasets:[{data:sts.map(s=>P.filter(p=>p.statut===s).reduce((sum,p)=>sum+p.budget,0)),backgroundColor:['#4f8ef7','#f4a261','#06d6a0','#7d8599'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#7d8599',font:{size:11}}}}}});
-  document.getElementById('proj-list').innerHTML=P.slice(0,5).map(p=>`<div class="prog-row"><span class="prog-label">${p.nom}</span><div class="prog-wrap"><div class="prog-fill" style="width:${p.valeur}%;background:${p.color||'#4f8ef7'}"></div></div><span class="prog-val">${p.valeur}</span></div>`).join('');
-  document.getElementById('btn-add-project').style.display=canEdit('project')?'inline-flex':'none';
-}
-
-// ══════════════════════════════════════════════════════════
-// SOURCING
-// ══════════════════════════════════════════════════════════
-function renderSourcing(){
-  document.getElementById('perm-sourcing').innerHTML=permLabel('sourcing');
-  const F=D.fournisseurs,n=F.length;
-  if(!n) return;
-  const avgQ=Math.round(F.reduce((s,f)=>s+f.qualite,0)/n);
-  const avgC=Math.round(F.reduce((s,f)=>s+f.crit,0)/n);
-  document.getElementById('sourcing-kpis').innerHTML=
-    kpi('Fournisseurs',n,'dans le portefeuille','',100,'#ffd166')+
-    kpi('Qualité moyenne',avgQ+'/100','score qualité','up',avgQ,'#06d6a0')+
-    kpi('Criticité moyenne',avgC+'/100','dépendance',avgC>70?'dn':'',avgC,'#ef4444')+
-    kpi('Contrats < 2026',F.filter(f=>f.contrat<'2026-01-01').length,'à renouveler','dn',F.filter(f=>f.contrat<'2026-01-01').length/n*100,'#f4a261');
-
-  dc('chartSourcingBubble');CI.chartSourcingBubble=new Chart(document.getElementById('chartSourcingBubble'),{type:'bubble',
-    data:{datasets:F.map(f=>({label:f.nom,data:[{x:f.crit,y:f.qualite,r:6+f.cout/25000}],
-      backgroundColor:(f.qualite>=60&&f.crit>=60?'rgba(6,214,160,0.55)':f.qualite>=60?'rgba(255,209,102,0.55)':f.crit>=60?'rgba(79,142,247,0.55)':'rgba(239,68,68,0.55)'),
-      borderColor:(f.qualite>=60&&f.crit>=60?'#06d6a0':f.qualite>=60?'#ffd166':f.crit>=60?'#4f8ef7':'#ef4444'),borderWidth:1.5}))},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:20},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: Q=${ctx.parsed.y} C=${ctx.parsed.x}`}}},scales:{x:{min:-5,max:105,title:{display:true,text:'Criticité',color:'#464e68'},ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.04)'}},y:{min:-5,max:105,title:{display:true,text:'Qualité',color:'#464e68'},ticks:{color:'#464e68'},grid:{color:'rgba(255,255,255,0.04)'}}}}});
-
-  document.getElementById('sourcing-rings').innerHTML=F.map((f,i)=>{
-    const col=f.crit>=80?'#ef4444':f.crit>=60?'#f4a261':'#06d6a0';
-    const circ=2*Math.PI*18,off=circ-(f.crit/100)*circ;
-    return `<div class="ring-wrap">
-      <div class="ring"><svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="18" stroke="${col}22" stroke-width="5" fill="none"/><circle cx="24" cy="24" r="18" stroke="${col}" stroke-width="5" fill="none" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" stroke-linecap="round"/></svg><div class="ring-text"><div class="ring-num" style="color:${col}">${f.crit}</div></div></div>
-      <div class="ring-info"><div class="ring-name">${f.nom}</div><div class="ring-detail">${f.cat} · Q: ${f.qualite}</div></div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <span class="badge ${f.crit>=80?'b-red':f.crit>=60?'b-amber':'b-green'}">${f.crit>=80?'Critique':f.crit>=60?'Haute':'Normale'}</span>
-        ${editBtn('sourcing',`openFournModal(${i})`)}
-      </div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('sourcing-tbody').innerHTML=F.map((f,i)=>`<tr>
-    <td><strong>${f.nom}</strong></td>
-    <td><span class="badge b-gray">${f.cat}</span></td>
-    <td class="mono" style="color:${f.crit>=80?'#ef4444':f.crit>=60?'#f4a261':'#06d6a0'}">${f.crit}/100</td>
-    <td class="mono" style="color:${f.qualite>=75?'#06d6a0':'#f4a261'}">${f.qualite}/100</td>
-    <td class="mono" style="font-size:11px;color:var(--text2)">${f.contrat}</td>
-    <td class="mono">${fmtEur(f.cout)}</td>
-    <td><span class="badge ${f.risque>=70?'b-red':f.risque>=40?'b-amber':'b-green'}">${f.risque>=70?'Élevé':f.risque>=40?'Moyen':'Faible'}</span></td>
-    <td>${editBtn('sourcing',`openFournModal(${i})`)}</td>
-  </tr>`).join('');
-  document.getElementById('btn-add-fourn').style.display=canEdit('sourcing')?'inline-flex':'none';
-}
-
-// ══════════════════════════════════════════════════════════
-// CRUD MODALS
-// ══════════════════════════════════════════════════════════
-function closeModal(id){document.getElementById(id).classList.remove('open')}
-function openModal(id){document.getElementById(id).classList.add('open')}
-
-function openAppModal(idx){
-  if(!canEdit('portfolio')&&!canEdit('tech')&&!canEdit('secu')&&!canEdit('finance')&&!canEdit('data')){toast('Accès en lecture seule pour votre rôle','err');return;}
-  const m=idx>=0?D.apps[idx]:{};
-  document.getElementById('modal-app-title').textContent=idx>=0?'Modifier l\'application':'Nouvelle application';
-  document.getElementById('ma-nom').value=m.nom||'';
-  document.getElementById('ma-domaine').value=m.domaine||'Finance';
-  document.getElementById('ma-fourn').value=m.fourn||'';
-  document.getElementById('ma-region').value=m.region||'';
-  document.getElementById('ma-cout').value=m.cout||0;
-  document.getElementById('ma-users').value=m.users||0;
-  document.getElementById('ma-mise').value=m.mise||2020;
-  document.getElementById('ma-crit').value=m.crit||'haute';
-  document.getElementById('ma-phase').value=m.phase||'maturite';
-  document.getElementById('ma-fonc').value=m.fonc||70;document.getElementById('ma-fonc-v').textContent=m.fonc||70;
-  document.getElementById('ma-tech').value=m.tech||60;document.getElementById('ma-tech-v').textContent=m.tech||60;
-  document.getElementById('ma-risque').value=m.risque||30;document.getElementById('ma-risque-v').textContent=m.risque||30;
-  document.getElementById('ma-notes').value=m.notes||'';
-  document.getElementById('ma-idx').value=idx;
-  document.getElementById('ma-delete-btn').style.display=idx>=0?'inline-flex':'none';
-  openModal('modal-app');
-}
-function saveApp(){
-  const idx=parseInt(document.getElementById('ma-idx').value);
-  const a={
-    nom:document.getElementById('ma-nom').value.trim(),
-    domaine:document.getElementById('ma-domaine').value,
-    fourn:document.getElementById('ma-fourn').value.trim(),
-    region:document.getElementById('ma-region').value.trim(),
-    cout:parseFloat(document.getElementById('ma-cout').value)||0,
-    users:parseInt(document.getElementById('ma-users').value)||0,
-    mise:parseInt(document.getElementById('ma-mise').value)||2020,
-    crit:document.getElementById('ma-crit').value,
-    phase:document.getElementById('ma-phase').value,
-    fonc:parseInt(document.getElementById('ma-fonc').value)||70,
-    tech:parseInt(document.getElementById('ma-tech').value)||60,
-    risque:parseInt(document.getElementById('ma-risque').value)||30,
-    notes:document.getElementById('ma-notes').value.trim(),
-    updatedAt:new Date().toISOString()
-  };
-  if(!a.nom){toast('Le nom est obligatoire','err');return;}
-  if(idx>=0)D.apps[idx]=a;else D.apps.push(a);
-  saveData();closeModal('modal-app');renderModule(currentModule);
-  toast(idx>=0?`${a.nom} mis à jour`:`${a.nom} ajouté`);
-}
-function deleteApp(){
-  const idx=parseInt(document.getElementById('ma-idx').value);
-  if(idx<0)return;
-  const nom=D.apps[idx].nom;
-  D.apps.splice(idx,1);saveData();closeModal('modal-app');renderModule(currentModule);
-  toast(`${nom} supprimé`);
-}
-
-function openProjectModal(idx){
-  if(!canEdit('project')){toast('Accès en lecture seule','err');return;}
-  const p=idx>=0?D.projets[idx]:{};
-  document.getElementById('modal-proj-title').textContent=idx>=0?'Modifier le projet':'Nouveau projet';
-  document.getElementById('mp-nom').value=p.nom||'';
-  document.getElementById('mp-phase').value=p.phase||'Q1 2026';
-  document.getElementById('mp-budget').value=p.budget||100000;
-  document.getElementById('mp-statut').value=p.statut||'planifié';
-  document.getElementById('mp-risque').value=p.risque||40;document.getElementById('mp-risque-v').textContent=p.risque||40;
-  document.getElementById('mp-valeur').value=p.valeur||70;document.getElementById('mp-valeur-v').textContent=p.valeur||70;
-  document.getElementById('mp-idx').value=idx;
-  document.getElementById('mp-delete-btn').style.display=idx>=0?'inline-flex':'none';
-  openModal('modal-project');
-}
-function saveProjet(){
-  const idx=parseInt(document.getElementById('mp-idx').value);
-  const PCOLS=['#4f8ef7','#06d6a0','#f4a261','#f72585','#7b61ff','#2ec4b6'];
-  const p={
-    nom:document.getElementById('mp-nom').value.trim(),
-    phase:document.getElementById('mp-phase').value.trim(),
-    budget:parseFloat(document.getElementById('mp-budget').value)||0,
-    statut:document.getElementById('mp-statut').value,
-    risque:parseInt(document.getElementById('mp-risque').value)||40,
-    valeur:parseInt(document.getElementById('mp-valeur').value)||70,
-    color:idx>=0?(D.projets[idx].color||PCOLS[idx%6]):PCOLS[D.projets.length%6],
-  };
-  if(!p.nom){toast('Le nom est obligatoire','err');return;}
-  if(idx>=0)D.projets[idx]=p;else D.projets.push(p);
-  saveData();closeModal('modal-project');renderModule(currentModule);
-  toast(idx>=0?'Projet mis à jour':'Projet ajouté');
-}
-function deleteProjet(){
-  const idx=parseInt(document.getElementById('mp-idx').value);
-  if(idx<0)return;
-  D.projets.splice(idx,1);saveData();closeModal('modal-project');renderModule(currentModule);toast('Projet supprimé');
-}
-
-function openFournModal(idx){
-  if(!canEdit('sourcing')){toast('Accès en lecture seule','err');return;}
-  const f=idx>=0?D.fournisseurs[idx]:{};
-  document.getElementById('modal-fourn-title').textContent=idx>=0?'Modifier le fournisseur':'Nouveau fournisseur';
-  document.getElementById('mf-nom').value=f.nom||'';
-  document.getElementById('mf-cat').value=f.cat||'';
-  document.getElementById('mf-cout').value=f.cout||0;
-  document.getElementById('mf-contrat').value=f.contrat||'';
-  document.getElementById('mf-crit').value=f.crit||70;document.getElementById('mf-crit-v').textContent=f.crit||70;
-  document.getElementById('mf-qual').value=f.qualite||75;document.getElementById('mf-qual-v').textContent=f.qualite||75;
-  document.getElementById('mf-risque').value=f.risque||30;document.getElementById('mf-risque-v').textContent=f.risque||30;
-  document.getElementById('mf-idx').value=idx;
-  document.getElementById('mf-delete-btn').style.display=idx>=0?'inline-flex':'none';
-  openModal('modal-fourn');
-}
-function saveFourn(){
-  const idx=parseInt(document.getElementById('mf-idx').value);
-  const f={nom:document.getElementById('mf-nom').value.trim(),cat:document.getElementById('mf-cat').value.trim(),cout:parseFloat(document.getElementById('mf-cout').value)||0,contrat:document.getElementById('mf-contrat').value,crit:parseInt(document.getElementById('mf-crit').value)||70,qualite:parseInt(document.getElementById('mf-qual').value)||75,risque:parseInt(document.getElementById('mf-risque').value)||30};
-  if(!f.nom){toast('Le nom est obligatoire','err');return;}
-  if(idx>=0)D.fournisseurs[idx]=f;else D.fournisseurs.push(f);
-  saveData();closeModal('modal-fourn');renderModule(currentModule);toast(idx>=0?'Fournisseur mis à jour':'Fournisseur ajouté');
-}
-function deleteFourn(){const idx=parseInt(document.getElementById('mf-idx').value);if(idx<0)return;D.fournisseurs.splice(idx,1);saveData();closeModal('modal-fourn');renderModule(currentModule);toast('Fournisseur supprimé');}
-
-function openInterfaceModal(idx){
-  if(!canEdit('data')){toast('Accès en lecture seule','err');return;}
-  const i=idx>=0?D.interfaces[idx]:{};
-  document.getElementById('mi-src').value=i.src||'';document.getElementById('mi-dst').value=i.dst||'';
-  document.getElementById('mi-type').value=i.type||'API REST';document.getElementById('mi-freq').value=i.freq||'Quotidien';
-  document.getElementById('mi-crit').value=i.crit||'haute';document.getElementById('mi-statut').value=i.statut||'actif';
-  document.getElementById('mi-idx').value=idx;
-  document.getElementById('mi-delete-btn').style.display=idx>=0?'inline-flex':'none';
-  openModal('modal-interface');
-}
-function saveInterface(){
-  const idx=parseInt(document.getElementById('mi-idx').value);
-  const i={src:document.getElementById('mi-src').value.trim(),dst:document.getElementById('mi-dst').value.trim(),type:document.getElementById('mi-type').value,freq:document.getElementById('mi-freq').value,crit:document.getElementById('mi-crit').value,statut:document.getElementById('mi-statut').value};
-  if(!i.src||!i.dst){toast('Source et cible obligatoires','err');return;}
-  if(idx>=0)D.interfaces[idx]=i;else D.interfaces.push(i);
-  saveData();closeModal('modal-interface');renderModule(currentModule);toast(idx>=0?'Interface mise à jour':'Interface ajoutée');
-}
-function deleteInterface(){const idx=parseInt(document.getElementById('mi-idx').value);if(idx<0)return;D.interfaces.splice(idx,1);saveData();closeModal('modal-interface');renderModule(currentModule);toast('Interface supprimée');}
-function openRegionModal(){toast('Modifier les régions via le formulaire Application → champ Région');}
-
-// Close modals on backdrop click
-['modal-app','modal-project','modal-fourn','modal-interface','modal-tool'].forEach(id=>{
-  document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeModal(id);});
-});
-
-// ══════════════════════════════════════════════════════════
-// OUTILS COMMUNS
-// ══════════════════════════════════════════════════════════
-function showTool(type){
-  const A=D.apps,F=D.fournisseurs,P=D.projets;
-  const cfg={
-    risk:{title:'↓ Réduire les risques',sub:'Applications à risque élevé · Actions prioritaires',body:()=>{
-      const top=[...A].filter(a=>a.risque>=60).sort((a,b)=>b.risque-a.risque);
-      return `<div class="mb8" style="font-size:12px;color:var(--text2)">Applications risque ≥ 60</div>`+
-        top.map(a=>`<div class="prog-row"><span class="prog-label">${a.nom}</span><div class="prog-wrap"><div class="prog-fill" style="width:${a.risque}%;background:${a.risque>=70?'#ef4444':'#f4a261'}"></div></div><span class="prog-val mono" style="color:#ef4444">${a.risque}</span></div>`).join('')+
-        (top.length?`<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;padding:10px;font-size:12px;color:var(--text2);margin-top:12px">Recommandation : planifier la migration de <strong style="color:#fff">${top[0].nom}</strong> en priorité (risque: ${top[0].risque})</div>`:
-        '<div class="empty">Aucune application à risque élevé</div>');
-    }},
-    cost:{title:'↓ Réduire les coûts',sub:'Applications coûteuses à score technique bas',body:()=>{
-      const top=[...A].sort((a,b)=>b.cout-a.cout).slice(0,5);
-      const eco=A.filter(a=>a.tech<50).reduce((s,a)=>s+a.cout*0.2,0);
-      return `<div class="mb8" style="font-size:12px;color:var(--text2)">Top 5 coûts annuels</div>`+
-        top.map(a=>`<div class="prog-row"><span class="prog-label">${a.nom}</span><div class="prog-wrap"><div class="prog-fill" style="width:${a.cout/top[0].cout*100}%;background:#f4a261"></div></div><span class="prog-val mono">${fmtEur(a.cout)}</span></div>`).join('')+
-        `<div style="background:rgba(6,214,160,0.06);border:1px solid rgba(6,214,160,0.15);border-radius:8px;padding:10px;font-size:12px;color:var(--text2);margin-top:12px">Économies estimées (apps tech < 50) : <strong style="color:#06d6a0">${fmtEur(eco)}/an</strong></div>`;
-    }},
-    start:{title:'⚡ Démarrer rapidement',sub:'Quick wins · ROI immédiat',body:()=>{
-      const qw=[{a:'Renouveler contrat Sage Compta',g:'18 000 €/an',e:'Faible',d:'1 mois'},{a:'Activer SSO Microsoft 365',g:'Sécurité +30%',e:'Faible',d:'2 sem.'},{a:'Déployer ServiceNow ITSM pour WMS',g:'Support -40%',e:'Moyen',d:'6 sem.'}];
-      return qw.map(q=>`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px"><div style="font-size:12px;font-weight:500;color:#fff;margin-bottom:5px">${q.a}</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-green">Gain: ${q.g}</span><span class="badge b-blue">Effort: ${q.e}</span><span class="badge b-teal">Délai: ${q.d}</span></div></div>`).join('');
-    }},
-    agile:{title:'↑ Augmenter l\'agilité',sub:'Score d\'agilité · Axes de modernisation',body:()=>{
-      const sorted=[...A].sort((a,b)=>(a.fonc+a.tech)-(b.fonc+b.tech));
-      const avg=Math.round(A.reduce((s,a)=>s+(a.fonc+a.tech)/2,0)/Math.max(1,A.length));
-      return `<div class="mb8" style="font-size:12px;color:var(--text2)">Score d'agilité (fonct. + tech.) / 2</div>`+
-        sorted.map(a=>{const sc=Math.round((a.fonc+a.tech)/2);return`<div class="prog-row"><span class="prog-label">${a.nom}</span><div class="prog-wrap"><div class="prog-fill" style="width:${sc}%;background:${sc>=70?'#4f8ef7':sc>=50?'#2ec4b6':'#f4a261'}"></div></div><span class="prog-val mono">${sc}</span></div>`}).join('')+
-        `<div style="background:rgba(79,142,247,0.06);border:1px solid rgba(79,142,247,0.15);border-radius:8px;padding:10px;font-size:12px;color:var(--text2);margin-top:12px">Score moyen d'agilité : <strong style="color:#4f8ef7">${avg}/100</strong></div>`;
-    }}
-  };
-  const c=cfg[type];if(!c)return;
-  document.getElementById('tool-modal-title').textContent=c.title;
-  document.getElementById('tool-modal-sub').textContent=c.sub;
-  document.getElementById('tool-modal-body').innerHTML=c.body();
-  openModal('modal-tool');
-}
-
-// ══════════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════════
-loadData();
-document.getElementById('th-date').textContent=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
-</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI Governance | Tableau de bord</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* ========== VOS STYLES EXISTANTS (copiez‑les ici) ========== */
+        :root {
+            --navy:#0B1829; --blue:#1A6CF5; --white:#FFF; --border:rgba(0,0,0,0.1);
+            --violet:#7C5CFC; --teal:#00B49C; --amber:#F5A623; --rose:#E84568; --u-color: var(--blue);
+            --orange:#F97316; --gold:#F5A623; --sky:#0EA5E9; --gray:#6B7280;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Instrument Sans', sans-serif; background:#F4F7FB; color:var(--navy); }
+
+        .topbar {
+            background:#fff; padding:0 32px; height:70px;
+            display:flex; align-items:center; justify-content:space-between;
+            width:100%; border-bottom:1px solid var(--border);
+            position:fixed; top:0; z-index:100;
+        }
+        .topbar-left { display:flex; align-items:center; gap:15px; }
+        #uAvatar {
+            width:35px; height:35px; border-radius:10px;
+            background:var(--u-color); color:#fff;
+            display:flex; align-items:center; justify-content:center; font-weight:800;
+        }
+        .topbar-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+        .btn {
+            padding:10px 20px; border-radius:10px; border:none; cursor:pointer;
+            font-weight:600; background:var(--u-color); color:#fff;
+            font-family:inherit; font-size:14px; transition:opacity 0.2s;
+        }
+        .btn:hover { opacity:0.85; }
+        .btn-ghost { background:none; color:var(--navy); }
+        .btn-ghost:hover { background:rgba(0,0,0,0.05); opacity:1; }
+        .btn-danger { background:var(--rose); }
+        .btn-sm { padding:6px 12px; font-size:12px; }
+        .btn-success { background:var(--teal); }
+
+        .container { padding:100px 32px 40px; max-width:1400px; width:100%; margin:0 auto; }
+        .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
+        .dashboard-header h1 { font-family:'Syne'; margin:0; }
+        .views-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(540px, 1fr)); gap:20px; }
+
+        .vp-card {
+            background:#fff; border-radius:16px; padding:20px;
+            border-top:5px solid var(--u-color);
+            box-shadow:0 4px 15px rgba(0,0,0,0.05);
+            transition:transform 0.2s, box-shadow 0.2s;
+        }
+        .vp-card:hover { transform:translateY(-3px); box-shadow:0 8px 25px rgba(0,0,0,0.1); }
+        .vp-card-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+        .vp-ico { font-size:24px; line-height:1; }
+        .vp-title { font-weight:600; font-size:15px; color:var(--navy); }
+        .vp-id { font-size:11px; color:#999; margin-top:2px; }
+        .vp-notes {
+            width:100%; border:1px solid #eee; border-radius:8px;
+            padding:10px; font-family:inherit; font-size:13px;
+            resize:vertical; min-height:60px; color:var(--navy);
+            transition:border-color 0.2s; outline:none;
+        }
+        .vp-notes:focus { border-color:var(--blue); }
+        .vp-saved { font-size:11px; color:var(--teal); margin-top:6px; display:none; }
+        .spell-bar { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+        .spell-word { font-size:10px; padding:2px 8px; border-radius:12px; background:#FEF3C7; color:#92400E; cursor:pointer; }
+
+        /* Tableau de suivi des statuts */
+        .status-table {
+            width:100%;
+            border-collapse:collapse;
+            font-size:11px;
+            margin:10px 0;
+        }
+        .status-table th, .status-table td {
+            padding:6px 4px;
+            text-align:left;
+            border-bottom:1px solid #eee;
+        }
+        .status-table th {
+            background:#f8fafc;
+            font-weight:600;
+        }
+        .status-badge-prevu { background:#E2E3E5; color:#4B5563; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
+        .status-badge-a-faire { background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
+        .status-badge-en-reflexion { background:#DBEAFE; color:#1E40AF; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
+        .status-badge-fait { background:#D1FAE5; color:#065F46; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
+        .status-badge-en-production { background:#C7D2FE; color:#3730A3; padding:2px 8px; border-radius:12px; font-size:10px; display:inline-block; }
+        .status-date-input, .status-comment-input {
+            padding:4px;
+            font-size:10px;
+            width:100%;
+            border:1px solid #ddd;
+            border-radius:6px;
+        }
+        .progress-chart {
+            width:100%;
+            height:80px;
+            margin:5px 0;
+        }
+        .progress-section {
+            background:#fafcff;
+            border-radius:12px;
+            padding:8px;
+            margin:8px 0;
+        }
+
+        /* Tags dictionnaire */
+        .dict-tag {
+            display:inline-block;
+            background:#eef2ff;
+            color:#1E40AF;
+            padding:4px 12px;
+            border-radius:20px;
+            font-size:11px;
+            margin:4px;
+            cursor:pointer;
+            transition:all 0.2s;
+        }
+        .dict-tag.selected {
+            background:var(--blue);
+            color:white;
+        }
+        .dict-tag:hover {
+            opacity:0.8;
+        }
+        .maturity-bar-container {
+            margin-top:8px;
+        }
+        .maturity-bar {
+            background:#e5e7eb;
+            border-radius:10px;
+            height:8px;
+            overflow:hidden;
+        }
+        .maturity-bar-fill {
+            width:0%;
+            height:100%;
+            background:var(--blue);
+            border-radius:10px;
+            transition:width 0.3s ease;
+        }
+        .maturity-score-text {
+            display:flex;
+            justify-content:space-between;
+            font-size:10px;
+            margin-bottom:4px;
+        }
+
+        #kpiSection, #complianceSection, #cyberSection, #communicationSection { display:none; }
+        .kpi-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:20px; margin-bottom:30px; }
+        .kpi-card { background:#fff; border-radius:16px; padding:24px; border-left:4px solid var(--kpi-color, var(--blue)); box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+        .kpi-value { font-family:'Syne'; font-size:32px; font-weight:800; }
+        .kpi-label { font-size:13px; color:#666; margin-top:8px; }
+        .chart-container { background:#fff; border-radius:16px; padding:20px; margin-bottom:24px; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+        .chart-container h3 { font-family:'Syne'; margin-bottom:16px; font-size:18px; }
+        .chart-wrap { height:300px; }
+
+        .upload-zone { border:2px dashed #ddd; border-radius:16px; padding:30px; text-align:center; cursor:pointer; margin-bottom:24px; background:#fafafa; transition:all 0.2s; }
+        .upload-zone:hover, .upload-zone.drag { border-color:var(--blue); background:#f0f7ff; }
+
+        #adminSection { display:none; }
+        .admin-card { background:#fff; padding:30px; border-radius:20px; border:1px solid #eee; max-width:500px; margin-bottom:24px; }
+        .admin-card h3 { margin:0 0 20px; font-family:'Syne'; }
+        .admin-card input, .admin-card select { padding:12px; border-radius:10px; border:1px solid #ddd; width:100%; margin-bottom:15px; font-family:inherit; font-size:14px; outline:none; }
+        .admin-card input:focus, .admin-card select:focus { border-color:var(--blue); }
+
+        .card-link {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+        .card-link .btn {
+            display: inline-block;
+            background: var(--blue);
+            color: #fff;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .message-item, .product-item, .problem-item {
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .message-unread { background: #FEF3C7; }
+        .message-read { background: #fff; }
+
+        #toast {
+            position:fixed; bottom:30px; right:30px; z-index:9999;
+            background:var(--navy); color:#fff; padding:14px 22px;
+            border-radius:12px; font-size:14px; font-weight:600;
+            transform:translateY(80px); opacity:0;
+            transition:transform 0.3s, opacity 0.3s;
+            pointer-events:none; max-width:300px;
+        }
+        #toast.show { transform:translateY(0); opacity:1; }
+        #toast.success { border-left:4px solid var(--teal); }
+        #toast.error { border-left:4px solid var(--rose); }
+
+        @media (max-width:600px) {
+            .topbar { padding:0 16px; }
+            .container { padding:90px 16px 30px; }
+            .dashboard-header { flex-direction:column; align-items:flex-start; }
+            .views-grid { grid-template-columns:1fr; }
+        }
+
+        /* Groupes */
+        .group-header {
+            grid-column: 1 / -1;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            font-family: 'Syne';
+            font-size: 22px;
+            background: #eef2ff;
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: #0B1829;
+        }
+        .sub-group-header {
+            grid-column: 1 / -1;
+            margin-top: 12px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #1A6CF5;
+            padding-left: 12px;
+            border-left: 3px solid #1A6CF5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Topbar -->
+    <nav class="topbar">
+        <div class="topbar-left"><div id="uAvatar"></div><span style="font-family:'Syne'; font-weight:800;">SI MANAGER</span></div>
+        <div class="topbar-right">
+            <button class="btn btn-ghost" onclick="tab('diag')">📊 Diagnostic</button>
+            <button class="btn btn-ghost" onclick="tab('kpi')">📈 KPI</button>
+            <button class="btn btn-ghost" onclick="tab('compliance')">⚖️ Conformité</button>
+            <button class="btn btn-ghost" onclick="tab('cyber')">🌍 Cyber Threat</button>
+            <button class="btn btn-ghost" onclick="tab('communication')">📬 Comm & Suivi</button>
+            <button class="btn btn-ghost" id="admLink" style="display:none;" onclick="tab('admin')">🔑 Admin</button>
+            <button class="btn btn-danger btn-sm" onclick="doLogout()">Déconnexion</button>
+        </div>
+    </nav>
+
+    <!-- DIAGNOSTIC -->
+    <main id="diagSection" class="container">
+        <div class="dashboard-header">
+            <h1>Dashboard des 25 Outils</h1>
+            <button class="btn" onclick="exportFullPDF()" style="background:var(--navy)">📊 Rapport PDF complet</button>
+        </div>
+        <div id="mainContainer" class="views-grid"></div>
+    </main>
+
+    <!-- KPI -->
+    <section id="kpiSection" class="container s-hide">
+        <div class="dashboard-header"><h1>KPI & Visualisations</h1></div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="handleSpreadsheetDrop(event)">
+            <p>📊 Glissez un fichier <strong>Excel (.xlsx, .csv)</strong> ici ou <strong>cliquez pour importer</strong></p>
+            <input type="file" id="fileInput" accept=".xlsx,.csv,.xls" style="display:none" onchange="importSpreadsheet(event)">
+        </div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="chart-container"><h3>📈 Évolution de la maturité</h3><div class="chart-wrap"><canvas id="maturityChart"></canvas></div></div>
+        <div class="chart-container"><h3>📊 Complétion des outils</h3><div class="chart-wrap"><canvas id="toolsChart"></canvas></div></div>
+        <div class="chart-container"><h3>📊 Niveaux de conformité par norme</h3><div class="chart-wrap"><canvas id="normeMaturityChart"></canvas></div></div>
+        <div class="chart-container"><h3>💰 Coûts d'intégration par métier</h3><div class="chart-wrap"><canvas id="integrationCostsChart"></canvas></div></div>
+        <div class="chart-container"><h3>📊 Scores de maturité par rôle</h3><div class="chart-wrap"><canvas id="maturityByRoleChart"></canvas></div></div>
+    </section>
+
+    <!-- CONFORMITÉ & GESTION DES COÛTS -->
+    <section id="complianceSection" class="container s-hide">
+        <div class="dashboard-header"><h1>Conformité & Gestion des Coûts</h1></div>
+        <div class="card-link">
+            <div style="font-size: 48px; margin-bottom: 20px;">⚖️</div>
+            <h2>Gestion des normes et des coûts</h2>
+            <p style="margin-bottom: 24px; color: #555;">Accédez à la page dédiée contenant :<br>
+            - Les normes NIS2, ITIL, ISO 27001/5 avec checklist et suivi de maturité<br>
+            - La gestion des taux horaires (techniciens, opérateurs)<br>
+            - La feuille de calcul des coûts et le suivi des factures</p>
+            <a href="/compliance-costs.html" target="_blank" class="btn">🔗 Ouvrir la page Conformité & Coûts</a>
+        </div>
+        <div class="card-link" style="margin-top: 24px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
+            <h2>Analyse de risque EBIOS RM</h2>
+            <p style="margin-bottom: 24px; color: #555;">Méthodologie complète d'analyse des risques selon le référentiel ANSSI</p>
+            <a href="/ebios-rm.html" target="_blank" class="btn">🔗 Ouvrir l'analyse EBIOS RM</a>
+        </div>
+    </section>
+
+    <!-- CYBER THREAT INTELLIGENCE -->
+    <section id="cyberSection" class="container s-hide">
+        <div class="dashboard-header"><h1>Cyber Threat Intelligence</h1></div>
+        <div class="card-link">
+            <div style="font-size: 48px; margin-bottom: 20px;">🌍</div>
+            <h2>Informations détaillées sur la cyber menace</h2>
+            <p style="margin-bottom: 24px; color: #555;">Services AI Check Point, MITRE ATT&CK, actualité cyber</p>
+            <a href="/cyber-threat-intel.html" target="_blank" class="btn">🔗 Ouvrir la page Cyber Threat Intelligence</a>
+        </div>
+    </section>
+
+    <!-- COMMUNICATION & SUIVI -->
+    <section id="communicationSection" class="container s-hide">
+        <div class="dashboard-header"><h1>Communication & Suivi</h1></div>
+        <div style="margin-bottom: 32px;">
+            <h2 style="font-family:'Syne'; margin-bottom: 20px;">📨 Messagerie interne</h2>
+            <div class="card-link" style="padding: 24px; text-align: left;">
+                <div style="margin-bottom: 20px;">
+                    <h3>Nouveau message</h3>
+                    <input type="text" id="msgSujet" placeholder="Sujet" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
+                    <textarea id="msgContenu" placeholder="Contenu du message..." rows="3" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></textarea>
+                    <select id="msgDestinataires" multiple size="3" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></select>
+                    <button class="btn btn-success" onclick="sendMessage()">Envoyer le message</button>
+                </div>
+                <div><h3>Boîte de réception</h3><div id="messageList" style="max-height: 400px; overflow-y: auto;"><p>Chargement...</p></div></div>
+            </div>
+        </div>
+        <div style="margin-bottom: 32px;">
+            <h2 style="font-family:'Syne'; margin-bottom: 20px;">📦 Fiches produit</h2>
+            <div class="card-link" style="padding: 24px; text-align: left;">
+                <div style="margin-bottom: 20px;">
+                    <h3>Nouvelle fiche produit</h3>
+                    <input type="text" id="prodNom" placeholder="Nom du produit" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
+                    <textarea id="prodDesc" placeholder="Description" rows="2" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></textarea>
+                    <select id="prodOwnerSelect" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></select>
+                    <button class="btn btn-success" onclick="createProductSheet()">Créer la fiche</button>
+                </div>
+                <div><h3>Liste des produits</h3><div id="productList" style="max-height: 400px; overflow-y: auto;"><p>Chargement...</p></div></div>
+            </div>
+        </div>
+        <div style="margin-bottom: 32px;">
+            <h2 style="font-family:'Syne'; margin-bottom: 20px;">🐛 Suivi des problèmes</h2>
+            <div class="card-link" style="padding: 24px; text-align: left;">
+                <div style="margin-bottom: 20px;">
+                    <h3>Nouveau problème</h3>
+                    <input type="text" id="probTitre" placeholder="Titre" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
+                    <textarea id="probDesc" placeholder="Description" rows="2" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></textarea>
+                    <select id="probResponsableSelect" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;"></select>
+                    <select id="probPriorite" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;"><option value="basse">Basse</option><option value="normale">Normale</option><option value="haute">Haute</option><option value="critique">Critique</option></select>
+                    <input type="date" id="probEcheance" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
+                    <button class="btn btn-success" onclick="createProblem()">Créer le problème</button>
+                </div>
+                <div><h3>Problèmes en cours</h3><div id="problemList" style="max-height: 400px; overflow-y: auto;"><p>Chargement...</p></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="adminSection" class="container s-hide">
+        <div class="dashboard-header"><h1>Administration</h1></div>
+        <div class="admin-card"><h3>➕ Ajouter un Expert SI</h3><input type="email" id="newEmail" placeholder="Email"><input type="text" id="newN" placeholder="Nom Prénom"><select id="newR"><option value="DSI">DSI (Violet)</option><option value="RSSI">RSSI (Rose)</option><option value="DATA">Expert Data (Teal)</option><option value="ADMIN">Super Admin (Blue)</option><option value="SERVICE_MANAGER">Manager de service</option><option value="CEO">PDG / CEO</option><option value="NET">Admin Réseaux</option><option value="SYS">Admin Système</option></select><button class="btn" style="width:100%" onclick="addUser()">Créer le profil</button></div>
+        <div class="admin-card"><h3>➕ Créer un nouvel utilisateur (avec sécurité)</h3><form id="createUserForm"><input type="email" id="newUserEmail" placeholder="Email" required><input type="password" id="newUserPassword" placeholder="Mot de passe" required><select id="newUserType"><option value="RSSI">RSSI (Rose)</option><option value="DSI">DSI (Violet)</option><option value="DATA">DATA (Teal)</option><option value="SERVICE_MANAGER">Manager de service</option><option value="CEO">PDG / CEO</option><option value="NET">Admin Réseaux</option><option value="SYS">Admin Système</option></select><div id="securityQuestionsContainer" style="margin:15px 0;"></div><div id="captchaContainer" style="margin:15px 0;"></div><button type="submit" class="btn" style="width:100%">Créer l'utilisateur</button></form><div id="createUserMessage" style="margin-top:12px;"></div></div>
+    </section>
+
+    <div id="toast"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true } });
+
+        let db = null, user = null;
+        let chartMaturity = null, chartTools = null, chartNormeMaturity = null, chartIntegrationCosts = null, chartMaturityByRole = null;
+        let toolStatuses = {};
+        let toolCharts = {};
+        let dictionaryTerms = [];
+
+        const COLORS = { DSI:'#7C5CFC', RSSI:'#E84568', DATA:'#00B49C', ADMIN:'#1A6CF5',
+            SERVICE_MANAGER:'#F97316', CEO:'#F5A623', NET:'#0EA5E9', SYS:'#6B7280' };
+        const ROLE_LABELS = { ADMIN:'Super Admin', DSI:'DSI', RSSI:'RSSI', DATA:'Expert Data',
+            SERVICE_MANAGER:'Manager de service', CEO:'PDG / CEO', NET:'Admin Réseaux', SYS:'Admin Système' };
+
+        const TOOLS = [
+            {id:1, t:"Capacités Métier", ico:"🧭"},{id:2, t:"Transformation IT",ico:"⚡"},{id:3, t:"Objectifs Strat",ico:"🎯"},
+            {id:4, t:"Écosystème",ico:"🌐"},{id:5, t:"Portefeuille App",ico:"📱"},{id:6, t:"Flux & Interfaces",ico:"🔗"},
+            {id:7, t:"Mapping Cap/App",ico:"🗺️"},{id:8, t:"Obsolescence",ico:"🕰️"},{id:9, t:"Données Métier",ico:"🗄️"},
+            {id:10, t:"Lineage Data",ico:"📉"},{id:11, t:"RGPD",ico:"⚖️"},{id:12, t:"Analytique",ico:"📊"},
+            {id:13, t:"Infrastructure",ico:"🖥️"},{id:14, t:"Sécurité SI",ico:"🛡️"},{id:15, t:"Standards",ico:"📜"},
+            {id:16, t:"Cloud Arch",ico:"☁️"},{id:17, t:"Processus",ico:"🏢"},{id:18, t:"Parties Prenantes",ico:"👥"},
+            {id:19, t:"Gouvernance",ico:"🏛️"},{id:20, t:"Risques SI",ico:"⚠️"},{id:21, t:"Roadmap SI",ico:"🗓️"},
+            {id:22, t:"Impact Projets",ico:"💥"},{id:23, t:"Coût IT",ico:"💰"},{id:24, t:"Innovation",ico:"💡"},
+            {id:25, t:"Référentiels de conformité", ico:"📋"}
+        ];
+
+        // Définition des groupes (inchangée)
+        const toolGroups = [
+            {
+                name: "📦 Gestion de portefeuille d’applications",
+                subGroups: [
+                    { name: "⚙️ Capacité fonctionnelle", toolIds: [1,2,3,4,5,6] },
+                    { name: "🖥️ Capacité technique", toolIds: [7,8,9,10,11,12] },
+                    { name: "🔍 Explorer : successeurs", toolIds: [13,14,15] },
+                    { name: "🎯 Criticité métier", toolIds: [16,17,18] },
+                    { name: "🔄 Cycle de vie", toolIds: [19,20,21] },
+                    { name: "⚖️ Capacité fonctionnelle vs technique", toolIds: [22,23,24] }
+                ]
+            },
+            {
+                name: "⚠️ Réduire les risques",
+                subGroups: [{ name: "", toolIds: [11,14,19,20,25] }]
+            },
+            {
+                name: "💰 Réduire les coûts",
+                subGroups: [{ name: "", toolIds: [13,23] }]
+            },
+            {
+                name: "🚀 Démarrer rapidement",
+                subGroups: [{ name: "", toolIds: [2,3,24] }]
+            },
+            {
+                name: "⚡ Augmenter l’agilité",
+                subGroups: [{ name: "", toolIds: [4,17,18] }]
+            }
+        ];
+
+        // ============================================================
+        // CORRECTION : loadDictionaryTerms avec rôle réel
+        // ============================================================
+        async function loadDictionaryTerms() {
+            // Récupérer le rôle depuis user_roles
+            const { data: roles } = await sb
+                .from('user_roles')
+                .select('role_id')
+                .eq('user_id', user.id);
+            const role = roles?.[0]?.role_id || 'SERVICE_MANAGER';
+
+            // Charger les termes du dictionnaire correspondant à ce rôle
+            const { data, error } = await sb
+                .from('professional_dict')
+                .select('id, terme, poids')
+                .eq('metier', role);
+            if (!error && data) {
+                dictionaryTerms = data;
+            } else {
+                dictionaryTerms = [];
+            }
+        }
+
+        // ============================================================
+        // AUTRES FONCTIONS (inchangées)
+        // ============================================================
+        async function checkSession() {
+            const { data: { user: authUser }, error } = await sb.auth.getUser();
+            if (error || !authUser) { window.location.href = '/index.html'; return null; }
+            return authUser;
+        }
+
+        async function loadToolDictSelections(toolId) {
+            const { data, error } = await sb.from('tool_dict_selections').select('terme_id').eq('tool_id', toolId).eq('user_email', user?.email);
+            const selections = {};
+            if (data) data.forEach(item => { selections[item.terme_id] = true; });
+            return selections;
+        }
+
+        async function calculateMaturityScore(toolId, selections) {
+            if (!dictionaryTerms.length) return 0;
+            let totalWeight = 0, selectedWeight = 0;
+            for (const term of dictionaryTerms) {
+                totalWeight += term.poids || 1;
+                if (selections[term.id]) selectedWeight += term.poids || 1;
+            }
+            if (totalWeight === 0) return 0;
+            return Math.round((selectedWeight / totalWeight) * 10 * 10) / 10;
+        }
+
+        async function saveDictSelectionWithMaturity(toolId, termeId, selected) {
+            if (selected) {
+                await sb.from('tool_dict_selections').upsert({ tool_id: toolId, terme_id: termeId, user_email: user.email, selected: true, updated_at: new Date().toISOString() }, { onConflict: 'tool_id, terme_id, user_email' });
+            } else {
+                await sb.from('tool_dict_selections').delete().eq('tool_id', toolId).eq('terme_id', termeId).eq('user_email', user.email);
+            }
+            const newSelections = await loadToolDictSelections(toolId);
+            const newScore = await calculateMaturityScore(toolId, newSelections);
+            await sb.from('tool_maturity_score').upsert({ tool_id: toolId, user_email: user.email, score: newScore, updated_at: new Date().toISOString() }, { onConflict: 'tool_id, user_email' });
+            const fillBar = document.getElementById(`maturity_fill_${toolId}`);
+            const valueSpan = document.getElementById(`maturity_val_${toolId}`);
+            if (fillBar) fillBar.style.width = `${newScore * 10}%`;
+            if (valueSpan) valueSpan.textContent = newScore.toFixed(1);
+        }
+
+        async function loadToolStatuses() {
+            const { data, error } = await sb.from('tool_status_history').select('*').eq('user_email', user.email);
+            if (error) return;
+            toolStatuses = {};
+            if (data) {
+                data.forEach(item => {
+                    if (!toolStatuses[item.tool_id]) toolStatuses[item.tool_id] = {};
+                    toolStatuses[item.tool_id][item.statut] = { date: item.date_statut, commentaire: item.commentaire || '', id: item.id };
+                });
+            }
+        }
+
+        async function saveToolStatus(toolId, statut, date, commentaire = '') {
+            const existing = toolStatuses[toolId]?.[statut];
+            if (existing) {
+                await sb.from('tool_status_history').update({ date_statut: date, commentaire, updated_at: new Date().toISOString() }).eq('id', existing.id);
+                existing.date = date; existing.commentaire = commentaire;
+            } else {
+                const { data, error } = await sb.from('tool_status_history').insert({ tool_id: toolId, statut, date_statut: date, user_email: user.email, commentaire }).select().single();
+                if (!error && data) {
+                    if (!toolStatuses[toolId]) toolStatuses[toolId] = {};
+                    toolStatuses[toolId][statut] = { date, commentaire, id: data.id };
+                }
+            }
+            showToast(`Statut "${statut}" enregistré`);
+            renderTools();
+        }
+
+        function getProgressStats(toolId) {
+            const statuses = toolStatuses[toolId] || {};
+            const statutList = ['Prévu', 'À faire', 'En réflexion', 'Fait', 'En production'];
+            const stats = {};
+            for (const s of statutList) stats[s] = statuses[s] ? 1 : 0;
+            return stats;
+        }
+
+        function renderProgressChart(toolId) {
+            const stats = getProgressStats(toolId);
+            const canvasId = `chart_${toolId}`;
+            setTimeout(() => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (toolCharts[toolId]) toolCharts[toolId].destroy();
+                toolCharts[toolId] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: ['Prévu', 'À faire', 'En réflexion', 'Fait', 'En production'], datasets: [{ data: [stats['Prévu'], stats['À faire'], stats['En réflexion'], stats['Fait'], stats['En production']], backgroundColor: ['#9CA3AF', '#F59E0B', '#3B82F6', '#10B981', '#6366F1'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 8 } } } } }
+                });
+            }, 50);
+        }
+
+        async function saveNote(toolId, value) {
+            if (!db) db = {};
+            db[`tool_${toolId}`] = value;
+            await sb.from('ea_platform_data').upsert({ id: 1, content: db }, { onConflict: 'id' });
+            const el = document.getElementById(`saved_${toolId}`);
+            if (el) { el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 2000); }
+        }
+
+        async function generateToolCard(tool) {
+            const val = db && db[`tool_${tool.id}`] ? db[`tool_${tool.id}`] : '';
+            const statuses = toolStatuses[tool.id] || {};
+            const completedCount = Object.keys(statuses).length;
+            const dictSelections = await loadToolDictSelections(tool.id);
+            const currentScore = await calculateMaturityScore(tool.id, dictSelections);
+
+            const card = document.createElement('div');
+            card.className = 'vp-card';
+            card.style.borderTopColor = COLORS[user?.role] || COLORS.ADMIN;
+
+            const statutLabels = ['Prévu', 'À faire', 'En réflexion', 'Fait', 'En production'];
+            let tableRows = '';
+            for (const statut of statutLabels) {
+                const existing = statuses[statut];
+                const dateValue = existing?.date || '';
+                const commentValue = existing?.commentaire || '';
+                const badgeClass = `status-badge-${statut.toLowerCase().replace(/ /g, '-')}`;
+                tableRows += `
+                    <tr>
+                        <td style="width:100px;"><span class="${badgeClass}" style="display:inline-block; padding:2px 8px; border-radius:12px; font-size:10px;">${statut}</span>  </td>
+                        <td style="width:110px;"><input type="date" class="status-date-input" data-tool="${tool.id}" data-statut="${statut}" value="${dateValue}" style="padding:4px; font-size:10px; width:100%; border-radius:6px; border:1px solid #ddd;"></td>
+                        <td><input type="text" class="status-comment-input" data-tool="${tool.id}" data-statut="${statut}" value="${escapeHtml(commentValue)}" placeholder="Commentaire" style="width:100%; padding:4px; font-size:10px; border-radius:6px; border:1px solid #ddd;"></td>
+                    </tr>
+                `;
+            }
+
+            let dictHtml = '';
+            if (dictionaryTerms.length) {
+                dictHtml = `
+                    <div style="margin-top:12px; border-top:1px solid #eee; padding-top:12px;">
+                        <strong style="font-size:11px; display:block; margin-bottom:8px;">📚 Dictionnaire métier (${ROLE_LABELS[user?.role] || user?.role || 'SUPER_ADMIN'})</strong>
+                        <div class="dict-tags-container" style="display:flex; flex-wrap:wrap; gap:6px;">
+                            ${dictionaryTerms.map(term => `
+                                <span class="dict-tag ${dictSelections[term.id] ? 'selected' : ''}" data-term-id="${term.id}" data-term="${term.terme}" style="cursor:pointer; background:${dictSelections[term.id] ? 'var(--blue)' : '#eef2ff'}; color:${dictSelections[term.id] ? 'white' : '#1E40AF'}; padding:4px 12px; border-radius:20px; font-size:11px; transition:all 0.2s;">
+                                    ${term.terme}
+                                </span>
+                            `).join('')}
+                        </div>
+                        <div style="font-size:10px; color:#888; margin-top:6px;">Cliquez sur un terme pour l'associer à cet outil</div>
+                    </div>
+                `;
+            } else {
+                dictHtml = `<div style="margin-top:12px; border-top:1px solid #eee; padding-top:12px;"><strong style="font-size:11px;">📚 Dictionnaire métier</strong><div style="font-size:11px; color:#888; margin-top:4px;">Aucun terme disponible</div></div>`;
+            }
+
+            const maturityHtml = `
+                <div style="margin-top:12px; border-top:1px solid #eee; padding-top:12px;">
+                    <strong style="font-size:11px; display:block; margin-bottom:6px;">📊 Score de maturité (basé sur les mots clés sélectionnés)</strong>
+                    <div class="maturity-bar-container">
+                        <div class="maturity-score-text"><span>Progression</span><span id="maturity_val_${tool.id}">${currentScore.toFixed(1)}</span></div>
+                        <div class="maturity-bar"><div id="maturity_fill_${tool.id}" class="maturity-bar-fill" style="width: ${currentScore * 10}%;"></div></div>
+                        <div style="font-size:9px; color:#666; margin-top:4px;">Score calculé sur ${dictionaryTerms.length} mots clés (pondérés)</div>
+                    </div>
+                </div>
+            `;
+
+            card.innerHTML = `
+                <div class="vp-card-header">
+                    <span class="vp-ico">${tool.ico}</span>
+                    <div>
+                        <div class="vp-title">${tool.t}</div>
+                        <div class="vp-id">Outil #${tool.id}</div>
+                    </div>
+                </div>
+                <div class="progress-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <strong style="font-size:12px;">📊 Progression des statuts</strong>
+                        <span style="font-size:10px; color:#666;">Statuts atteints: ${completedCount}/5</span>
+                    </div>
+                    <div style="height:90px;"><canvas id="chart_${tool.id}" class="progress-chart"></canvas></div>
+                </div>
+                <div class="status-table-container" style="margin-top:8px;">
+                    <table class="status-table"><thead><tr><th>Statut</th><th>Date</th><th>Commentaire</th></tr></thead><tbody>${tableRows}</tbody></table>
+                </div>
+                ${dictHtml}
+                ${maturityHtml}
+                <textarea class="vp-notes" id="note_${tool.id}" placeholder="Notes complémentaires..." style="margin-top:12px;">${escapeHtml(val)}</textarea>
+                <div class="spell-bar" id="spell_${tool.id}"></div>
+                <div class="vp-saved" id="saved_${tool.id}">✓ Sauvegardé</div>
+            `;
+
+            // Événements
+            card.querySelectorAll('.status-date-input, .status-comment-input').forEach(input => {
+                input.addEventListener('change', async () => {
+                    const toolId = parseInt(input.dataset.tool);
+                    const statut = input.dataset.statut;
+                    const dateInput = card.querySelector(`.status-date-input[data-tool="${toolId}"][data-statut="${statut}"]`);
+                    const commentInput = card.querySelector(`.status-comment-input[data-tool="${toolId}"][data-statut="${statut}"]`);
+                    const date = dateInput ? dateInput.value : '';
+                    const comment = commentInput ? commentInput.value : '';
+                    if (date) await saveToolStatus(toolId, statut, date, comment);
+                });
+            });
+
+            card.querySelectorAll('.dict-tag').forEach(tag => {
+                tag.addEventListener('click', async () => {
+                    const termId = parseInt(tag.dataset.termId);
+                    const isSelected = tag.classList.contains('selected');
+                    if (isSelected) {
+                        tag.classList.remove('selected');
+                        tag.style.background = '#eef2ff';
+                        tag.style.color = '#1E40AF';
+                        await saveDictSelectionWithMaturity(tool.id, termId, false);
+                    } else {
+                        tag.classList.add('selected');
+                        tag.style.background = 'var(--blue)';
+                        tag.style.color = 'white';
+                        await saveDictSelectionWithMaturity(tool.id, termId, true);
+                    }
+                });
+            });
+
+            const ta = card.querySelector(`#note_${tool.id}`);
+            let deb;
+            ta.addEventListener('input', () => {
+                clearTimeout(deb);
+                deb = setTimeout(() => { saveNote(tool.id, ta.value); }, 700);
+            });
+
+            renderProgressChart(tool.id);
+            return card;
+        }
+
+        async function renderTools() {
+            const grid = document.getElementById('mainContainer');
+            grid.innerHTML = '';
+            const toolsMap = {};
+            TOOLS.forEach(t => { toolsMap[t.id] = t; });
+            for (const group of toolGroups) {
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'group-header';
+                groupHeader.innerText = group.name;
+                grid.appendChild(groupHeader);
+                for (const subGroup of group.subGroups) {
+                    if (subGroup.name) {
+                        const subHeader = document.createElement('div');
+                        subHeader.className = 'sub-group-header';
+                        subHeader.innerText = subGroup.name;
+                        grid.appendChild(subHeader);
+                    }
+                    for (const toolId of subGroup.toolIds) {
+                        const tool = toolsMap[toolId];
+                        if (!tool) continue;
+                        const card = await generateToolCard(tool);
+                        grid.appendChild(card);
+                    }
+                }
+            }
+        }
+
+        // KPI, graphiques, etc. (inchangés)
+        function computeKPI() {
+            const filled = TOOLS.filter(t => db && db[`tool_${t.id}`] && db[`tool_${t.id}`].trim().length > 0).length;
+            return { filled, completion: Math.round((filled/25)*100) };
+        }
+        function updateKPI() {
+            const k = computeKPI();
+            const grid = document.getElementById('kpiGrid');
+            if (grid) grid.innerHTML = `
+                <div class="kpi-card" style="--kpi-color:var(--blue)"><div class="kpi-value">${k.filled}/25</div><div class="kpi-label">Outils complétés</div></div>
+                <div class="kpi-card" style="--kpi-color:var(--teal)"><div class="kpi-value">${k.completion}%</div><div class="kpi-label">Taux de complétion</div></div>
+                <div class="kpi-card" style="--kpi-color:var(--amber)"><div class="kpi-value">${user ? (ROLE_LABELS[user.role] || user.role) : '—'}</div><div class="kpi-label">Votre rôle</div></div>
+            `;
+        }
+        function renderCharts() {
+            const k = computeKPI();
+            if (chartMaturity) chartMaturity.destroy();
+            if (chartTools) chartTools.destroy();
+            const ctxM = document.getElementById('maturityChart');
+            if(ctxM) chartMaturity = new Chart(ctxM.getContext('2d'), { type:'line', data:{ labels:['Jan','Fév','Mar','Avr','Mai','Juin'], datasets:[{ label:'Maturité (%)', data:[30,42,55,63,71,k.completion], borderColor:'#1A6CF5', tension:0.3 }] }, options:{ responsive:true, maintainAspectRatio:false } });
+            const ctxT = document.getElementById('toolsChart');
+            if(ctxT) chartTools = new Chart(ctxT.getContext('2d'), { type:'doughnut', data:{ labels:['Complétés','À renseigner'], datasets:[{ data:[k.filled,25-k.filled], backgroundColor:['#00B49C','#E5E7EB'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
+        }
+        async function renderNormeMaturityChart() {
+            const { data: norms } = await sb.from('normes_compliance').select('norme, niveau_maturite');
+            if (!norms) return;
+            const labels = norms.map(n => n.norme);
+            const data = norms.map(n => n.niveau_maturite);
+            const ctx = document.getElementById('normeMaturityChart');
+            if (ctx) {
+                if (chartNormeMaturity) chartNormeMaturity.destroy();
+                chartNormeMaturity = new Chart(ctx.getContext('2d'), { type:'bar', data:{ labels, datasets:[{ label:'Maturité (%)', data, backgroundColor:'#1A6CF5', borderRadius:8 }] }, options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ max:100, title:{ display:true, text:'Maturité (%)' } } } } });
+            }
+        }
+        async function renderIntegrationCostsChart() {
+            const { data: costs } = await sb.from('integration_costs').select('metier, cout_unitaire, quantite_estimee');
+            if (!costs) return;
+            const metierMap = {};
+            costs.forEach(c => { const total = c.cout_unitaire * (c.quantite_estimee || 1); metierMap[c.metier] = (metierMap[c.metier] || 0) + total; });
+            const labels = Object.keys(metierMap);
+            const data = Object.values(metierMap);
+            const ctx = document.getElementById('integrationCostsChart');
+            if (ctx) {
+                if (chartIntegrationCosts) chartIntegrationCosts.destroy();
+                chartIntegrationCosts = new Chart(ctx.getContext('2d'), { type:'bar', data:{ labels, datasets:[{ label:'Coût estimé (€)', data, backgroundColor:'#F97316', borderRadius:8 }] }, options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ title:{ display:true, text:'Coût (€)' } } } } });
+            }
+        }
+        async function renderMaturityByRoleChart() {
+            const { data: allScores } = await sb.from('tool_maturity_score').select('user_email, tool_id, score');
+            const { data: allUsers } = await sb.from('ea_users').select('email, nom, role');
+            if (!allScores || !allUsers) return;
+            const roleScores = {}, roleCounts = {};
+            for (const u of allUsers) {
+                const userScores = allScores.filter(s => s.user_email === u.email);
+                if (userScores.length) {
+                    const avg = userScores.reduce((a,b) => a + b.score, 0) / userScores.length;
+                    roleScores[u.role] = (roleScores[u.role] || 0) + avg;
+                    roleCounts[u.role] = (roleCounts[u.role] || 0) + 1;
+                }
+            }
+            const labels = Object.keys(roleScores);
+            const data = labels.map(r => (roleScores[r] / roleCounts[r]).toFixed(1));
+            const ctx = document.getElementById('maturityByRoleChart');
+            if (ctx) {
+                if (chartMaturityByRole) chartMaturityByRole.destroy();
+                chartMaturityByRole = new Chart(ctx.getContext('2d'), { type:'bar', data:{ labels, datasets:[{ label:'Score de maturité moyen (1-10)', data, backgroundColor:'#6366F1', borderRadius:8 }] }, options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ min:0, max:10, title:{ display:true, text:'Score' } } } } });
+            }
+        }
+
+        function tab(which) {
+            document.getElementById('diagSection').style.display = which === 'diag' ? 'block' : 'none';
+            document.getElementById('kpiSection').style.display = which === 'kpi' ? 'block' : 'none';
+            document.getElementById('complianceSection').style.display = which === 'compliance' ? 'block' : 'none';
+            document.getElementById('cyberSection').style.display = which === 'cyber' ? 'block' : 'none';
+            document.getElementById('communicationSection').style.display = which === 'communication' ? 'block' : 'none';
+            document.getElementById('adminSection').style.display = which === 'admin' ? 'block' : 'none';
+            if (which === 'kpi') { updateKPI(); renderCharts(); renderNormeMaturityChart(); renderIntegrationCostsChart(); renderMaturityByRoleChart(); }
+        }
+
+        async function doLogout() { await sb.auth.signOut(); window.location.href = '/index.html'; }
+
+        // Fonctions vides (messagerie, etc.) pour éviter les erreurs – à implémenter ultérieurement
+        async function loadMessages() {}
+        async function loadProducts() {}
+        async function loadProblems() {}
+        async function loadUsersForMessaging() {}
+        async function loadUsersForProducts() {}
+        async function loadUsersForProblems() {}
+        async function loadSecurityQuestions() {}
+        function generateCaptcha() {}
+        function handleSpreadsheetDrop(e) {}
+        function importSpreadsheet(e) {}
+        function exportFullPDF() { showToast('Export PDF à implémenter'); }
+        function showToast(msg, type='success') { const t = document.getElementById('toast'); t.textContent = msg; t.className = `show ${type}`; setTimeout(() => t.className = '', 3000); }
+        function escapeHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        // Chargement principal
+        async function loadUserProfile() {
+            const authUser = await checkSession();
+            if (!authUser) return;
+            const { data: profile } = await sb.from('users').select('*, companies(name)').eq('id', authUser.id).single();
+            user = profile || { id: authUser.id, email: authUser.email, role: 'SUPER_ADMIN' };
+            const { data: roles } = await sb.from('user_roles').select('role_id').eq('user_id', authUser.id);
+            if (roles && roles.length) user.role = roles[0].role_id;
+            const color = COLORS[user.role] || COLORS.ADMIN;
+            document.documentElement.style.setProperty('--u-color', color);
+            document.getElementById('uAvatar').style.background = color;
+            document.getElementById('uAvatar').textContent = (user.email?.charAt(0).toUpperCase() || 'U');
+            document.getElementById('admLink').style.display = (user.role === 'SUPER_ADMIN' || user.role === 'DSI') ? 'inline-block' : 'none';
+            const { data: row } = await sb.from('ea_platform_data').select('content').eq('id', 1).single();
+            db = row?.content || {};
+            await loadToolStatuses();
+            await loadDictionaryTerms();
+            renderTools();
+            updateKPI();
+            renderCharts();
+            renderNormeMaturityChart();
+            renderIntegrationCostsChart();
+            renderMaturityByRoleChart();
+            loadMessages(); loadProducts(); loadProblems(); loadUsersForMessaging(); loadUsersForProducts(); loadUsersForProblems();
+            if (user.role === 'SUPER_ADMIN') { loadSecurityQuestions(); generateCaptcha(); }
+        }
+
+        loadUserProfile();
+    </script>
 </body>
 </html>
