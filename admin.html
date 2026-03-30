@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI Governance | Administration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Instrument Sans', sans-serif; background:#F4F7FB; color:#0B1829; }
+        .topbar {
+            background:#fff; padding:0 32px; height:70px;
+            display:flex; align-items:center; justify-content:space-between;
+            width:100%; border-bottom:1px solid rgba(0,0,0,0.1);
+            position:fixed; top:0; z-index:100;
+        }
+        .topbar-left { display:flex; align-items:center; gap:15px; }
+        #uAvatar {
+            width:35px; height:35px; border-radius:10px;
+            background:#1A6CF5; color:#fff;
+            display:flex; align-items:center; justify-content:center; font-weight:800;
+        }
+        .topbar-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .btn {
+            padding:10px 20px; border-radius:10px; border:none; cursor:pointer;
+            font-weight:600; background:#1A6CF5; color:#fff;
+            font-family:inherit; font-size:14px; transition:opacity 0.2s;
+        }
+        .btn-ghost { background:none; color:#0B1829; }
+        .btn-ghost:hover { background:rgba(0,0,0,0.05); }
+        .btn-danger { background:#E84568; }
+        .btn-sm { padding:6px 12px; font-size:12px; }
+        .container { padding:100px 32px 40px; max-width:1400px; margin:0 auto; }
+        .sidebar {
+            width: 260px;
+            background: #0B1829;
+            position: fixed;
+            left: 0;
+            top: 70px;
+            bottom: 0;
+            padding: 20px;
+            color: white;
+        }
+        .sidebar a {
+            display: block;
+            padding: 12px 16px;
+            color: #9ca3af;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: 0.2s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: #1A6CF5;
+            color: white;
+        }
+        .main-content {
+            margin-left: 260px;
+            padding: 20px 32px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            font-family: 'Syne';
+            margin-bottom: 16px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        .btn-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 0 4px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #0B1829;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="topbar-left"><div id="uAvatar"></div><span style="font-family:'Syne'; font-weight:800;">SI MANAGER</span></div>
+        <div class="topbar-right">
+            <button class="btn btn-ghost" onclick="window.location.href='/dashboard.html'">📊 Diagnostic</button>
+            <button class="btn btn-ghost" onclick="window.location.href='/kpi.html'">📈 KPI</button>
+            <button class="btn btn-ghost" onclick="window.location.href='/conformite.html'">⚖️ Conformité</button>
+            <button class="btn btn-ghost" onclick="window.location.href='/cyber.html'">🌍 Cyber Threat</button>
+            <button class="btn btn-ghost" onclick="window.location.href='/messagerie.html'">📬 Messagerie</button>
+            <button class="btn btn-ghost active" onclick="window.location.href='/admin.html'">🔧 Admin</button>
+            <button class="btn btn-danger btn-sm" onclick="logout()">Déconnexion</button>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <a href="/dashboard.html">🏠 Tableau de bord</a>
+        <a href="/services.html">📋 Services</a>
+        <a href="/risques.html">⚠️ Risques</a>
+        <a href="/cartographie.html">🗺️ Cartographie</a>
+        <a href="/conformite.html">⚖️ Conformité</a>
+        <a href="/fournisseurs.html">🤝 Fournisseurs</a>
+        <a href="/donnees.html">🗄️ Données</a>
+        <a href="/cyber.html">🎯 Cyber</a>
+        <a href="/kpi.html">📊 KPI</a>
+        <a href="/operations.html">🔄 Opérations</a>
+        <a href="/admin.html" class="active">🔧 Admin</a>
+    </div>
+
+    <div class="main-content">
+        <div class="card">
+            <h2>🏢 Entreprises</h2>
+            <button class="btn btn-sm" onclick="showAddCompanyForm()">➕ Ajouter une entreprise</button>
+            <div id="companiesList"></div>
+        </div>
+        <div class="card">
+            <h2>👥 Utilisateurs</h2>
+            <button class="btn btn-sm" onclick="showAddUserForm()">➕ Ajouter un utilisateur</button>
+            <div id="usersList"></div>
+        </div>
+        <div class="card">
+            <h2>🔑 Rôles</h2>
+            <div id="rolesList"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true } });
+
+        let user = null;
+
+        async function checkAuth() {
+            const { data: { user: authUser }, error } = await sb.auth.getUser();
+            if (error || !authUser) {
+                window.location.href = '/index.html';
+                return false;
+            }
+            // Vérifier le rôle
+            const { data: roles } = await sb.from('user_roles').select('role_id').eq('user_id', authUser.id);
+            const role = roles?.[0]?.role_id;
+            if (role !== 'SUPER_ADMIN' && role !== 'DSI') {
+                alert('Accès non autorisé. Vous devez être SUPER_ADMIN ou DSI.');
+                window.location.href = '/dashboard.html';
+                return false;
+            }
+            // Charger profil
+            const { data: profile } = await sb.from('users').select('*').eq('id', authUser.id).single();
+            user = profile || { email: authUser.email };
+            document.getElementById('uAvatar').textContent = (user.email?.charAt(0).toUpperCase() || 'U');
+            return true;
+        }
+
+        async function loadCompanies() {
+            const { data } = await sb.from('companies').select('*').order('name');
+            const container = document.getElementById('companiesList');
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p>Aucune entreprise</p>';
+                return;
+            }
+            container.innerHTML = `
+                <table class="data-table">
+                    <thead><tr><th>Nom</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        ${data.map(c => `
+                            <tr>
+                                <td>${escapeHtml(c.name)}</td>
+                                <td>
+                                    <button class="btn-icon" onclick="editCompany('${c.id}')">✏️</button>
+                                    <button class="btn-icon" onclick="deleteCompany('${c.id}')">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function loadUsers() {
+            const { data } = await sb.from('users').select('*, companies(name)').order('email');
+            const container = document.getElementById('usersList');
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p>Aucun utilisateur</p>';
+                return;
+            }
+            // Récupérer les rôles pour chaque utilisateur
+            const rolesMap = {};
+            const { data: allRoles } = await sb.from('user_roles').select('user_id, role_id');
+            if (allRoles) {
+                allRoles.forEach(r => { rolesMap[r.user_id] = r.role_id; });
+            }
+            container.innerHTML = `
+                <table class="data-table">
+                    <thead><tr><th>Email</th><th>Entreprise</th><th>Rôle</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        ${data.map(u => `
+                            <tr>
+                                <td>${escapeHtml(u.email)}</td>
+                                <td>${escapeHtml(u.companies?.name || '-')}</td>
+                                <td>
+                                    <select id="role_${u.id}" onchange="updateUserRole('${u.id}', this.value)">
+                                        <option value="SUPER_ADMIN" ${rolesMap[u.id] === 'SUPER_ADMIN' ? 'selected' : ''}>SUPER_ADMIN</option>
+                                        <option value="DSI" ${rolesMap[u.id] === 'DSI' ? 'selected' : ''}>DSI</option>
+                                        <option value="RSSI" ${rolesMap[u.id] === 'RSSI' ? 'selected' : ''}>RSSI</option>
+                                        <option value="CEO" ${rolesMap[u.id] === 'CEO' ? 'selected' : ''}>CEO</option>
+                                        <option value="DRH" ${rolesMap[u.id] === 'DRH' ? 'selected' : ''}>DRH</option>
+                                        <option value="NETWORK_ADMIN" ${rolesMap[u.id] === 'NETWORK_ADMIN' ? 'selected' : ''}>NETWORK_ADMIN</option>
+                                        <option value="SYSTEM_ADMIN" ${rolesMap[u.id] === 'SYSTEM_ADMIN' ? 'selected' : ''}>SYSTEM_ADMIN</option>
+                                        <option value="SERVICE_MANAGER" ${rolesMap[u.id] === 'SERVICE_MANAGER' ? 'selected' : ''}>SERVICE_MANAGER</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <button class="btn-icon" onclick="deleteUser('${u.id}')">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function loadRoles() {
+            const { data } = await sb.from('roles').select('id').order('id');
+            const container = document.getElementById('rolesList');
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p>Aucun rôle</p>';
+                return;
+            }
+            container.innerHTML = `
+                <ul style="display:flex; flex-wrap:wrap; gap:8px;">
+                    ${data.map(r => `<li style="background:#eef2ff; padding:4px 12px; border-radius:20px;">${r.id}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        function showAddCompanyForm() {
+            const name = prompt('Nom de la nouvelle entreprise :');
+            if (name && name.trim()) {
+                addCompany(name.trim());
+            }
+        }
+
+        async function addCompany(name) {
+            const { error } = await sb.from('companies').insert({ name });
+            if (error) showToast('Erreur : ' + error.message);
+            else { showToast('Entreprise ajoutée'); loadCompanies(); }
+        }
+
+        async function editCompany(id) {
+            const newName = prompt('Nouveau nom :');
+            if (newName && newName.trim()) {
+                const { error } = await sb.from('companies').update({ name: newName.trim() }).eq('id', id);
+                if (error) showToast('Erreur : ' + error.message);
+                else { showToast('Entreprise modifiée'); loadCompanies(); }
+            }
+        }
+
+        async function deleteCompany(id) {
+            if (confirm('Supprimer cette entreprise ?')) {
+                const { error } = await sb.from('companies').delete().eq('id', id);
+                if (error) showToast('Erreur : ' + error.message);
+                else { showToast('Entreprise supprimée'); loadCompanies(); loadUsers(); }
+            }
+        }
+
+        function showAddUserForm() {
+            const email = prompt('Email du nouvel utilisateur :');
+            if (email && email.trim()) {
+                addUser(email.trim());
+            }
+        }
+
+        async function addUser(email) {
+            // Créer un utilisateur dans auth.users (mot de passe temporaire)
+            const tempPassword = Math.random().toString(36).slice(-8) + 'A1!';
+            const { data: authData, error: authError } = await sb.auth.admin.createUser({
+                email,
+                password: tempPassword,
+                email_confirm: true
+            });
+            if (authError) {
+                showToast('Erreur création compte : ' + authError.message);
+                return;
+            }
+            // Associer à la première entreprise (pour simplifier)
+            const { data: companies } = await sb.from('companies').select('id').limit(1);
+            const companyId = companies?.[0]?.id;
+            const { error: insertError } = await sb.from('users').insert({
+                id: authData.user.id,
+                email,
+                company_id: companyId
+            });
+            if (insertError) {
+                showToast('Erreur insertion profil : ' + insertError.message);
+                return;
+            }
+            // Attribuer un rôle par défaut (SERVICE_MANAGER)
+            await sb.from('user_roles').insert({ user_id: authData.user.id, role_id: 'SERVICE_MANAGER' });
+            showToast(`Utilisateur ${email} créé avec mot de passe temporaire : ${tempPassword}`);
+            loadUsers();
+        }
+
+        async function updateUserRole(userId, roleId) {
+            const { error } = await sb.from('user_roles').upsert({ user_id: userId, role_id: roleId }, { onConflict: 'user_id' });
+            if (error) showToast('Erreur : ' + error.message);
+            else showToast('Rôle mis à jour');
+        }
+
+        async function deleteUser(userId) {
+            if (confirm('Supprimer définitivement cet utilisateur ?')) {
+                const { error } = await sb.auth.admin.deleteUser(userId);
+                if (error) {
+                    showToast('Erreur suppression compte : ' + error.message);
+                    return;
+                }
+                await sb.from('users').delete().eq('id', userId);
+                await sb.from('user_roles').delete().eq('user_id', userId);
+                showToast('Utilisateur supprimé');
+                loadUsers();
+            }
+        }
+
+        async function logout() {
+            await sb.auth.signOut();
+            window.location.href = '/index.html';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        (async () => {
+            if (await checkAuth()) {
+                await loadCompanies();
+                await loadUsers();
+                await loadRoles();
+            }
+        })();
+    </script>
+</body>
+</html>
