@@ -1,1151 +1,1336 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Réorganiser son IT — Vues clés de l'architecture</title>
+<title>SI Governance Enterprise — Architecture IT</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ========== VOTRE STYLE EXACT (recopié ici) ========== */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;1,400&display=swap');
-:root{
-  --bg:#080a0f;--bg1:#0d1018;--bg2:#121520;--bg3:#1a1f2e;--bg4:#222840;
-  --border:rgba(255,255,255,0.05);--border2:rgba(255,255,255,0.1);--border3:rgba(255,255,255,0.18);
-  --text:#dde2f0;--text2:#7d8599;--text3:#464e68;
-  --c-portfolio:#4f8ef7;--c-tech:#2ec4b6;--c-secu:#f72585;--c-finance:#f4a261;
-  --c-data:#7b61ff;--c-project:#06d6a0;--c-sourcing:#ffd166;
-  --accent:#4f8ef7;--r:10px;--r2:14px;--r3:20px;
+/* ═══════════════════════════════════ DESIGN TOKENS */
+:root {
+  /* DARK (default) */
+  --bg-base:    #080b12;
+  --bg-surface: #0f1422;
+  --bg-panel:   #141929;
+  --bg-raised:  #1c2238;
+  --bg-hover:   #222943;
+  --border-lo:  rgba(255,255,255,0.05);
+  --border-mid: rgba(255,255,255,0.09);
+  --border-hi:  rgba(255,255,255,0.16);
+  --text-pri:   #e2e6f3;
+  --text-sec:   #7a84a0;
+  --text-ter:   #424d6a;
+  --text-inv:   #080b12;
+  /* ACCENT PALETTE */
+  --portfolio:  #4b8cf5;
+  --tech:       #22d3bc;
+  --secu:       #f43f8a;
+  --finance:    #fb923c;
+  --data:       #8b5cf6;
+  --project:    #10d07a;
+  --sourcing:   #fbbf24;
+  --risk:       #ef4444;
+  --ok:         #22c55e;
+  /* SHADOWS */
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.35);
+  --shadow-md:  0 4px 20px rgba(0,0,0,0.45);
+  /* RADIUS */
+  --r-sm: 8px;  --r-md: 12px;  --r-lg: 16px;  --r-xl: 22px;
 }
+[data-theme="light"] {
+  --bg-base:    #f0f2f8;
+  --bg-surface: #ffffff;
+  --bg-panel:   #f7f8fc;
+  --bg-raised:  #eef0f8;
+  --bg-hover:   #e5e8f4;
+  --border-lo:  rgba(0,0,0,0.06);
+  --border-mid: rgba(0,0,0,0.10);
+  --border-hi:  rgba(0,0,0,0.18);
+  --text-pri:   #111827;
+  --text-sec:   #4b5563;
+  --text-ter:   #9ca3af;
+  --text-inv:   #ffffff;
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 20px rgba(0,0,0,0.12);
+}
+
+/* ═══════════════════════════════════ RESET */
 *{box-sizing:border-box;margin:0;padding:0}
-html{font-size:13px}
-body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+html{font-size:13px;scroll-behavior:smooth}
+body{font-family:'Instrument Sans',sans-serif;background:var(--bg-base);color:var(--text-pri);min-height:100vh;transition:background .25s,color .25s}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:4px}
 
-/* ── LOGIN SCREEN ── */
-.login-screen{
-  position:fixed;inset:0;background:var(--bg);z-index:1000;
+/* ═══════════════════════════════════ TOP MENUBAR */
+.menubar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:52px;background:var(--bg-surface);
+  border-bottom:1px solid var(--border-mid);
+  display:flex;align-items:center;padding:0 20px;gap:0;
+  box-shadow:var(--shadow-sm);
+}
+.mb-brand{
+  display:flex;align-items:center;gap:10px;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:14px;
+  color:var(--text-pri);white-space:nowrap;margin-right:18px;padding-right:18px;
+  border-right:1px solid var(--border-mid);
+}
+.mb-brand-dot{width:22px;height:22px;border-radius:6px;background:var(--portfolio);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+
+.mb-nav{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto;overflow-y:hidden}
+.mb-nav::-webkit-scrollbar{height:0}
+
+.mb-item{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 13px;border-radius:var(--r-sm);
+  font-size:12px;font-weight:500;color:var(--text-sec);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+  border:1px solid transparent;user-select:none;
+}
+.mb-item:hover{background:var(--bg-raised);color:var(--text-pri)}
+.mb-item.active{background:var(--bg-raised);color:var(--text-pri);border-color:var(--border-mid)}
+.mb-item.active .mb-dot{opacity:1}
+.mb-dot{width:7px;height:7px;border-radius:50%;opacity:0.5;transition:opacity .15s;flex-shrink:0}
+.mb-badge{
+  font-size:10px;font-family:'JetBrains Mono',monospace;
+  background:var(--bg-base);border:1px solid var(--border-mid);
+  border-radius:20px;padding:1px 6px;color:var(--text-ter);
+  min-width:20px;text-align:center;
+}
+
+.mb-right{display:flex;align-items:center;gap:8px;margin-left:12px;padding-left:12px;border-left:1px solid var(--border-mid);flex-shrink:0}
+
+/* THEME TOGGLE */
+.theme-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;
+  background:var(--bg-raised);border:1px solid var(--border-mid);
+  color:var(--text-sec);font-size:11px;font-weight:500;cursor:pointer;
+  transition:all .15s;
+}
+.theme-btn:hover{border-color:var(--border-hi);color:var(--text-pri)}
+.theme-icon{font-size:14px;line-height:1;transition:transform .3s}
+
+/* IMPACT PULSE */
+.impact-ring{
+  position:relative;width:28px;height:28px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  flex-direction:column;gap:0;
 }
-.login-screen.hidden{display:none}
-.login-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#fff;letter-spacing:-0.03em;margin-bottom:6px;text-align:center}
-.login-sub{font-size:13px;color:var(--text3);margin-bottom:40px;letter-spacing:0.06em;text-transform:uppercase;text-align:center}
-.role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:580px;padding:0 20px}
-.role-card{
-  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);
-  padding:20px 16px;cursor:pointer;transition:all 0.2s;text-align:center;
-  position:relative;overflow:hidden;
+.impact-ring::before{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid var(--border-mid)}
+.impact-count{
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;
+  color:var(--text-pri);z-index:1;
 }
-.role-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity 0.2s}
-.role-card:hover{border-color:var(--border3);transform:translateY(-2px)}
-.role-card.selected{border-width:2px}
-.rc-emoji{font-size:28px;margin-bottom:10px;display:block}
-.rc-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#fff;margin-bottom:4px}
-.rc-sub{font-size:11px;color:var(--text3);line-height:1.4}
-.rc-perms{margin-top:8px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
-.perm-dot{width:6px;height:6px;border-radius:50%}
-.login-btn{
-  margin-top:28px;padding:12px 40px;background:var(--accent);border:none;border-radius:10px;
-  color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;
-  transition:all 0.18s;opacity:0.4;pointer-events:none;
+.impact-ring.has-changes::before{border-color:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(16,208,122,0.4)}50%{box-shadow:0 0 0 6px rgba(16,208,122,0)}}
+
+/* ROLE BADGE */
+.role-chip{
+  display:flex;align-items:center;gap:7px;
+  padding:4px 10px;border-radius:20px;
+  background:var(--bg-raised);border:1px solid var(--border-mid);
+  font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;
 }
-.login-btn.ready{opacity:1;pointer-events:all}
-.login-btn.ready:hover{background:#3a7ef5;transform:translateY(-1px)}
+.role-chip:hover{border-color:var(--border-hi)}
+.role-dot{width:7px;height:7px;border-radius:50%}
 
-/* ── ROLE BADGE ── */
-.role-badge{
-  display:flex;align-items:center;gap:8px;padding:6px 12px;
-  background:var(--bg3);border:1px solid var(--border2);border-radius:20px;
-  cursor:pointer;transition:background 0.15s;
-}
-.role-badge:hover{background:var(--bg4)}
-.rb-dot{width:8px;height:8px;border-radius:50%}
-.rb-name{font-size:12px;font-weight:500;color:var(--text)}
-.rb-switch{font-size:10px;color:var(--text3)}
+/* DATE */
+.mb-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-ter)}
 
-/* ── EDIT BADGE ── */
-.edit-badge{
-  display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
-  background:rgba(255,255,255,0.04);border:1px solid var(--border2);
-  border-radius:6px;font-size:10px;color:var(--text3);cursor:pointer;
-  transition:all 0.15s;margin-left:8px;
-}
-.edit-badge:hover{background:rgba(255,255,255,0.08);color:var(--text);border-color:var(--border3)}
-.edit-badge.locked{cursor:not-allowed;opacity:0.4}
-.edit-badge svg{width:10px;height:10px}
+/* ═══════════════════════════════════ MAIN LAYOUT */
+.shell{display:flex;padding-top:52px;min-height:100vh}
+.content{flex:1;padding:22px 26px;min-width:0;overflow-x:hidden}
 
-/* ── ACCESS DENIED ── */
-.access-denied{
-  background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);
-  border-radius:var(--r);padding:12px 16px;font-size:12px;color:#ef4444;
-  display:flex;align-items:center;gap:8px;
-}
-
-/* ── SHELL ── */
-.shell{display:flex;min-height:100vh}
-
-/* ── SIDEBAR ── */
-.sidebar{width:230px;flex-shrink:0;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:10}
-.sidebar::-webkit-scrollbar{width:3px}
-.sidebar::-webkit-scrollbar-thumb{background:var(--border3);border-radius:2px}
-.brand{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
-.brand-title{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#fff;letter-spacing:-0.02em;line-height:1.2}
-.brand-sub{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:0.08em;text-transform:uppercase}
-.nav-section{padding:14px 14px 4px;font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em}
-.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;margin:1px 6px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text2);transition:all 0.15s;user-select:none;position:relative}
-.nav-item:hover{background:var(--bg3);color:var(--text)}
-.nav-item.active{background:var(--bg3);color:#fff}
-.nav-item.active::before{content:'';position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:3px;height:60%;border-radius:2px;background:var(--active-color,#4f8ef7)}
-.nav-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.nav-lock{font-size:10px;opacity:0.5;margin-left:auto}
-
-/* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;overflow-x:hidden}
-.topheader{background:var(--bg1);border-bottom:1px solid var(--border);padding:0 28px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:9}
-.th-left{display:flex;align-items:center;gap:10px}
-.th-dot{width:10px;height:10px;border-radius:50%}
-.th-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff}
-.th-sub{font-size:11px;color:var(--text3);margin-top:1px}
-.th-right{display:flex;gap:8px;align-items:center}
-.th-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)}
-
-/* ── BUTTONS ── */
-.btn{padding:6px 13px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;font-size:12px;cursor:pointer;transition:all 0.15s}
-.btn:hover{background:var(--bg4);border-color:var(--border3)}
-.btn-accent{border-color:var(--accent);color:var(--accent)}
-.btn-accent:hover{background:rgba(79,142,247,0.08)}
-.btn-danger{border-color:rgba(239,68,68,0.4);color:#ef4444}
-.btn-danger:hover{background:rgba(239,68,68,0.08)}
-.btn-sm{padding:4px 10px;font-size:11px}
-.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn-primary:hover{background:#3a7ef5}
-
-/* ── CONTENT ── */
-.content{flex:1;padding:22px 28px;overflow-x:hidden}
-.page{display:none;animation:fadeUp 0.18s ease}
+/* ═══════════════════════════════════ PAGES */
+.page{display:none;animation:fadeUp .18s ease}
 .page.active{display:block}
 @keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── SECTION HEADER ── */
-.sec-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
-.sec-title{font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:#fff;letter-spacing:-0.02em}
-.sec-subtitle{font-size:11px;color:var(--text3);margin-top:3px}
-.sec-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* ═══════════════════════════════════ SECTION HEADER */
+.sec-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.sec-title{font-family:'Syne',sans-serif;font-weight:700;font-size:20px;letter-spacing:-.025em}
+.sec-sub{font-size:11px;color:var(--text-ter);margin-top:3px}
+.sec-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-/* ── TOOLBAR ── */
-.toolbar{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:12px 16px;margin-bottom:18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.toolbar-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-right:4px}
-.tool-chip{display:flex;align-items:center;gap:5px;padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid;transition:all 0.15s}
+/* IMPACT TRAIL */
+.impact-trail{
+  background:var(--bg-panel);border:1px solid var(--border-lo);
+  border-radius:var(--r-md);padding:10px 14px;margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.trail-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-ter)}
+.trail-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;
+  background:var(--bg-raised);border:1px solid var(--border-mid);
+}
+.trail-chip .tc-dot{width:6px;height:6px;border-radius:50%}
+.trail-chip.new-impact{border-color:rgba(16,208,122,0.4);animation:chipIn .3s ease}
+@keyframes chipIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+
+/* ═══════════════════════════════════ TOOLBAR */
+.toolbar{
+  background:var(--bg-panel);border:1px solid var(--border-lo);
+  border-radius:var(--r-md);padding:10px 14px;margin-bottom:16px;
+  display:flex;gap:7px;flex-wrap:wrap;align-items:center;
+}
+.tl-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-ter);margin-right:4px}
+.tool-chip{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid;transition:all .15s}
 .tool-chip:hover{transform:translateY(-1px)}
-.tc-risk{border-color:rgba(239,68,68,0.3);color:#ef4444;background:rgba(239,68,68,0.07)}
-.tc-cost{border-color:rgba(244,162,97,0.3);color:#f4a261;background:rgba(244,162,97,0.07)}
-.tc-start{border-color:rgba(6,214,160,0.3);color:#06d6a0;background:rgba(6,214,160,0.07)}
-.tc-agile{border-color:rgba(79,142,247,0.3);color:#4f8ef7;background:rgba(79,142,247,0.07)}
+.tc-risk{border-color:rgba(239,68,68,.25);color:#ef4444;background:rgba(239,68,68,.06)}
+.tc-cost{border-color:rgba(251,146,60,.25);color:var(--finance);background:rgba(251,146,60,.06)}
+.tc-start{border-color:rgba(16,208,122,.25);color:var(--project);background:rgba(16,208,122,.06)}
+.tc-agile{border-color:rgba(75,140,245,.25);color:var(--portfolio);background:rgba(75,140,245,.06)}
 
-/* ── GRID ── */
+/* ═══════════════════════════════════ GRID */
 .grid{display:grid;gap:14px}
-.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
-.g12{grid-template-columns:1fr 2fr}.g21{grid-template-columns:2fr 1fr}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g12{grid-template-columns:1fr 2fr}
 .gfull{grid-column:1/-1}
 @media(max-width:1200px){.g3{grid-template-columns:1fr 1fr}.g4{grid-template-columns:1fr 1fr}}
-@media(max-width:900px){.g2,.g3,.g4,.g12,.g21{grid-template-columns:1fr}.content{padding:14px 16px}}
+@media(max-width:860px){.g2,.g3,.g4,.g12{grid-template-columns:1fr}.content{padding:14px 16px}}
 
-/* ── PANEL ── */
-.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;display:flex;flex-direction:column}
-.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
-.panel-title{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:#fff;letter-spacing:-0.01em}
-.panel-sub{font-size:11px;color:var(--text3);margin-top:1px}
+/* ═══════════════════════════════════ PANEL */
+.panel{
+  background:var(--bg-panel);border:1px solid var(--border-lo);
+  border-radius:var(--r-lg);padding:16px 18px;
+  transition:background .25s,border-color .25s;
+}
+.panel:hover{border-color:var(--border-mid)}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.pt{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:-.01em}
+.ps{font-size:11px;color:var(--text-ter);margin-top:2px}
 .chart-wrap{position:relative;width:100%}
 
-/* ── KPI ── */
-.kpi{background:var(--bg3);border-radius:var(--r);padding:14px 15px;border:1px solid var(--border)}
-.kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px}
-.kpi-value{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:500;color:#fff;line-height:1}
-.kpi-delta{font-size:11px;margin-top:4px;color:var(--text3)}
-.kpi-delta.up{color:#06d6a0}.kpi-delta.dn{color:#ef4444}
-.kpi-bar{height:3px;border-radius:2px;background:var(--bg4);margin-top:9px;overflow:hidden}
-.kpi-bar-fill{height:100%;border-radius:2px;transition:width 0.6s ease}
+/* ═══════════════════════════════════ KPI CARDS */
+.kpi{background:var(--bg-raised);border-radius:var(--r-md);padding:14px 16px;border:1px solid var(--border-lo);transition:background .25s}
+.kpi-lbl{font-size:10px;color:var(--text-ter);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.kpi-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:500;line-height:1}
+.kpi-dlt{font-size:11px;margin-top:4px;color:var(--text-ter)}
+.kpi-dlt.up{color:var(--ok)}.kpi-dlt.dn{color:var(--risk)}
+.kpi-bar{height:3px;border-radius:2px;background:var(--bg-base);margin-top:9px;overflow:hidden}
+.kpi-fill{height:100%;border-radius:2px;transition:width .7s ease}
 
-/* ── PROGRESS ── */
-.prog-row{display:flex;align-items:center;gap:9px;margin-bottom:8px}
-.prog-label{font-size:12px;color:var(--text2);min-width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prog-wrap{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
-.prog-fill{height:100%;border-radius:3px;transition:width 0.7s cubic-bezier(.16,1,.3,1)}
-.prog-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);min-width:28px;text-align:right}
+/* LINKED KPI — highlights when source changes */
+.kpi.linked-active{border-color:rgba(16,208,122,.35);box-shadow:0 0 0 1px rgba(16,208,122,.15);animation:linkPulse .6s ease}
+@keyframes linkPulse{0%{transform:scale(1.01)}50%{transform:scale(1)}100%{transform:scale(1)}}
 
-/* ── BADGES ── */
+/* ═══════════════════════════════════ PROGRESS */
+.prow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.plbl{font-size:12px;color:var(--text-sec);min-width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pwrap{flex:1;height:5px;background:var(--bg-base);border-radius:3px;overflow:hidden}
+.pfill{height:100%;border-radius:3px;transition:width .7s ease}
+.pval{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-ter);min-width:26px;text-align:right}
+
+/* ═══════════════════════════════════ BADGES */
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
-.b-red{background:rgba(239,68,68,0.1);color:#ef4444}.b-amber{background:rgba(244,162,97,0.1);color:#f4a261}
-.b-green{background:rgba(6,214,160,0.1);color:#06d6a0}.b-blue{background:rgba(79,142,247,0.1);color:#4f8ef7}
-.b-teal{background:rgba(46,196,182,0.1);color:#2ec4b6}.b-violet{background:rgba(123,97,255,0.1);color:#7b61ff}
-.b-pink{background:rgba(247,37,133,0.1);color:#f72585}.b-yellow{background:rgba(255,209,102,0.1);color:#ffd166}
-.b-gray{background:rgba(255,255,255,0.06);color:var(--text2)}
+.b-red{background:rgba(239,68,68,.1);color:#ef4444}
+.b-amb{background:rgba(251,146,60,.1);color:var(--finance)}
+.b-grn{background:rgba(16,208,122,.1);color:var(--project)}
+.b-blu{background:rgba(75,140,245,.1);color:var(--portfolio)}
+.b-tel{background:rgba(34,211,188,.1);color:var(--tech)}
+.b-vio{background:rgba(139,92,246,.1);color:var(--data)}
+.b-yel{background:rgba(251,191,36,.1);color:var(--sourcing)}
+.b-gry{background:rgba(255,255,255,.06);color:var(--text-sec)}
 
-/* ── TABLE ── */
-.tbl-wrap{overflow-x:auto}
+/* ═══════════════════════════════════ TABLE */
+.twrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-th{text-align:left;padding:7px 10px;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)}
-td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+th{text-align:left;padding:7px 10px;color:var(--text-ter);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-lo)}
+td{padding:8px 10px;border-bottom:1px solid var(--border-lo);color:var(--text-pri);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,0.015)}
+tr:hover td{background:var(--bg-hover)}
 
-/* ── EDITABLE CELL ── */
-.editable-cell{
-  display:inline-flex;align-items:center;gap:4px;padding:2px 6px;
-  border-radius:5px;border:1px solid transparent;transition:all 0.15s;cursor:pointer;
-}
-.editable-cell:hover{background:rgba(79,142,247,0.08);border-color:rgba(79,142,247,0.3)}
-.editable-cell.editing{background:rgba(79,142,247,0.12);border-color:rgba(79,142,247,0.5)}
-.edit-icon{opacity:0;transition:opacity 0.15s;font-size:10px;color:var(--accent)}
-.editable-cell:hover .edit-icon{opacity:1}
+/* ═══════════════════════════════════ GANTT */
+.grow{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.glbl{font-size:11px;color:var(--text-sec);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gtrack{flex:1;height:20px;background:var(--bg-raised);border-radius:4px;position:relative;overflow:hidden}
+.gbar{position:absolute;top:2px;height:16px;border-radius:3px;display:flex;align-items:center;padding:0 5px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden}
+.gyr{font-size:10px;color:var(--text-ter);min-width:36px;text-align:right;font-family:'JetBrains Mono',monospace}
 
-/* ── INLINE EDIT INPUT ── */
-.inline-input{
-  background:var(--bg4);border:1px solid var(--accent);border-radius:5px;
-  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;
-  padding:2px 6px;width:80px;outline:none;
-}
-.inline-select{
-  background:var(--bg4);border:1px solid var(--accent);border-radius:5px;
-  color:var(--text);font-family:inherit;font-size:11px;padding:2px 6px;outline:none;cursor:pointer;
-}
+/* ═══════════════════════════════════ QUAD LABELS */
+.qlbl{position:absolute;font-size:10px;font-weight:600;pointer-events:none;letter-spacing:.04em;text-transform:uppercase}
 
-/* ── GANTT ── */
-.gantt-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
-.gantt-label{font-size:11px;color:var(--text2);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gantt-track{flex:1;height:20px;background:var(--bg3);border-radius:4px;position:relative;overflow:hidden}
-.gantt-bar{position:absolute;top:2px;height:16px;border-radius:3px;display:flex;align-items:center;padding:0 5px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden}
-.gantt-year{font-size:10px;color:var(--text3);min-width:36px;text-align:right;font-family:'JetBrains Mono',monospace}
-
-/* ── QUADRANT LABELS ── */
-.quad-label{position:absolute;font-size:10px;color:var(--text3);font-weight:600;pointer-events:none;letter-spacing:0.05em;text-transform:uppercase}
-
-/* ── REGION CARDS ── */
-.region-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.region-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;transition:border-color 0.15s}
-.region-card:hover{border-color:var(--border3)}
-.rc-name{font-size:11px;font-weight:500;color:#fff;margin-bottom:4px}
-.rc-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500}
-.rc-sub{font-size:10px;color:var(--text3);margin-top:2px}
-
-/* ── ROADMAP ── */
-.roadmap-phase{margin-bottom:14px}
-.rp-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text3);margin-bottom:6px;padding-left:2px}
+/* ═══════════════════════════════════ ROADMAP */
+.rphase{margin-bottom:14px}
+.rpt{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-ter);margin-bottom:7px}
 .rp-items{display:flex;gap:8px;flex-wrap:wrap}
-.rp-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;min-width:120px;transition:border-color 0.15s}
-.rp-item:hover{border-color:var(--border3)}
-.rp-item-title{font-size:12px;font-weight:500;color:#fff;margin-bottom:2px}
-.rp-item-meta{font-size:11px;color:var(--text3)}
+.rp-card{background:var(--bg-raised);border:1px solid var(--border-lo);border-radius:var(--r-md);padding:8px 10px;flex:1;min-width:120px;transition:border-color .15s;cursor:default}
+.rp-card:hover{border-color:var(--border-hi)}
 .rp-stripe{height:3px;border-radius:2px;margin-bottom:6px}
+.rp-name{font-size:12px;font-weight:500;margin-bottom:2px}
+.rp-meta{font-size:11px;color:var(--text-ter)}
 
-/* ── RING ── */
-.ring-wrap{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
-.ring-wrap:last-child{border-bottom:none}
+/* ═══════════════════════════════════ RINGS */
+.rwrap{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-lo)}
+.rwrap:last-child{border-bottom:none}
 .ring{position:relative;width:48px;height:48px;flex-shrink:0}
 .ring svg{transform:rotate(-90deg)}
-.ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ring-num{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;line-height:1}
-.ring-info{flex:1}
-.ring-name{font-size:12px;font-weight:500;color:#fff}
-.ring-detail{font-size:11px;color:var(--text3);margin-top:1px}
+.ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-n{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;line-height:1}
+.ring-i{flex:1}.ring-name{font-size:12px;font-weight:500}.ring-det{font-size:11px;color:var(--text-ter);margin-top:1px}
 
-/* ── MODAL ── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
-.modal-bg.open{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);padding:24px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;animation:fadeUp 0.2s ease}
-.modal::-webkit-scrollbar{width:4px}.modal::-webkit-scrollbar-thumb{background:var(--border3);border-radius:2px}
-.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
-.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#fff}
-.modal-sub{font-size:12px;color:var(--text3);margin-top:3px}
-.modal-close{cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px;transition:color 0.15s}
-.modal-close:hover{color:#fff}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+/* ═══════════════════════════════════ MODAL */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:none;align-items:center;justify-content:center;padding:16px}
+.moverlay.open{display:flex}
+.mbox{background:var(--bg-surface);border:1px solid var(--border-mid);border-radius:var(--r-xl);padding:24px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;animation:fadeUp .2s ease;transition:background .25s}
+.mbox::-webkit-scrollbar{width:4px}.mbox::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:2px}
+.mhdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.mtitle{font-family:'Syne',sans-serif;font-weight:700;font-size:16px}
+.msub{font-size:12px;color:var(--text-ter);margin-top:3px}
+.mclose{cursor:pointer;color:var(--text-ter);font-size:18px;line-height:1;transition:color .15s}
+.mclose:hover{color:var(--text-pri)}
+.mfooter{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border-lo)}
 
-/* ── FORM ── */
-.form-section{margin-bottom:16px}
-.form-section-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:10px}
-.form-row{display:flex;gap:10px;flex-wrap:wrap}
-.fgroup{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
-.fgroup label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+/* FORM */
+.frow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:11px}
+.fg{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
+.fg label{font-size:10px;color:var(--text-ter);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 input[type=text],input[type=number],input[type=date],select,textarea{
-  background:var(--bg3);border:1px solid var(--border2);border-radius:7px;
-  color:var(--text);font-family:inherit;font-size:12px;padding:6px 10px;
-  outline:none;transition:border-color 0.15s;width:100%;
+  background:var(--bg-raised);border:1px solid var(--border-mid);border-radius:var(--r-sm);
+  color:var(--text-pri);font-family:inherit;font-size:12px;padding:7px 10px;
+  outline:none;transition:border-color .15s,background .25s;width:100%
 }
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input:focus,select:focus,textarea:focus{border-color:var(--portfolio)}
 select{cursor:pointer}
 textarea{resize:vertical;min-height:55px}
-input[type=range]{background:var(--bg4);border:none;height:4px;-webkit-appearance:none;border-radius:2px;padding:0;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg2)}
-.range-row{display:flex;align-items:center;gap:10px}
-.range-row input[type=range]{flex:1}
-.range-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);min-width:28px;text-align:right}
+input[type=range]{background:var(--bg-base);border:none;height:4px;-webkit-appearance:none;border-radius:2px;padding:0;cursor:pointer;transition:background .25s}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--portfolio);cursor:pointer;border:2px solid var(--bg-surface)}
+.rrow{display:flex;align-items:center;gap:10px}
+.rrow input[type=range]{flex:1}
+.rval{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--portfolio);min-width:26px;text-align:right}
 
-/* ── TOAST ── */
-.toast{position:fixed;bottom:18px;right:18px;background:var(--bg3);border:1px solid var(--border2);border-left:3px solid var(--accent);border-radius:10px;padding:10px 16px;font-size:12px;color:var(--text);transform:translateY(60px);opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
+/* BUTTONS */
+.btn{padding:7px 14px;border-radius:var(--r-sm);border:1px solid var(--border-mid);background:var(--bg-raised);color:var(--text-pri);font-family:inherit;font-size:12px;cursor:pointer;transition:all .15s}
+.btn:hover{background:var(--bg-hover);border-color:var(--border-hi)}
+.btn-p{background:var(--portfolio);border-color:var(--portfolio);color:#fff}
+.btn-p:hover{background:#3a7ef5}
+.btn-d{border-color:rgba(239,68,68,.3);color:#ef4444}
+.btn-d:hover{background:rgba(239,68,68,.08)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-acc{border-color:var(--portfolio);color:var(--portfolio)}
+
+/* ═══════════════════════════════════ REGION CARDS */
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rcard{background:var(--bg-raised);border:1px solid var(--border-lo);border-radius:var(--r-md);padding:12px;text-align:center;transition:border-color .15s,background .25s}
+.rcard:hover{border-color:var(--border-hi)}
+.rc-nm{font-size:11px;font-weight:500;margin-bottom:4px}
+.rc-v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500}
+.rc-s{font-size:10px;color:var(--text-ter);margin-top:2px}
+
+/* ═══════════════════════════════════ LOGIN */
+.login-wrap{position:fixed;inset:0;background:var(--bg-base);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0;transition:background .25s}
+.login-wrap.gone{display:none}
+.login-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;text-align:center;margin-bottom:5px}
+.login-sub{font-size:11px;color:var(--text-ter);text-align:center;letter-spacing:.08em;text-transform:uppercase;margin-bottom:38px}
+.role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:560px;padding:0 16px}
+.rcard-login{background:var(--bg-panel);border:1px solid var(--border-mid);border-radius:var(--r-lg);padding:18px 14px;cursor:pointer;transition:all .18s;text-align:center}
+.rcard-login:hover{border-color:var(--border-hi);transform:translateY(-2px)}
+.rcard-login.sel{border-width:2px}
+.rl-emoji{font-size:26px;margin-bottom:8px;display:block}
+.rl-title{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;margin-bottom:3px}
+.rl-sub{font-size:10px;color:var(--text-ter);line-height:1.4}
+.rl-dots{margin-top:7px;display:flex;gap:3px;justify-content:center}
+.ldot{width:6px;height:6px;border-radius:50%}
+.login-go{
+  margin-top:24px;padding:11px 36px;background:var(--portfolio);border:none;
+  border-radius:var(--r-md);color:#fff;font-family:'Syne',sans-serif;font-weight:700;
+  font-size:13px;cursor:pointer;transition:all .18s;opacity:.35;pointer-events:none;
+}
+.login-go.rdy{opacity:1;pointer-events:all}
+.login-go.rdy:hover{background:#3a7ef5;transform:translateY(-1px)}
+/* inline theme toggle on login */
+.login-theme{position:fixed;top:14px;right:14px}
+
+/* ═══════════════════════════════════ TOAST */
+.toast{position:fixed;bottom:18px;right:18px;background:var(--bg-panel);border:1px solid var(--border-mid);border-left:3px solid var(--portfolio);border-radius:var(--r-md);padding:10px 16px;font-size:12px;color:var(--text-pri);transform:translateY(60px);opacity:0;transition:all .25s;z-index:400;pointer-events:none;max-width:320px}
 .toast.show{transform:translateY(0);opacity:1}
 
-/* ── PERM TOOLTIP ── */
-.perm-info{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);padding:3px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)}
+/* ═══════════════════════════════════ IMPACT PANEL (right drawer) */
+.impact-panel{
+  position:fixed;top:52px;right:0;bottom:0;width:300px;
+  background:var(--bg-surface);border-left:1px solid var(--border-mid);
+  z-index:90;transform:translateX(100%);transition:transform .22s ease;
+  padding:18px;overflow-y:auto;
+}
+.impact-panel.open{transform:translateX(0)}
+.ip-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:14px}
+.ip-entry{padding:10px 12px;background:var(--bg-raised);border:1px solid var(--border-lo);border-radius:var(--r-sm);margin-bottom:8px;font-size:12px;transition:background .25s}
+.ip-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-ter);display:block;margin-bottom:3px}
+.ip-msg{color:var(--text-sec);line-height:1.5}
+.ip-msg strong{color:var(--text-pri);font-weight:500}
 
 /* MISC */
 .mono{font-family:'JetBrains Mono',monospace}
 .mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
-.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}
-.divider{height:1px;background:var(--border);margin:14px 0}
-.empty{text-align:center;padding:28px 16px;color:var(--text3);font-size:12px}
-.flex{display:flex}.flex-between{justify-content:space-between}.flex-center{align-items:center}.gap8{gap:8px}.gap12{gap:12px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb14{margin-bottom:14px}
+.perm-lbl{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;background:var(--bg-raised);border-radius:6px;border:1px solid var(--border-lo)}
+.divider{height:1px;background:var(--border-lo);margin:14px 0}
+.empty{text-align:center;padding:26px 16px;color:var(--text-ter);font-size:12px}
+.link-ext{font-size:11px;color:var(--portfolio);text-decoration:none;opacity:.8}
+.link-ext:hover{opacity:1}
 </style>
+</head>
+<body>
 
-<!-- ════════ LOGIN SCREEN ════════ -->
-<div class="login-screen" id="login-screen">
-  <div class="login-brand">Réorganiser son IT</div>
-  <div class="login-sub">Vues clés de l'architecture — Sélectionnez votre rôle</div>
-  <div class="role-grid" id="role-grid">
-    <div class="role-card" data-role="DSI" onclick="selectRole(this)">
-      <span class="rc-emoji">🏛️</span>
-      <div class="rc-title">DSI</div>
-      <div class="rc-sub">Direction des Systèmes d'Information</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:#4f8ef7" title="Portfolio"></div>
-        <div class="perm-dot" style="background:#2ec4b6" title="Tech"></div>
-        <div class="perm-dot" style="background:#f72585" title="Sécu"></div>
-        <div class="perm-dot" style="background:#f4a261" title="Finance"></div>
-        <div class="perm-dot" style="background:#7b61ff" title="Data"></div>
-        <div class="perm-dot" style="background:#06d6a0" title="Projet"></div>
-        <div class="perm-dot" style="background:#ffd166" title="Sourcing"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="RSSI" onclick="selectRole(this)">
-      <span class="rc-emoji">🔐</span>
-      <div class="rc-title">RSSI</div>
-      <div class="rc-sub">Responsable Sécurité des SI</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:var(--text3)" title="Portfolio (lecture)"></div>
-        <div class="perm-dot" style="background:#2ec4b6" title="Tech"></div>
-        <div class="perm-dot" style="background:#f72585" title="Sécu"></div>
-        <div class="perm-dot" style="background:var(--text3)" title="Finance (lecture)"></div>
-        <div class="perm-dot" style="background:var(--text3)" title="Data (lecture)"></div>
-        <div class="perm-dot" style="background:var(--text3)" title="Projet (lecture)"></div>
-        <div class="perm-dot" style="background:#ffd166" title="Sourcing (sécu)"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="DAF" onclick="selectRole(this)">
-      <span class="rc-emoji">💰</span>
-      <div class="rc-title">DAF / Contrôle de Gestion</div>
-      <div class="rc-sub">Direction Administrative & Financière</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:#f4a261"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:#06d6a0"></div>
-        <div class="perm-dot" style="background:#ffd166"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="EA" onclick="selectRole(this)">
-      <span class="rc-emoji">🏗️</span>
-      <div class="rc-title">Architecte EA</div>
-      <div class="rc-sub">Enterprise Architecture</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:#4f8ef7"></div>
-        <div class="perm-dot" style="background:#2ec4b6"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:#7b61ff"></div>
-        <div class="perm-dot" style="background:#06d6a0"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="PM" onclick="selectRole(this)">
-      <span class="rc-emoji">📋</span>
-      <div class="rc-title">Chef de Projet</div>
-      <div class="rc-sub">Project Manager / MOE</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:#06d6a0"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-      </div>
-    </div>
-    <div class="role-card" data-role="DG" onclick="selectRole(this)">
-      <span class="rc-emoji">👔</span>
-      <div class="rc-title">DG / COMEX</div>
-      <div class="rc-sub">Direction Générale — Lecture seule</div>
-      <div class="rc-perms">
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-        <div class="perm-dot" style="background:var(--text3)"></div>
-      </div>
+<!-- ════════════════════════════ LOGIN -->
+<div class="login-wrap" id="login-screen">
+  <div class="login-theme">
+    <div class="theme-btn" onclick="toggleTheme()" id="theme-btn-login">
+      <span class="theme-icon" id="theme-icon-login">🌙</span>
+      <span id="theme-lbl-login">Mode clair</span>
     </div>
   </div>
-  <button class="login-btn" id="login-btn" onclick="doLogin()">Accéder au tableau de bord →</button>
+  <div class="login-brand">SI Governance Enterprise</div>
+  <div class="login-sub">Vues clés de l'architecture · Sélectionnez votre profil</div>
+  <div class="role-grid" id="role-grid"></div>
+  <button class="login-go" id="login-go" onclick="doLogin()">Accéder au tableau de bord →</button>
 </div>
 
-<!-- ════════ MAIN SHELL ════════ -->
-<div class="shell" id="main-shell" style="display:none">
-<nav class="sidebar">
-  <div class="brand">
-    <div class="brand-title">Réorganiser son IT</div>
-    <div class="brand-sub">Architecture &amp; Gouvernance</div>
+<!-- ════════════════════════════ TOP MENUBAR -->
+<nav class="menubar" id="menubar" style="display:none">
+  <div class="mb-brand">
+    <div class="mb-brand-dot">🏛</div>
+    SI Gov.
   </div>
-  <div class="nav-section">Architecture</div>
-  <div class="nav-item active" id="nav-portfolio" style="--active-color:var(--c-portfolio)" onclick="nav('portfolio',this,'var(--c-portfolio)')">
-    <div class="nav-dot" style="background:var(--c-portfolio)"></div>
-    <span>Gestion de portefeuille</span>
-    <span class="nav-lock" id="lock-portfolio"></span>
-  </div>
-  <div class="nav-section">Domaines</div>
-  <div class="nav-item" id="nav-tech" style="--active-color:var(--c-tech)" onclick="nav('tech',this,'var(--c-tech)')">
-    <div class="nav-dot" style="background:var(--c-tech)"></div>
-    <span>Technology &amp; Risk</span>
-    <span class="nav-lock" id="lock-tech"></span>
-  </div>
-  <div class="nav-item" id="nav-secu" style="--active-color:var(--c-secu)" onclick="nav('secu',this,'var(--c-secu)')">
-    <div class="nav-dot" style="background:var(--c-secu)"></div>
-    <span>Sécurité &amp; Confidentialité</span>
-    <span class="nav-lock" id="lock-secu"></span>
-  </div>
-  <div class="nav-item" id="nav-finance" style="--active-color:var(--c-finance)" onclick="nav('finance',this,'var(--c-finance)')">
-    <div class="nav-dot" style="background:var(--c-finance)"></div>
-    <span>Gestion financière IT</span>
-    <span class="nav-lock" id="lock-finance"></span>
-  </div>
-  <div class="nav-item" id="nav-data" style="--active-color:var(--c-data)" onclick="nav('data',this,'var(--c-data)')">
-    <div class="nav-dot" style="background:var(--c-data)"></div>
-    <span>Intégration &amp; Données</span>
-    <span class="nav-lock" id="lock-data"></span>
-  </div>
-  <div class="nav-item" id="nav-project" style="--active-color:var(--c-project)" onclick="nav('project',this,'var(--c-project)')">
-    <div class="nav-dot" style="background:var(--c-project)"></div>
-    <span>Project Portfolio Mgmt</span>
-    <span class="nav-lock" id="lock-project"></span>
-  </div>
-  <div class="nav-item" id="nav-sourcing" style="--active-color:var(--c-sourcing)" onclick="nav('sourcing',this,'var(--c-sourcing)')">
-    <div class="nav-dot" style="background:var(--c-sourcing)"></div>
-    <span>Gestion du Sourcing IT</span>
-    <span class="nav-lock" id="lock-sourcing"></span>
+  <div class="mb-nav" id="mb-nav"></div>
+  <div class="mb-right">
+    <span class="mb-date mono" id="mb-date"></span>
+    <div class="impact-ring" id="impact-ring" onclick="toggleImpactPanel()" title="Journal des impacts">
+      <span class="impact-count" id="impact-count">0</span>
+    </div>
+    <div class="theme-btn" onclick="toggleTheme()" id="theme-btn-main">
+      <span class="theme-icon" id="theme-icon-main">🌙</span>
+      <span id="theme-lbl-main">Clair</span>
+    </div>
+    <div class="role-chip" onclick="doLogout()" id="role-chip">
+      <div class="role-dot" id="chip-dot"></div>
+      <span id="chip-name"></span>
+    </div>
+    <a class="link-ext" href="https://github.com/alaingrafcolson-lang/ea-platform" target="_blank" title="GitHub">⬡ GitHub</a>
   </div>
 </nav>
 
-<div class="main">
-<div class="topheader">
-  <div class="th-left">
-    <div class="th-dot" id="th-dot" style="background:var(--c-portfolio)"></div>
-    <div>
-      <div class="th-name" id="th-name">Gestion de portefeuille</div>
-      <div class="th-sub" id="th-sub">Capacités · Cycle de vie · Criticité</div>
-    </div>
+<!-- IMPACT PANEL -->
+<div class="impact-panel" id="impact-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div class="ip-title">Rapport technique d'impact</div>
+    <span style="cursor:pointer;color:var(--text-ter);font-size:16px" onclick="toggleImpactPanel()">✕</span>
   </div>
-  <div class="th-right">
-    <span class="th-date mono" id="th-date"></span>
-    <div class="role-badge" id="role-badge" onclick="switchRole()">
-      <div class="rb-dot" id="rb-dot"></div>
-      <span class="rb-name" id="rb-name"></span>
-      <span class="rb-switch">Changer</span>
-    </div>
+  <div id="impact-list"><div class="empty">Aucune modification enregistrée</div></div>
+  <div class="mt12" style="display:flex;gap:8px">
+    <button class="btn btn-sm" onclick="clearImpacts()">Vider</button>
+    <button class="btn btn-sm btn-acc" onclick="exportImpacts()">Exporter</button>
   </div>
 </div>
-<div class="content" id="content">
 
-<!-- ════════ PAGE PORTFOLIO ════════ -->
-<div class="page active" id="page-portfolio">
-  <div class="sec-header">
-    <div><div class="sec-title">Gestion de portefeuille d'applications</div><div class="sec-subtitle">Fonctionnel · Technique · Criticité · Cycle de vie · Successeurs</div></div>
-    <div class="sec-actions">
-      <span class="perm-info" id="perm-portfolio"></span>
-      <button class="btn btn-accent btn-sm" id="btn-add-app" onclick="openAppModal(-1)">+ Application</button>
-    </div>
+<!-- ════════════════════════════ SHELL -->
+<div class="shell" id="main-shell" style="display:none">
+<div class="content" id="main-content">
+
+<!-- ══ PAGE: SYNTHÈSE ══ -->
+<div class="page active" id="page-synthese">
+  <div class="sec-hdr">
+    <div><div class="sec-title">Synthèse du portefeuille IT</div><div class="sec-sub">Vue consolidée · toutes modifications se propagent ici</div></div>
+    <div class="sec-acts"><span class="perm-lbl" id="perm-synthese"></span></div>
   </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="port-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
+  <div class="grid g4 mb14" id="syn-kpis" style="margin-bottom:14px"></div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
     <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Capacité fonctionnelle</div><div class="panel-sub">Score moyen par domaine</div></div></div>
-      <div class="chart-wrap" style="height:190px"><canvas id="chartFonc"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Capacité technique</div><div class="panel-sub">Score moyen par domaine</div></div></div>
-      <div class="chart-wrap" style="height:190px"><canvas id="chartTech"></canvas></div>
-    </div>
-  </div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Fonctionnel vs Technique</div><div class="panel-sub">Matrice stratégique (taille = coût)</div></div></div>
+      <div class="ph"><div><div class="pt">Fonctionnel vs Technique</div><div class="ps">Positionnement stratégique du portefeuille</div></div></div>
       <div style="position:relative">
-        <div class="chart-wrap" style="height:280px"><canvas id="chartQuad"></canvas></div>
-        <div class="quad-label" style="top:6px;right:8px;color:#06d6a0">★ Investir</div>
-        <div class="quad-label" style="top:6px;left:52px;color:#f4a261">⚡ Optimiser</div>
-        <div class="quad-label" style="bottom:14px;right:8px;color:#4f8ef7">⬆ Moderniser</div>
-        <div class="quad-label" style="bottom:14px;left:52px;color:#ef4444">✕ Éliminer</div>
+        <div class="chart-wrap" style="height:270px"><canvas id="syn-quad"></canvas></div>
+        <div class="qlbl" style="top:6px;right:8px;color:var(--project)">★ Investir</div>
+        <div class="qlbl" style="top:6px;left:52px;color:var(--finance)">⚡ Optimiser</div>
+        <div class="qlbl" style="bottom:14px;right:8px;color:var(--portfolio)">⬆ Moderniser</div>
+        <div class="qlbl" style="bottom:14px;left:52px;color:var(--risk)">✕ Éliminer</div>
       </div>
     </div>
+    <div class="grid" style="gap:14px">
+      <div class="panel">
+        <div class="ph"><div class="pt">Score de maturité global</div></div>
+        <div class="chart-wrap" style="height:100px"><canvas id="syn-maturite"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="pt">Répartition des risques</div></div>
+        <div id="syn-risk-bars"></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid g3">
     <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Criticité métier</div></div></div>
-      <div class="chart-wrap" style="height:150px"><canvas id="chartCrit"></canvas></div>
-      <div class="mt12" id="crit-detail"></div>
+      <div class="ph"><div><div class="pt">Criticité métier</div></div></div>
+      <div class="chart-wrap" style="height:140px"><canvas id="syn-crit"></canvas></div>
+      <div class="mt8" id="syn-crit-detail"></div>
     </div>
-  </div>
-  <div class="panel" style="margin-bottom:14px">
-    <div class="panel-header"><div><div class="panel-title">Cycle de vie · Explorer successeurs</div></div></div>
-    <div class="chart-wrap" style="height:150px"><canvas id="chartCycle"></canvas></div>
-    <div class="mt12" id="successors-section"></div>
-  </div>
-  <div class="panel">
-    <div class="panel-header">
-      <div><div class="panel-title">Catalogue des applications</div></div>
-      <div class="flex gap8"></div>
+    <div class="panel">
+      <div class="ph"><div><div class="pt">Cycle de vie</div></div></div>
+      <div class="chart-wrap" style="height:140px"><canvas id="syn-cycle"></canvas></div>
     </div>
-    <div class="tbl-wrap"> <table>
-      <thead> <th>Application</th><th>Domaine</th><th>Fonct.</th><th>Tech.</th><th>Criticité</th><th>Phase</th><th>Coût/an</th><th>Risque</th><th></th> </thead>
-      <tbody id="app-tbody"></tbody>
-     </table></div>
+    <div class="panel">
+      <div class="ph"><div><div class="pt">Budget IT par domaine</div></div></div>
+      <div class="chart-wrap" style="height:140px"><canvas id="syn-budget"></canvas></div>
+    </div>
   </div>
 </div>
 
-<!-- ════════ PAGE TECH ════════ -->
+<!-- ══ PAGE: PORTFOLIO ══ -->
+<div class="page" id="page-portfolio">
+  <div class="sec-hdr">
+    <div><div class="sec-title">Gestion de portefeuille d'applications</div><div class="sec-sub">Capacités · Criticité · Cycle de vie · Successeurs</div></div>
+    <div class="sec-acts"><span class="perm-lbl" id="perm-portfolio"></span><button class="btn btn-sm btn-acc" id="btn-add-app" onclick="openAppModal(-1)">+ Application</button></div>
+  </div>
+  <div id="trail-portfolio" class="impact-trail mb14" style="display:none"></div>
+  <div class="toolbar">
+    <span class="tl-label">Outils</span>
+    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
+    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
+    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
+    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
+  </div>
+  <div class="grid g4 mb14" id="port-kpis" style="margin-bottom:14px"></div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
+    <div class="panel"><div class="ph"><div><div class="pt">Capacité fonctionnelle</div><div class="ps">Par domaine métier</div></div></div><div class="chart-wrap" style="height:190px"><canvas id="p-fonc"></canvas></div></div>
+    <div class="panel"><div class="ph"><div><div class="pt">Capacité technique</div><div class="ps">Par domaine</div></div></div><div class="chart-wrap" style="height:190px"><canvas id="p-tech"></canvas></div></div>
+  </div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
+    <div class="panel">
+      <div class="ph"><div><div class="pt">Matrice Fonctionnel / Technique</div><div class="ps">taille de bulle = coût annuel</div></div></div>
+      <div style="position:relative">
+        <div class="chart-wrap" style="height:280px"><canvas id="p-quad"></canvas></div>
+        <div class="qlbl" style="top:6px;right:8px;color:var(--project)">★ Investir</div>
+        <div class="qlbl" style="top:6px;left:52px;color:var(--finance)">⚡ Optimiser</div>
+        <div class="qlbl" style="bottom:14px;right:8px;color:var(--portfolio)">⬆ Moderniser</div>
+        <div class="qlbl" style="bottom:14px;left:52px;color:var(--risk)">✕ Éliminer</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div><div class="pt">Criticité métier</div></div></div>
+      <div class="chart-wrap" style="height:150px"><canvas id="p-crit"></canvas></div>
+      <div class="mt8" id="p-crit-det"></div>
+    </div>
+  </div>
+  <div class="panel mb14" style="margin-bottom:14px">
+    <div class="ph"><div><div class="pt">Cycle de vie · Explorer successeurs</div></div></div>
+    <div class="chart-wrap" style="height:150px"><canvas id="p-cycle"></canvas></div>
+    <div class="mt10" id="p-succ"></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><div class="pt">Catalogue des applications</div></div>
+    <div class="twrap"><table><thead><tr><th>Application</th><th>Domaine</th><th>Fonct.</th><th>Tech.</th><th>Criticité</th><th>Phase</th><th>Coût/an</th><th>Risque</th><th></th></tr></thead><tbody id="app-tbody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: TECH ══ -->
 <div class="page" id="page-tech">
-  <div class="sec-header">
-    <div><div class="sec-title">Technology &amp; Risk Management</div><div class="sec-subtitle">Explorateur de relations · Âge · Régions · Risques technologiques</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-tech"></span></div>
+  <div class="sec-hdr"><div><div class="sec-title">Technology &amp; Risk Management</div><div class="sec-sub">Relations · Âge · Régions · Risques technologiques</div></div><div class="sec-acts"><span class="perm-lbl" id="perm-tech"></span></div></div>
+  <div id="trail-tech" class="impact-trail mb14" style="display:none"></div>
+  <div class="toolbar"><span class="tl-label">Outils</span><div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div><div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div><div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer</div><div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Agilité</div></div>
+  <div class="grid g4 mb14" id="tech-kpis" style="margin-bottom:14px"></div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
+    <div class="panel"><div class="ph"><div><div class="pt">Explorateur de relations</div><div class="ps">Dépendances inter-applications</div></div></div><div class="chart-wrap" style="height:240px"><canvas id="t-rel"></canvas></div></div>
+    <div class="panel"><div class="ph"><div><div class="pt">Cycle de vie et âge des applications</div></div></div><div id="t-gantt" class="mt8"></div></div>
   </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
+    <div class="panel"><div class="ph"><div><div class="pt">Utilisation par régions</div><div class="ps">Pôles techniques</div></div></div><div class="rgrid mt8" id="t-regions"></div></div>
+    <div class="panel"><div class="ph"><div><div class="pt">Risques technologiques</div></div></div><div class="chart-wrap" style="height:230px"><canvas id="t-risk"></canvas></div></div>
   </div>
-  <div class="grid g4 mb16" id="tech-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Explorateur de relations</div><div class="panel-sub">Dépendances inter-applications</div></div></div>
-      <div class="chart-wrap" style="height:250px"><canvas id="chartRelations"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Cycle de vie et âge des applications</div></div></div>
-      <div id="age-gantt" class="mt8"></div>
-    </div>
-  </div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header">
-        <div><div class="panel-title">Utilisation par régions</div><div class="panel-sub">Pôles techniques</div></div>
-        <button class="btn btn-sm" id="btn-add-region" onclick="openRegionModal(-1)">+ Région</button>
-      </div>
-      <div class="region-grid mt8" id="region-grid"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Risques technologiques</div></div></div>
-      <div class="chart-wrap" style="height:230px"><canvas id="chartRiskTech"></canvas></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Explorer : successeurs technologiques</div></div></div>
-    <div id="tech-successors"></div>
-  </div>
+  <div class="panel"><div class="ph"><div><div class="pt">Explorer : successeurs technologiques</div></div></div><div id="t-succ"></div></div>
 </div>
 
-<!-- ════════ PAGE SECU ════════ -->
+<!-- ══ PAGE: SECU ══ -->
 <div class="page" id="page-secu">
-  <div class="sec-header">
-    <div><div class="sec-title">Sécurité informatique &amp; Confidentialité</div><div class="sec-subtitle">Classification · Risques · Conformité NIS2 / ISO 27001</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-secu"></span></div>
+  <div class="sec-hdr"><div><div class="sec-title">Sécurité informatique &amp; Confidentialité</div><div class="sec-sub">Classification · Risques · Conformité NIS2 / ISO 27001</div></div><div class="sec-acts"><span class="perm-lbl" id="perm-secu"></span></div></div>
+  <div id="trail-secu" class="impact-trail mb14" style="display:none"></div>
+  <div class="toolbar"><span class="tl-label">Outils</span><div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Risques</div><div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Coûts</div><div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer</div><div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Agilité</div></div>
+  <div class="grid g4 mb14" id="secu-kpis" style="margin-bottom:14px"></div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
+    <div class="panel"><div class="ph"><div><div class="pt">Cycle de vie sécurité</div></div></div><div class="chart-wrap" style="height:200px"><canvas id="s-life"></canvas></div></div>
+    <div class="panel"><div class="ph"><div><div class="pt">Classification des données</div></div></div><div class="chart-wrap" style="height:140px"><canvas id="s-class"></canvas></div><div class="mt8" id="s-class-det"></div></div>
   </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="secu-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Cycle de vie sécurité</div></div></div>
-      <div class="chart-wrap" style="height:210px"><canvas id="chartSecuLife"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Classification des objets de données</div></div></div>
-      <div class="chart-wrap" style="height:150px"><canvas id="chartDataClass"></canvas></div>
-      <div class="mt10" id="data-class-detail"></div>
-    </div>
-  </div>
-  <div class="panel" style="margin-bottom:14px">
-    <div class="panel-header"><div><div class="panel-title">Risques technologiques de sécurité</div><div class="panel-sub">Radar NIS2 / ISO 27001</div></div></div>
-    <div class="chart-wrap" style="height:210px"><canvas id="chartSecuRisk"></canvas></div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Inventaire sécurité par application</div></div></div>
-    <div class="tbl-wrap"> <table>
-      <thead> <th>Application</th><th>Données perso.</th><th>Type données</th><th>Chiffrement</th><th>RGPD</th><th>Score risque</th><th></th> </thead>
-      <tbody id="secu-tbody"></tbody>
-     </table></div>
-  </div>
+  <div class="panel mb14" style="margin-bottom:14px"><div class="ph"><div><div class="pt">Radar NIS2 / ISO 27001</div></div></div><div class="chart-wrap" style="height:210px"><canvas id="s-radar"></canvas></div></div>
+  <div class="panel"><div class="ph"><div class="pt">Inventaire sécurité</div></div><div class="twrap"><table><thead><tr><th>Application</th><th>Données perso.</th><th>Type</th><th>Chiffrement</th><th>RGPD</th><th>Risque</th><th></th></tr></thead><tbody id="secu-tbody"></tbody></table></div></div>
 </div>
 
-<!-- ════════ PAGE FINANCE ════════ -->
+<!-- ══ PAGE: FINANCE ══ -->
 <div class="page" id="page-finance">
-  <div class="sec-header">
-    <div><div class="sec-title">Gestion financière de l'IT</div><div class="sec-subtitle">Coût annuel total · Investissements fournisseurs · Coûts interventions</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-finance"></span></div>
+  <div class="sec-hdr"><div><div class="sec-title">Gestion financière de l'IT</div><div class="sec-sub">TCO · Investissements fournisseurs · Coûts interventions</div></div><div class="sec-acts"><span class="perm-lbl" id="perm-finance"></span></div></div>
+  <div id="trail-finance" class="impact-trail mb14" style="display:none"></div>
+  <div class="toolbar"><span class="tl-label">Outils</span><div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Risques</div><div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Coûts</div><div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer</div><div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Agilité</div></div>
+  <div class="grid g4 mb14" id="fin-kpis" style="margin-bottom:14px"></div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
+    <div class="panel"><div class="ph"><div><div class="pt">Coût annuel par domaine</div></div></div><div class="chart-wrap" style="height:210px"><canvas id="f-dom"></canvas></div></div>
+    <div class="panel"><div class="ph"><div><div class="pt">Investissements par fournisseur</div></div></div><div class="chart-wrap" style="height:210px"><canvas id="f-fourn"></canvas></div></div>
   </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
+    <div class="panel"><div class="ph"><div><div class="pt">Coût des interventions</div></div></div><div class="chart-wrap" style="height:190px"><canvas id="f-interv"></canvas></div></div>
+    <div class="panel"><div class="ph"><div><div class="pt">Projection budgétaire 3 ans</div></div></div><div class="chart-wrap" style="height:190px"><canvas id="f-proj"></canvas></div></div>
   </div>
-  <div class="grid g4 mb16" id="finance-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Coût annuel total par domaine</div></div></div>
-      <div class="chart-wrap" style="height:210px"><canvas id="chartFinDomaine"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Investissements par fournisseur</div><div class="panel-sub">Logiciel &amp; Matériel</div></div></div>
-      <div class="chart-wrap" style="height:210px"><canvas id="chartFournisseurs"></canvas></div>
-    </div>
-  </div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Coût des interventions</div></div></div>
-      <div class="chart-wrap" style="height:190px"><canvas id="chartInterventions"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Projection budgétaire 3 ans</div></div></div>
-      <div class="chart-wrap" style="height:190px"><canvas id="chartFinProj"></canvas></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Détail coûts par application</div></div></div>
-    <div class="tbl-wrap"> <table>
-      <thead> <th>Application</th><th>Licences</th><th>Infra</th><th>Maintenance</th><th>RH/Support</th><th>Total/an</th><th>Tendance</th><th></th> </thead>
-      <tbody id="finance-tbody"></tbody>
-     </table></div>
-  </div>
+  <div class="panel"><div class="ph"><div class="pt">Détail coûts par application</div></div><div class="twrap"><table><thead><tr><th>Application</th><th>Licences</th><th>Infra</th><th>Maintenance</th><th>RH</th><th>Total/an</th><th>Tendance</th><th></th></tr></thead><tbody id="fin-tbody"></tbody></table></div></div>
 </div>
 
-<!-- ════════ PAGE DATA ════════ -->
+<!-- ══ PAGE: DATA ══ -->
 <div class="page" id="page-data">
-  <div class="sec-header">
-    <div><div class="sec-title">Intégration &amp; Données</div><div class="sec-subtitle">Carte circulaire des interfaces · Maps · Inventaire des flux</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-data"></span>
-    <button class="btn btn-sm" id="btn-add-interface" onclick="openInterfaceModal(-1)">+ Interface</button></div>
+  <div class="sec-hdr"><div><div class="sec-title">Intégration &amp; Données</div><div class="sec-sub">Carte circulaire des interfaces · Maps · Flux</div></div><div class="sec-acts"><span class="perm-lbl" id="perm-data"></span><button class="btn btn-sm btn-acc" id="btn-add-if" onclick="openIfModal(-1)">+ Interface</button></div></div>
+  <div id="trail-data" class="impact-trail mb14" style="display:none"></div>
+  <div class="toolbar"><span class="tl-label">Outils</span><div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Risques</div><div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Coûts</div><div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer</div><div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Agilité</div></div>
+  <div class="grid g4 mb14" id="data-kpis" style="margin-bottom:14px"></div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
+    <div class="panel"><div class="ph"><div><div class="pt">Carte circulaire des interfaces</div><div class="ps">Flux inter-applications</div></div></div><div style="display:flex;justify-content:center"><canvas id="d-chord" width="280" height="280"></canvas></div></div>
+    <div class="panel"><div class="ph"><div><div class="pt">Statut des interfaces</div></div></div><div class="chart-wrap" style="height:150px"><canvas id="d-if"></canvas></div><div class="mt8" id="d-if-list"></div></div>
   </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="data-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Carte circulaire des interfaces</div><div class="panel-sub">Flux inter-applications</div></div></div>
-      <div style="display:flex;justify-content:center;padding:8px 0"><canvas id="chartChord" width="290" height="290"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Inventaire des interfaces</div></div></div>
-      <div class="chart-wrap" style="height:160px"><canvas id="chartInterfaces"></canvas></div>
-      <div class="mt10" id="interface-list"></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Map des flux de données</div></div></div>
-    <div class="tbl-wrap"> <table>
-      <thead> <th>Source</th><th>Cible</th><th>Type</th><th>Fréquence</th><th>Criticité</th><th>Statut</th><th></th> </thead>
-      <tbody id="data-tbody"></tbody>
-     </table></div>
-  </div>
+  <div class="panel"><div class="ph"><div class="pt">Map des flux de données</div></div><div class="twrap"><table><thead><tr><th>Source</th><th>Cible</th><th>Type</th><th>Fréquence</th><th>Criticité</th><th>Statut</th><th></th></tr></thead><tbody id="data-tbody"></tbody></table></div></div>
 </div>
 
-<!-- ════════ PAGE PROJECT ════════ -->
+<!-- ══ PAGE: PROJECT ══ -->
 <div class="page" id="page-project">
-  <div class="sec-header">
-    <div><div class="sec-title">Project Portfolio Management</div><div class="sec-subtitle">Feuille de route · Risque vs Valeur métier</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-project"></span>
-    <button class="btn btn-sm" id="btn-add-project" onclick="openProjectModal(-1)">+ Projet</button></div>
-  </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="project-kpis" style="margin-bottom:14px"></div>
-  <div class="panel" style="margin-bottom:14px">
-    <div class="panel-header"><div><div class="panel-title">Feuille de route des projets</div><div class="panel-sub">Roadmap par trimestre</div></div></div>
-    <div id="roadmap-content" class="mt8"></div>
-  </div>
+  <div class="sec-hdr"><div><div class="sec-title">Project Portfolio Management</div><div class="sec-sub">Feuille de route · Risque vs Valeur métier</div></div><div class="sec-acts"><span class="perm-lbl" id="perm-project"></span><button class="btn btn-sm btn-acc" id="btn-add-proj" onclick="openProjModal(-1)">+ Projet</button></div></div>
+  <div id="trail-project" class="impact-trail mb14" style="display:none"></div>
+  <div class="toolbar"><span class="tl-label">Outils</span><div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Risques</div><div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Coûts</div><div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer</div><div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Agilité</div></div>
+  <div class="grid g4 mb14" id="proj-kpis" style="margin-bottom:14px"></div>
+  <div class="panel mb14" style="margin-bottom:14px"><div class="ph"><div><div class="pt">Feuille de route des projets</div><div class="ps">Roadmap par trimestre</div></div></div><div id="proj-roadmap" class="mt8"></div></div>
   <div class="grid g2">
     <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Risque projet vs Valeur métier</div></div></div>
+      <div class="ph"><div><div class="pt">Risque projet vs Valeur métier</div></div></div>
       <div style="position:relative">
-        <div class="chart-wrap" style="height:270px"><canvas id="chartProjBubble"></canvas></div>
-        <div class="quad-label" style="top:6px;right:8px;color:#06d6a0;font-size:9px">Priorité haute</div>
-        <div class="quad-label" style="top:6px;left:52px;color:#f4a261;font-size:9px">Challenger</div>
-        <div class="quad-label" style="bottom:14px;right:8px;color:#4f8ef7;font-size:9px">Opportunité</div>
-        <div class="quad-label" style="bottom:14px;left:52px;color:#ef4444;font-size:9px">Reconsidérer</div>
+        <div class="chart-wrap" style="height:270px"><canvas id="pr-bubble"></canvas></div>
+        <div class="qlbl" style="top:6px;right:8px;color:var(--project);font-size:9px">Priorité haute</div>
+        <div class="qlbl" style="top:6px;left:52px;color:var(--finance);font-size:9px">Challenger</div>
+        <div class="qlbl" style="bottom:14px;right:8px;color:var(--portfolio);font-size:9px">Opportunité</div>
+        <div class="qlbl" style="bottom:14px;left:52px;color:var(--risk);font-size:9px">Reconsidérer</div>
       </div>
     </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Budget par statut</div></div></div>
-      <div class="chart-wrap" style="height:160px"><canvas id="chartProjBudget"></canvas></div>
-      <div class="mt12" id="proj-list"></div>
-    </div>
+    <div class="panel"><div class="ph"><div><div class="pt">Budget par statut</div></div></div><div class="chart-wrap" style="height:150px"><canvas id="pr-budget"></canvas></div><div class="mt10" id="pr-list"></div></div>
   </div>
 </div>
 
-<!-- ════════ PAGE SOURCING ════════ -->
+<!-- ══ PAGE: SOURCING ══ -->
 <div class="page" id="page-sourcing">
-  <div class="sec-header">
-    <div><div class="sec-title">Gestion du Sourcing IT</div><div class="sec-subtitle">Qualité fournisseur · Criticité · Matrice de dépendance</div></div>
-    <div class="sec-actions"><span class="perm-info" id="perm-sourcing"></span>
-    <button class="btn btn-sm" id="btn-add-fourn" onclick="openFournModal(-1)">+ Fournisseur</button></div>
-  </div>
-  <div class="toolbar">
-    <span class="toolbar-label">Outils</span>
-    <div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Réduire les risques</div>
-    <div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Réduire les coûts</div>
-    <div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer rapidement</div>
-    <div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Augmenter l'agilité</div>
-  </div>
-  <div class="grid g4 mb16" id="sourcing-kpis" style="margin-bottom:14px"></div>
-  <div class="grid g2" style="margin-bottom:14px">
+  <div class="sec-hdr"><div><div class="sec-title">Gestion du Sourcing IT</div><div class="sec-sub">Qualité · Criticité · Matrice de dépendance</div></div><div class="sec-acts"><span class="perm-lbl" id="perm-sourcing"></span><button class="btn btn-sm btn-acc" id="btn-add-fourn" onclick="openFournModal(-1)">+ Fournisseur</button></div></div>
+  <div id="trail-sourcing" class="impact-trail mb14" style="display:none"></div>
+  <div class="toolbar"><span class="tl-label">Outils</span><div class="tool-chip tc-risk" onclick="showTool('risk')">↓ Risques</div><div class="tool-chip tc-cost" onclick="showTool('cost')">↓ Coûts</div><div class="tool-chip tc-start" onclick="showTool('start')">⚡ Démarrer</div><div class="tool-chip tc-agile" onclick="showTool('agile')">↑ Agilité</div></div>
+  <div class="grid g4 mb14" id="src-kpis" style="margin-bottom:14px"></div>
+  <div class="grid g2 mb14" style="margin-bottom:14px">
     <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Qualité vs Criticité fournisseur</div></div></div>
+      <div class="ph"><div><div class="pt">Qualité vs Criticité fournisseur</div></div></div>
       <div style="position:relative">
-        <div class="chart-wrap" style="height:270px"><canvas id="chartSourcingBubble"></canvas></div>
-        <div class="quad-label" style="top:6px;right:8px;color:#06d6a0;font-size:9px">Partenaire strat.</div>
-        <div class="quad-label" style="top:6px;left:52px;color:#ffd166;font-size:9px">À surveiller</div>
-        <div class="quad-label" style="bottom:14px;right:8px;color:#4f8ef7;font-size:9px">Fiable sec.</div>
-        <div class="quad-label" style="bottom:14px;left:52px;color:#ef4444;font-size:9px">Risque élevé</div>
+        <div class="chart-wrap" style="height:270px"><canvas id="src-bubble"></canvas></div>
+        <div class="qlbl" style="top:6px;right:8px;color:var(--project);font-size:9px">Partenaire strat.</div>
+        <div class="qlbl" style="top:6px;left:52px;color:var(--sourcing);font-size:9px">À surveiller</div>
+        <div class="qlbl" style="bottom:14px;right:8px;color:var(--portfolio);font-size:9px">Fiable sec.</div>
+        <div class="qlbl" style="bottom:14px;left:52px;color:var(--risk);font-size:9px">Risque élevé</div>
       </div>
     </div>
-    <div class="panel">
-      <div class="panel-header"><div><div class="panel-title">Criticité fournisseur</div></div></div>
-      <div id="sourcing-rings" class="mt4"></div>
-    </div>
+    <div class="panel"><div class="ph"><div><div class="pt">Criticité fournisseur</div></div></div><div id="src-rings"></div></div>
   </div>
-  <div class="panel">
-    <div class="panel-header"><div><div class="panel-title">Inventaire des fournisseurs</div></div></div>
-    <div class="tbl-wrap"> <table>
-      <thead> <th>Fournisseur</th><th>Catégorie</th><th>Criticité</th><th>Qualité</th><th>Contrat fin</th><th>Coût annuel</th><th>Risque</th><th></th> </thead>
-      <tbody id="sourcing-tbody"></tbody>
-     </table></div>
-  </div>
+  <div class="panel"><div class="ph"><div class="pt">Inventaire des fournisseurs</div></div><div class="twrap"><table><thead><tr><th>Fournisseur</th><th>Catégorie</th><th>Criticité</th><th>Qualité</th><th>Contrat fin</th><th>Coût/an</th><th>Risque</th><th></th></tr></thead><tbody id="src-tbody"></tbody></table></div></div>
 </div>
 
 </div><!-- /content -->
-</div><!-- /main -->
 </div><!-- /shell -->
 
-<!-- ════════ MODALS ════════ -->
-<div class="modal-bg" id="modal-app"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title" id="modal-app-title">Application</div><div class="modal-sub">Modifier les données de l'application</div></div><span class="modal-close" onclick="closeModal('modal-app')">✕</span></div>
-  <div class="form-section">
-    <div class="form-row">
-      <div class="fgroup"><label>Nom</label><input id="ma-nom" type="text"></div>
-      <div class="fgroup"><label>Domaine</label><select id="ma-domaine"><option>Finance</option><option>RH</option><option>Production</option><option>Logistique</option><option>Commercial</option><option>IT</option><option>Bureautique</option><option>Autre</option></select></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Fournisseur</label><input id="ma-fourn" type="text"></div>
-      <div class="fgroup"><label>Région</label><input id="ma-region" type="text" placeholder="Paris, Lyon..."></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Coût annuel (€)</label><input id="ma-cout" type="number" min="0"></div>
-      <div class="fgroup"><label>Utilisateurs</label><input id="ma-users" type="number" min="0"></div>
-      <div class="fgroup"><label>Mise en service (année)</label><input id="ma-mise" type="number" min="1990" max="2030"></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Criticité</label><select id="ma-crit"><option value="critique">Critique</option><option value="haute">Haute</option><option value="moyenne">Moyenne</option><option value="basse">Basse</option></select></div>
-      <div class="fgroup"><label>Phase</label><select id="ma-phase"><option value="introduction">Introduction</option><option value="croissance">Croissance</option><option value="maturite">Maturité</option><option value="declin">Déclin</option><option value="elimination">Élimination</option></select></div>
-    </div>
-    <div class="form-row mt8">
-      <div class="fgroup"><label>Cap. fonctionnelle <span id="ma-fonc-v">70</span>/100</label><div class="range-row"><input type="range" id="ma-fonc" min="0" max="100" value="70" oninput="document.getElementById('ma-fonc-v').textContent=this.value"></div></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Cap. technique <span id="ma-tech-v">60</span>/100</label><div class="range-row"><input type="range" id="ma-tech" min="0" max="100" value="60" oninput="document.getElementById('ma-tech-v').textContent=this.value"></div></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Score risque <span id="ma-risque-v">30</span>/100</label><div class="range-row"><input type="range" id="ma-risque" min="0" max="100" value="30" oninput="document.getElementById('ma-risque-v').textContent=this.value"></div></div>
-    </div>
-    <div class="form-row">
-      <div class="fgroup"><label>Notes / successeur</label><textarea id="ma-notes"></textarea></div>
-    </div>
-  </div>
-  <input type="hidden" id="ma-idx" value="-1">
-  <div class="modal-footer">
-    <button class="btn btn-danger btn-sm" id="ma-delete-btn" onclick="deleteApp()" style="margin-right:auto;display:none">Supprimer</button>
-    <button class="btn btn-sm" onclick="closeModal('modal-app')">Annuler</button>
-    <button class="btn btn-primary btn-sm" onclick="saveApp()">Enregistrer</button>
-  </div>
+<!-- ════════════════════════════ MODALS -->
+<!-- App Modal -->
+<div class="moverlay" id="modal-app"><div class="mbox">
+  <div class="mhdr"><div><div class="mtitle" id="mapp-title">Application</div><div class="msub">Toute modification se propage aux autres modules</div></div><span class="mclose" onclick="closeModal('modal-app')">✕</span></div>
+  <div class="frow"><div class="fg"><label>Nom</label><input id="a-nom" type="text"></div><div class="fg"><label>Domaine</label><select id="a-dom"><option>Finance</option><option>RH</option><option>Production</option><option>Logistique</option><option>Commercial</option><option>IT</option><option>Bureautique</option><option>Autre</option></select></div></div>
+  <div class="frow"><div class="fg"><label>Fournisseur</label><input id="a-fourn" type="text"></div><div class="fg"><label>Région</label><input id="a-reg" type="text" placeholder="Paris, Lyon..."></div></div>
+  <div class="frow"><div class="fg"><label>Coût annuel (€)</label><input id="a-cout" type="number" min="0"></div><div class="fg"><label>Utilisateurs</label><input id="a-users" type="number" min="0"></div><div class="fg"><label>Mise en service</label><input id="a-mise" type="number" min="1990" max="2030"></div></div>
+  <div class="frow"><div class="fg"><label>Criticité</label><select id="a-crit"><option value="critique">Critique</option><option value="haute">Haute</option><option value="moyenne">Moyenne</option><option value="basse">Basse</option></select></div><div class="fg"><label>Phase</label><select id="a-phase"><option value="introduction">Introduction</option><option value="croissance">Croissance</option><option value="maturite">Maturité</option><option value="declin">Déclin</option><option value="elimination">Élimination</option></select></div></div>
+  <div class="frow mt8"><div class="fg"><label>Capacité fonctionnelle <span id="av-fonc">70</span>/100</label><div class="rrow"><input type="range" id="a-fonc" min="0" max="100" value="70" oninput="document.getElementById('av-fonc').textContent=this.value"></div></div></div>
+  <div class="frow"><div class="fg"><label>Capacité technique <span id="av-tech">60</span>/100</label><div class="rrow"><input type="range" id="a-tech" min="0" max="100" value="60" oninput="document.getElementById('av-tech').textContent=this.value"></div></div></div>
+  <div class="frow"><div class="fg"><label>Score risque <span id="av-risque">30</span>/100</label><div class="rrow"><input type="range" id="a-risque" min="0" max="100" value="30" oninput="document.getElementById('av-risque').textContent=this.value"></div></div></div>
+  <div class="frow"><div class="fg"><label>Notes / successeur</label><textarea id="a-notes"></textarea></div></div>
+  <input type="hidden" id="a-idx" value="-1">
+  <div class="mfooter"><button class="btn btn-d btn-sm" id="a-del" onclick="delApp()" style="display:none;margin-right:auto">Supprimer</button><button class="btn btn-sm" onclick="closeModal('modal-app')">Annuler</button><button class="btn btn-p btn-sm" onclick="saveApp()">Enregistrer</button></div>
 </div></div>
 
-<div class="modal-bg" id="modal-project"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title" id="modal-proj-title">Projet</div><div class="modal-sub">Modifier les données du projet</div></div><span class="modal-close" onclick="closeModal('modal-project')">✕</span></div>
-  <div class="form-row">
-    <div class="fgroup"><label>Nom du projet</label><input id="mp-nom" type="text"></div>
-    <div class="fgroup"><label>Phase (ex: Q3 2025)</label><input id="mp-phase" type="text"></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Budget (€)</label><input id="mp-budget" type="number" min="0"></div>
-    <div class="fgroup"><label>Statut</label><select id="mp-statut"><option value="planifié">Planifié</option><option value="en cours">En cours</option><option value="terminé">Terminé</option><option value="en attente">En attente</option></select></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Risque projet <span id="mp-risque-v">40</span>/100</label><div class="range-row"><input type="range" id="mp-risque" min="0" max="100" value="40" oninput="document.getElementById('mp-risque-v').textContent=this.value"></div></div>
-  </div>
-  <div class="form-row">
-    <div class="fgroup"><label>Valeur métier <span id="mp-valeur-v">70</span>/100</label><div class="range-row"><input type="range" id="mp-valeur" min="0" max="100" value="70" oninput="document.getElementById('mp-valeur-v').textContent=this.value"></div></div>
-  </div>
-  <input type="hidden" id="mp-idx" value="-1">
-  <div class="modal-footer">
-    <button class="btn btn-danger btn-sm" id="mp-delete-btn" onclick="deleteProjet()" style="margin-right:auto;display:none">Supprimer</button>
-    <button class="btn btn-sm" onclick="closeModal('modal-project')">Annuler</button>
-    <button class="btn btn-primary btn-sm" onclick="saveProjet()">Enregistrer</button>
-  </div>
+<!-- Fourn Modal -->
+<div class="moverlay" id="modal-fourn"><div class="mbox">
+  <div class="mhdr"><div><div class="mtitle" id="mf-title">Fournisseur</div><div class="msub">Modification propagée vers Finance et Sourcing</div></div><span class="mclose" onclick="closeModal('modal-fourn')">✕</span></div>
+  <div class="frow"><div class="fg"><label>Nom</label><input id="f-nom" type="text"></div><div class="fg"><label>Catégorie</label><input id="f-cat" type="text"></div></div>
+  <div class="frow"><div class="fg"><label>Coût annuel (€)</label><input id="f-cout" type="number" min="0"></div><div class="fg"><label>Fin de contrat</label><input id="f-cont" type="date"></div></div>
+  <div class="frow mt8"><div class="fg"><label>Criticité <span id="fv-crit">70</span>/100</label><div class="rrow"><input type="range" id="f-crit" min="0" max="100" value="70" oninput="document.getElementById('fv-crit').textContent=this.value"></div></div></div>
+  <div class="frow"><div class="fg"><label>Qualité <span id="fv-qual">75</span>/100</label><div class="rrow"><input type="range" id="f-qual" min="0" max="100" value="75" oninput="document.getElementById('fv-qual').textContent=this.value"></div></div></div>
+  <div class="frow"><div class="fg"><label>Risque <span id="fv-risk">30</span>/100</label><div class="rrow"><input type="range" id="f-risk" min="0" max="100" value="30" oninput="document.getElementById('fv-risk').textContent=this.value"></div></div></div>
+  <input type="hidden" id="f-idx" value="-1">
+  <div class="mfooter"><button class="btn btn-d btn-sm" id="f-del" onclick="delFourn()" style="display:none;margin-right:auto">Supprimer</button><button class="btn btn-sm" onclick="closeModal('modal-fourn')">Annuler</button><button class="btn btn-p btn-sm" onclick="saveFourn()">Enregistrer</button></div>
 </div></div>
 
-<div class="modal-bg" id="modal-fourn"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title" id="modal-fourn-title">Fournisseur</div><div class="modal-sub">Modifier les données fournisseur</div></div><span class="modal-close" onclick="closeModal('modal-fourn')">✕</span></div>
-  <div class="form-row">
-    <div class="fgroup"><label>Nom</label><input id="mf-nom" type="text"></div>
-    <div class="fgroup"><label>Catégorie</label><input id="mf-cat" type="text" placeholder="ERP, CRM, Cloud..."></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Coût annuel (€)</label><input id="mf-cout" type="number" min="0"></div>
-    <div class="fgroup"><label>Fin de contrat</label><input id="mf-contrat" type="date"></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Criticité <span id="mf-crit-v">70</span>/100</label><div class="range-row"><input type="range" id="mf-crit" min="0" max="100" value="70" oninput="document.getElementById('mf-crit-v').textContent=this.value"></div></div>
-  </div>
-  <div class="form-row">
-    <div class="fgroup"><label>Qualité <span id="mf-qual-v">75</span>/100</label><div class="range-row"><input type="range" id="mf-qual" min="0" max="100" value="75" oninput="document.getElementById('mf-qual-v').textContent=this.value"></div></div>
-  </div>
-  <div class="form-row">
-    <div class="fgroup"><label>Risque <span id="mf-risque-v">30</span>/100</label><div class="range-row"><input type="range" id="mf-risque" min="0" max="100" value="30" oninput="document.getElementById('mf-risque-v').textContent=this.value"></div></div>
-  </div>
-  <input type="hidden" id="mf-idx" value="-1">
-  <div class="modal-footer">
-    <button class="btn btn-danger btn-sm" id="mf-delete-btn" onclick="deleteFourn()" style="margin-right:auto;display:none">Supprimer</button>
-    <button class="btn btn-sm" onclick="closeModal('modal-fourn')">Annuler</button>
-    <button class="btn btn-primary btn-sm" onclick="saveFourn()">Enregistrer</button>
-  </div>
+<!-- Proj Modal -->
+<div class="moverlay" id="modal-proj"><div class="mbox">
+  <div class="mhdr"><div><div class="mtitle" id="mp-title">Projet</div><div class="msub">Modification propagée vers Synthèse et Finance</div></div><span class="mclose" onclick="closeModal('modal-proj')">✕</span></div>
+  <div class="frow"><div class="fg"><label>Nom</label><input id="p-nom" type="text"></div><div class="fg"><label>Phase (ex: Q3 2025)</label><input id="p-phase" type="text"></div></div>
+  <div class="frow mt8"><div class="fg"><label>Budget (€)</label><input id="p-budget" type="number" min="0"></div><div class="fg"><label>Statut</label><select id="p-statut"><option value="planifié">Planifié</option><option value="en cours">En cours</option><option value="terminé">Terminé</option><option value="en attente">En attente</option></select></div></div>
+  <div class="frow mt8"><div class="fg"><label>Risque <span id="pv-risk">40</span>/100</label><div class="rrow"><input type="range" id="p-risk" min="0" max="100" value="40" oninput="document.getElementById('pv-risk').textContent=this.value"></div></div></div>
+  <div class="frow"><div class="fg"><label>Valeur métier <span id="pv-val">70</span>/100</label><div class="rrow"><input type="range" id="p-val" min="0" max="100" value="70" oninput="document.getElementById('pv-val').textContent=this.value"></div></div></div>
+  <input type="hidden" id="p-idx" value="-1">
+  <div class="mfooter"><button class="btn btn-d btn-sm" id="p-del" onclick="delProj()" style="display:none;margin-right:auto">Supprimer</button><button class="btn btn-sm" onclick="closeModal('modal-proj')">Annuler</button><button class="btn btn-p btn-sm" onclick="saveProj()">Enregistrer</button></div>
 </div></div>
 
-<div class="modal-bg" id="modal-interface"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title">Interface</div><div class="modal-sub">Flux d'intégration entre applications</div></div><span class="modal-close" onclick="closeModal('modal-interface')">✕</span></div>
-  <div class="form-row">
-    <div class="fgroup"><label>Application source</label><input id="mi-src" type="text"></div>
-    <div class="fgroup"><label>Application cible</label><input id="mi-dst" type="text"></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Type</label><select id="mi-type"><option>API REST</option><option>ETL</option><option>Webhook</option><option>LDAP</option><option>Fichier</option><option>Batch</option><option>Autre</option></select></div>
-    <div class="fgroup"><label>Fréquence</label><select id="mi-freq"><option>Temps réel</option><option>Événement</option><option>Horaire</option><option>Quotidien</option><option>Hebdo</option><option>Mensuel</option></select></div>
-  </div>
-  <div class="form-row mt8">
-    <div class="fgroup"><label>Criticité</label><select id="mi-crit"><option value="critique">Critique</option><option value="haute">Haute</option><option value="moyenne">Moyenne</option><option value="basse">Basse</option></select></div>
-    <div class="fgroup"><label>Statut</label><select id="mi-statut"><option value="actif">Actif</option><option value="dégradé">Dégradé</option><option value="obsolète">Obsolète</option><option value="planifié">Planifié</option></select></div>
-  </div>
-  <input type="hidden" id="mi-idx" value="-1">
-  <div class="modal-footer">
-    <button class="btn btn-danger btn-sm" id="mi-delete-btn" onclick="deleteInterface()" style="margin-right:auto;display:none">Supprimer</button>
-    <button class="btn btn-sm" onclick="closeModal('modal-interface')">Annuler</button>
-    <button class="btn btn-primary btn-sm" onclick="saveInterface()">Enregistrer</button>
-  </div>
+<!-- Interface Modal -->
+<div class="moverlay" id="modal-if"><div class="mbox">
+  <div class="mhdr"><div><div class="mtitle" id="mi-title">Interface</div><div class="msub">Modification propagée vers Tech &amp; Synthèse</div></div><span class="mclose" onclick="closeModal('modal-if')">✕</span></div>
+  <div class="frow"><div class="fg"><label>Source</label><input id="i-src" type="text"></div><div class="fg"><label>Cible</label><input id="i-dst" type="text"></div></div>
+  <div class="frow mt8"><div class="fg"><label>Type</label><select id="i-type"><option>API REST</option><option>ETL</option><option>Webhook</option><option>LDAP</option><option>Fichier</option><option>Batch</option><option>Autre</option></select></div><div class="fg"><label>Fréquence</label><select id="i-freq"><option>Temps réel</option><option>Événement</option><option>Horaire</option><option>Quotidien</option><option>Mensuel</option></select></div></div>
+  <div class="frow mt8"><div class="fg"><label>Criticité</label><select id="i-crit"><option value="critique">Critique</option><option value="haute">Haute</option><option value="moyenne">Moyenne</option><option value="basse">Basse</option></select></div><div class="fg"><label>Statut</label><select id="i-stat"><option value="actif">Actif</option><option value="dégradé">Dégradé</option><option value="obsolète">Obsolète</option><option value="planifié">Planifié</option></select></div></div>
+  <input type="hidden" id="i-idx" value="-1">
+  <div class="mfooter"><button class="btn btn-d btn-sm" id="i-del" onclick="delIf()" style="display:none;margin-right:auto">Supprimer</button><button class="btn btn-sm" onclick="closeModal('modal-if')">Annuler</button><button class="btn btn-p btn-sm" onclick="saveIf()">Enregistrer</button></div>
 </div></div>
 
-<div class="modal-bg" id="modal-tool"><div class="modal">
-  <div class="modal-header"><div><div class="modal-title" id="tool-modal-title">Analyse</div><div class="modal-sub" id="tool-modal-sub"></div></div><span class="modal-close" onclick="closeModal('modal-tool')">✕</span></div>
-  <div id="tool-modal-body"></div>
-  <div class="modal-footer"><button class="btn btn-sm" onclick="closeModal('modal-tool')">Fermer</button></div>
+<!-- Tool Modal -->
+<div class="moverlay" id="modal-tool"><div class="mbox">
+  <div class="mhdr"><div><div class="mtitle" id="tool-title">Analyse</div><div class="msub" id="tool-sub"></div></div><span class="mclose" onclick="closeModal('modal-tool')">✕</span></div>
+  <div id="tool-body"></div>
+  <div class="mfooter"><button class="btn btn-sm" onclick="closeModal('modal-tool')">Fermer</button></div>
 </div></div>
 
 <div class="toast" id="toast"></div>
 <script>
-// ============================================================
-//  INTÉGRATION SUPABASE
-// ============================================================
-const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true } });
-
-let currentRoleKey = null;     // rôle réel de l'utilisateur (DSI, RSSI, etc.)
-let currentUser = null;        // utilisateur Supabase
-
-// ============================================================
-//  FONCTIONS D'AUTHENTIFICATION
-// ============================================================
-async function checkSupabaseSession() {
-  const { data: { session }, error } = await sb.auth.getSession();
-  if (error || !session) {
-    return false;
-  }
-  currentUser = session.user;
-  // Récupérer le rôle depuis user_roles
-  const { data: roles } = await sb.from('user_roles').select('role_id').eq('user_id', currentUser.id);
-  const roleId = roles?.[0]?.role_id;
-  if (!roleId) {
-    // Aucun rôle trouvé → rediriger vers login
-    return false;
-  }
-  // Correspondance entre role_id et clé utilisée dans l'interface
-  const roleMap = {
-    'SUPER_ADMIN': 'DSI',   // SUPER_ADMIN obtient les droits DSI
-    'DSI': 'DSI',
-    'RSSI': 'RSSI',
-    'DAF': 'DAF',
-    'EA': 'EA',
-    'PM': 'PM',
-    'DG': 'DG'
-  };
-  currentRoleKey = roleMap[roleId] || 'DG';
-  return true;
-}
-
-function selectRole(el) {
-  // Désactive la sélection de rôle – le rôle est déjà imposé par Supabase
-  toast('Votre rôle est défini par votre compte Supabase', 'err');
-}
-
-async function doLogin() {
-  // La connexion est déjà gérée par Supabase, on vérifie juste la session
-  const isAuthenticated = await checkSupabaseSession();
-  if (isAuthenticated) {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('main-shell').style.display = 'flex';
-    updateRoleBadge();
-    updateNavLocks();
-    renderModule('portfolio');
-    loadDictionaryTerms(); // Charger le dictionnaire en fonction du rôle
-  } else {
-    // Rediriger vers la page de login Supabase si besoin, mais ici on ouvre la fenêtre de connexion Supabase
-    // Pour simplifier, on demande à l'utilisateur de se connecter via popup Supabase
-    const { error } = await sb.auth.signInWithOAuth({ provider: 'google' });
-    if (error) toast(error.message, 'err');
-  }
-}
-
-function switchRole() {
-  // Déconnexion Supabase et retour à l'écran de connexion
-  sb.auth.signOut().then(() => {
-    document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('main-shell').style.display = 'none';
-    document.querySelectorAll('.role-card').forEach(c => {
-      c.classList.remove('selected');
-      c.style.borderColor = '';
-    });
-    document.getElementById('login-btn').classList.remove('ready');
-    selectedRoleKey = null;
-  });
-}
-
-function updateRoleBadge() {
-  const r = ROLES[currentRoleKey];
-  if (!r) return;
-  document.getElementById('rb-dot').style.background = r.color;
-  document.getElementById('rb-name').textContent = r.emoji + ' ' + r.label;
-  document.documentElement.style.setProperty('--accent', r.color);
-}
-
-function updateNavLocks() {
-  const r = ROLES[currentRoleKey];
-  if (!r) return;
-  ['portfolio','tech','secu','finance','data','project','sourcing'].forEach(m => {
-    document.getElementById('lock-' + m).textContent = r.edit[m] ? '' : '🔒';
-  });
-}
-
-function canEdit(module) {
-  return currentRoleKey && ROLES[currentRoleKey].edit[module];
-}
-
-function permLabel(module) {
-  return canEdit(module)
-    ? `<span style="color:#06d6a0">✓ Édition autorisée</span>`
-    : `<span style="color:var(--text3)">🔒 Lecture seule — ${ROLES[currentRoleKey]?.label}</span>`;
-}
-
-// ============================================================
-//  DICTIONNAIRE PROFESSIONNEL (chargement par rôle)
-// ============================================================
-let dictionaryTerms = [];
-
-async function loadDictionaryTerms() {
-  if (!currentRoleKey) return;
-  const roleMappings = {
-    'DSI': 'DSI',
-    'RSSI': 'RSSI',
-    'DAF': 'DAF',
-    'EA': 'EA',
-    'PM': 'PM',
-    'DG': 'DG'
-  };
-  const dictRole = roleMappings[currentRoleKey] || 'SERVICE_MANAGER';
-  const { data, error } = await sb
-    .from('professional_dict')
-    .select('id, terme, poids')
-    .eq('metier', dictRole);
-  if (!error && data) {
-    dictionaryTerms = data;
-    console.log(`Dictionnaire chargé pour le rôle ${dictRole} : ${dictionaryTerms.length} termes`);
-  } else {
-    dictionaryTerms = [];
-    console.warn('Aucun terme trouvé pour ce rôle', error);
-  }
-}
-
-// ============================================================
-//  DONNÉES LOCALES (inchangées)
-// ============================================================
-const SK = 'ea_gov_v2';
-let D = {};
-
-function defaultData() {
-  return {
-    apps: [
-      {nom:'SAP ERP',domaine:'Finance',fourn:'SAP SE',cout:120000,users:450,mise:2015,tech:65,fonc:85,crit:'critique',phase:'maturite',risque:35,region:'Paris',notes:'Successeur: SAP S/4HANA'},
-      {nom:'Salesforce CRM',domaine:'Commercial',fourn:'Salesforce',cout:80000,users:120,mise:2019,tech:88,fonc:90,crit:'haute',phase:'croissance',risque:20,region:'Lyon',notes:''},
-      {nom:'Oracle HRMS',domaine:'RH',fourn:'Oracle',cout:55000,users:80,mise:2012,tech:40,fonc:55,crit:'haute',phase:'declin',risque:72,region:'Paris',notes:'Successeur: Workday / SAP SF'},
-      {nom:'Sage Compta',domaine:'Finance',fourn:'Sage',cout:18000,users:15,mise:2010,tech:30,fonc:45,crit:'moyenne',phase:'elimination',risque:88,region:'Paris',notes:'Intégrer dans SAP ERP'},
-      {nom:'ServiceNow',domaine:'IT',fourn:'ServiceNow',cout:95000,users:200,mise:2021,tech:92,fonc:82,crit:'critique',phase:'croissance',risque:15,region:'Bordeaux',notes:''},
-      {nom:'Tableau BI',domaine:'IT',fourn:'Salesforce',cout:35000,users:60,mise:2020,tech:80,fonc:78,crit:'moyenne',phase:'maturite',risque:25,region:'Lyon',notes:''},
-      {nom:'JD Edwards WMS',domaine:'Logistique',fourn:'Oracle',cout:42000,users:90,mise:2014,tech:38,fonc:60,crit:'haute',phase:'declin',risque:68,region:'Bordeaux',notes:'Successeur: SAP EWM'},
-      {nom:'Microsoft 365',domaine:'Bureautique',fourn:'Microsoft',cout:65000,users:800,mise:2018,tech:90,fonc:88,crit:'critique',phase:'croissance',risque:12,region:'Paris',notes:''},
-    ],
-    fournisseurs: [
-      {nom:'SAP SE',cat:'ERP',crit:90,qualite:80,contrat:'2028-12-31',cout:120000,risque:35},
-      {nom:'Salesforce',cat:'CRM/BI',crit:75,qualite:88,contrat:'2026-06-30',cout:115000,risque:20},
-      {nom:'Oracle',cat:'ERP/WMS',crit:80,qualite:60,contrat:'2025-12-31',cout:97000,risque:65},
-      {nom:'ServiceNow',cat:'ITSM',crit:85,qualite:92,contrat:'2026-09-30',cout:95000,risque:15},
-      {nom:'Microsoft',cat:'Bureautique',crit:95,qualite:90,contrat:'2027-06-30',cout:65000,risque:12},
-      {nom:'Sage',cat:'Finance',crit:40,qualite:55,contrat:'2024-12-31',cout:18000,risque:75},
-    ],
-    projets: [
-      {nom:'Migration SAP S/4HANA',phase:'Q3 2025',budget:850000,statut:'en cours',risque:75,valeur:90,color:'#4f8ef7'},
-      {nom:'Déploiement CRM Mobile',phase:'Q1 2025',budget:120000,statut:'terminé',risque:20,valeur:70,color:'#06d6a0'},
-      {nom:'Modernisation WMS',phase:'Q4 2025',budget:380000,statut:'planifié',risque:60,valeur:75,color:'#f4a261'},
-      {nom:'Refonte SIRH',phase:'Q2 2026',budget:500000,statut:'planifié',risque:55,valeur:80,color:'#f72585'},
-      {nom:'Data Lake BI',phase:'Q1 2026',budget:280000,statut:'planifié',risque:40,valeur:85,color:'#7b61ff'},
-      {nom:'Zero Trust Sécurité',phase:'Q3 2025',budget:200000,statut:'en cours',risque:30,valeur:95,color:'#2ec4b6'},
-    ],
-    interfaces: [
-      {src:'SAP ERP',dst:'Salesforce CRM',type:'API REST',freq:'Temps réel',crit:'haute',statut:'actif'},
-      {src:'SAP ERP',dst:'Tableau BI',type:'ETL',freq:'Quotidien',crit:'moyenne',statut:'actif'},
-      {src:'ServiceNow',dst:'Microsoft 365',type:'Webhook',freq:'Événement',crit:'haute',statut:'actif'},
-      {src:'Oracle HRMS',dst:'Microsoft 365',type:'LDAP',freq:'Horaire',crit:'critique',statut:'dégradé'},
-      {src:'JD Edwards WMS',dst:'SAP ERP',type:'Fichier',freq:'Quotidien',crit:'haute',statut:'actif'},
-      {src:'Sage Compta',dst:'SAP ERP',type:'Batch',freq:'Mensuel',crit:'moyenne',statut:'obsolète'},
-    ],
-    regions: [
-      {nom:'Paris',color:'#4f8ef7'},{nom:'Lyon',color:'#2ec4b6'},{nom:'Bordeaux',color:'#f4a261'}
-    ]
-  };
-}
-
-function loadData() {
-  try { const s=localStorage.getItem(SK); if(s){D=JSON.parse(s);if(!D.regions)D.regions=defaultData().regions;} else D=defaultData(); }
-  catch(e){D=defaultData();}
-}
-function saveData() { localStorage.setItem(SK,JSON.stringify(D)); }
-function resetData() { D=defaultData(); saveData(); renderModule(currentModule); toast('Données réinitialisées'); }
-
-// ============================================================
-//  PERMISSIONS MATRIX (inchangée)
-// ============================================================
-const ROLES = {
-  DSI:  {label:'DSI',color:'#4f8ef7',emoji:'🏛️',
-    edit:{portfolio:true,tech:true,secu:true,finance:true,data:true,project:true,sourcing:true}},
-  RSSI: {label:'RSSI',color:'#f72585',emoji:'🔐',
-    edit:{portfolio:false,tech:true,secu:true,finance:false,data:false,project:false,sourcing:true}},
-  DAF:  {label:'DAF',color:'#f4a261',emoji:'💰',
-    edit:{portfolio:false,tech:false,secu:false,finance:true,data:false,project:true,sourcing:true}},
-  EA:   {label:'Architecte EA',color:'#7b61ff',emoji:'🏗️',
-    edit:{portfolio:true,tech:true,secu:false,finance:false,data:true,project:true,sourcing:false}},
-  PM:   {label:'Chef de Projet',color:'#06d6a0',emoji:'📋',
-    edit:{portfolio:false,tech:false,secu:false,finance:false,data:false,project:true,sourcing:false}},
-  DG:   {label:'DG / COMEX',color:'#ffd166',emoji:'👔',
-    edit:{portfolio:false,tech:false,secu:false,finance:false,data:false,project:false,sourcing:false}},
+// ══════════════════════════════════════════════════════════════════
+// ROLES & PERMISSIONS
+// ══════════════════════════════════════════════════════════════════
+const ROLES={
+  DSI: {l:'DSI',c:'#4b8cf5',e:'🏛️',edit:{synthese:false,portfolio:true,tech:true,secu:true,finance:true,data:true,project:true,sourcing:true}},
+  RSSI:{l:'RSSI',c:'#f43f8a',e:'🔐',edit:{synthese:false,portfolio:false,tech:true,secu:true,finance:false,data:false,project:false,sourcing:true}},
+  DAF: {l:'DAF',c:'#fb923c',e:'💰',edit:{synthese:false,portfolio:false,tech:false,secu:false,finance:true,data:false,project:true,sourcing:true}},
+  EA:  {l:'Architecte EA',c:'#8b5cf6',e:'🏗️',edit:{synthese:false,portfolio:true,tech:true,secu:false,finance:false,data:true,project:true,sourcing:false}},
+  PM:  {l:'Chef de Projet',c:'#10d07a',e:'📋',edit:{synthese:false,portfolio:false,tech:false,secu:false,finance:false,data:false,project:true,sourcing:false}},
+  DG:  {l:'DG / COMEX',c:'#fbbf24',e:'👔',edit:{synthese:false,portfolio:false,tech:false,secu:false,finance:false,data:false,project:false,sourcing:false}},
 };
 
-// ============================================================
-//  TOUTES LES FONCTIONS DE RENDU (inchangées)
-//  (renderPortfolio, renderTech, etc.)
-//  Pour ne pas alourdir, je ne les recopie pas ici – elles sont identiques à celles de votre fichier original.
-//  En pratique, vous devez garder toutes les fonctions que vous aviez (renderPortfolio, renderTech, etc.)
-//  Je les laisse volontairement commentées pour que vous puissiez les conserver intactes.
-// ============================================================
+// ══════════════════════════════════════════════════════════════════
+// DATA STORE
+// ══════════════════════════════════════════════════════════════════
+const SK='ea_v3';
+let D={};
 
-// ... [TOUT LE RESTE DE VOTRE CODE EXISTANT – CRUD, GRAPHIQUES, ETC.] ...
+function defaultD(){return{
+  apps:[
+    {nom:'SAP ERP',dom:'Finance',fourn:'SAP SE',cout:120000,users:450,mise:2015,tech:65,fonc:85,crit:'critique',phase:'maturite',risque:35,reg:'Paris',notes:'Successeur: SAP S/4HANA'},
+    {nom:'Salesforce CRM',dom:'Commercial',fourn:'Salesforce',cout:80000,users:120,mise:2019,tech:88,fonc:90,crit:'haute',phase:'croissance',risque:20,reg:'Lyon',notes:''},
+    {nom:'Oracle HRMS',dom:'RH',fourn:'Oracle',cout:55000,users:80,mise:2012,tech:40,fonc:55,crit:'haute',phase:'declin',risque:72,reg:'Paris',notes:'Successeur: Workday / SAP SF'},
+    {nom:'Sage Compta',dom:'Finance',fourn:'Sage',cout:18000,users:15,mise:2010,tech:30,fonc:45,crit:'moyenne',phase:'elimination',risque:88,reg:'Paris',notes:'Intégrer dans SAP ERP'},
+    {nom:'ServiceNow',dom:'IT',fourn:'ServiceNow',cout:95000,users:200,mise:2021,tech:92,fonc:82,crit:'critique',phase:'croissance',risque:15,reg:'Bordeaux',notes:''},
+    {nom:'Tableau BI',dom:'IT',fourn:'Salesforce',cout:35000,users:60,mise:2020,tech:80,fonc:78,crit:'moyenne',phase:'maturite',risque:25,reg:'Lyon',notes:''},
+    {nom:'JD Edwards WMS',dom:'Logistique',fourn:'Oracle',cout:42000,users:90,mise:2014,tech:38,fonc:60,crit:'haute',phase:'declin',risque:68,reg:'Bordeaux',notes:'Successeur: SAP EWM'},
+    {nom:'Microsoft 365',dom:'Bureautique',fourn:'Microsoft',cout:65000,users:800,mise:2018,tech:90,fonc:88,crit:'critique',phase:'croissance',risque:12,reg:'Paris',notes:''},
+  ],
+  fournisseurs:[
+    {nom:'SAP SE',cat:'ERP',crit:90,qual:80,cont:'2028-12-31',cout:120000,risque:35},
+    {nom:'Salesforce',cat:'CRM/BI',crit:75,qual:88,cont:'2026-06-30',cout:115000,risque:20},
+    {nom:'Oracle',cat:'ERP/WMS',crit:80,qual:60,cont:'2025-12-31',cout:97000,risque:65},
+    {nom:'ServiceNow',cat:'ITSM',crit:85,qual:92,cont:'2026-09-30',cout:95000,risque:15},
+    {nom:'Microsoft',cat:'Bureautique',crit:95,qual:90,cont:'2027-06-30',cout:65000,risque:12},
+    {nom:'Sage',cat:'Finance',crit:40,qual:55,cont:'2024-12-31',cout:18000,risque:75},
+  ],
+  projets:[
+    {nom:'Migration SAP S/4HANA',phase:'Q3 2025',budget:850000,statut:'en cours',risque:75,val:90,color:'#4b8cf5'},
+    {nom:'CRM Mobile',phase:'Q1 2025',budget:120000,statut:'terminé',risque:20,val:70,color:'#10d07a'},
+    {nom:'Modernisation WMS',phase:'Q4 2025',budget:380000,statut:'planifié',risque:60,val:75,color:'#fb923c'},
+    {nom:'Refonte SIRH',phase:'Q2 2026',budget:500000,statut:'planifié',risque:55,val:80,color:'#f43f8a'},
+    {nom:'Data Lake BI',phase:'Q1 2026',budget:280000,statut:'planifié',risque:40,val:85,color:'#8b5cf6'},
+    {nom:'Zero Trust Sécurité',phase:'Q3 2025',budget:200000,statut:'en cours',risque:30,val:95,color:'#22d3bc'},
+  ],
+  interfaces:[
+    {src:'SAP ERP',dst:'Salesforce CRM',type:'API REST',freq:'Temps réel',crit:'haute',stat:'actif'},
+    {src:'SAP ERP',dst:'Tableau BI',type:'ETL',freq:'Quotidien',crit:'moyenne',stat:'actif'},
+    {src:'ServiceNow',dst:'Microsoft 365',type:'Webhook',freq:'Événement',crit:'haute',stat:'actif'},
+    {src:'Oracle HRMS',dst:'Microsoft 365',type:'LDAP',freq:'Horaire',crit:'critique',stat:'dégradé'},
+    {src:'JD Edwards WMS',dst:'SAP ERP',type:'Fichier',freq:'Quotidien',crit:'haute',stat:'actif'},
+    {src:'Sage Compta',dst:'SAP ERP',type:'Batch',freq:'Mensuel',crit:'moyenne',stat:'obsolète'},
+  ]
+};}
 
-// Pour que la page fonctionne, vous devez recopier ici toutes les fonctions
-// de votre code original (renderPortfolio, renderTech, renderSecu, etc.)
-// ainsi que les fonctions CRUD (openAppModal, saveApp, etc.)
-// et les outils (showTool, etc.)
-// Je ne peux pas tout reproduire ici car cela dépasserait la limite de caractères.
-// Mais vous pouvez simplement reprendre votre ancien fichier et remplacer la partie <script>
-// par ce nouveau script, en veillant à conserver toutes vos fonctions de rendu.
+function loadD(){try{const s=localStorage.getItem(SK);D=s?JSON.parse(s):defaultD();}catch(e){D=defaultD();}}
+function saveD(){localStorage.setItem(SK,JSON.stringify(D));}
 
-// ⚠️ ATTENTION : vous devez impérativement conserver tout le reste de votre code JavaScript
-// (renderPortfolio, renderTech, renderSecu, renderFinance, renderData, renderProject, renderSourcing,
-//  openAppModal, saveApp, deleteApp, openProjectModal, saveProjet, deleteProjet, openFournModal,
-//  saveFourn, deleteFourn, openInterfaceModal, saveInterface, deleteInterface, showTool, etc.)
-// Tel qu'il était dans votre fichier original.
-// Ici je n'ai modifié que la partie authentification et l'ajout du chargement du dictionnaire.
-// Le reste doit rester strictement identique.
+// ══════════════════════════════════════════════════════════════════
+// IMPACT SYSTEM — propagation cross-modules
+// ══════════════════════════════════════════════════════════════════
+let impacts=[];
+const MODULE_IMPACTS={
+  portfolio:['tech','finance','synthese'],
+  tech:['synthese'],
+  secu:['synthese'],
+  finance:['synthese','sourcing'],
+  data:['tech','synthese'],
+  project:['finance','synthese'],
+  sourcing:['finance','synthese'],
+};
 
-// ============================================================
-//  FONCTIONS DE BASE (toast, closeModal, etc.)
-// ============================================================
+function recordImpact(sourceModule,action,entity){
+  const ts=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const affected=MODULE_IMPACTS[sourceModule]||[];
+  const entry={ts,source:sourceModule,action,entity,affected};
+  impacts.unshift(entry);
+  if(impacts.length>50)impacts.pop();
+  updateImpactUI(entry);
+  // cascade refresh affected modules if active
+  affected.forEach(m=>{
+    showTrailChip(m,sourceModule,entity);
+    if(currentMod===m)setTimeout(()=>renderModule(m),100);
+  });
+  // always refresh synthese
+  if(currentMod==='synthese')setTimeout(()=>renderSynthese(),100);
+}
+
+function updateImpactUI(entry){
+  const count=impacts.length;
+  const ring=document.getElementById('impact-ring');
+  document.getElementById('impact-count').textContent=count;
+  ring.classList.toggle('has-changes',count>0);
+  const list=document.getElementById('impact-list');
+  const color=ROLES[currentRole]?.c||'#4b8cf5';
+  const affected=entry.affected.length?entry.affected.join(', '):'—';
+  const div=document.createElement('div');
+  div.className='ip-entry';
+  div.innerHTML=`<span class="ip-time">${entry.ts} · ${entry.source} → ${affected}</span><div class="ip-msg"><strong>${entry.action}</strong> : ${entry.entity}</div>`;
+  if(list.children[0]?.classList.contains('empty'))list.innerHTML='';
+  list.prepend(div);
+  updateMbBadges();
+}
+
+function showTrailChip(mod,source,entity){
+  const el=document.getElementById('trail-'+mod);
+  if(!el)return;
+  el.style.display='flex';
+  const chip=document.createElement('div');
+  chip.className='trail-chip new-impact';
+  const col=MODULE_META[source]?.color||'#888';
+  chip.innerHTML=`<div class="tc-dot" style="background:${col}"></div>${source} → ${entity.slice(0,18)}`;
+  const lbl=el.querySelector('.trail-label');
+  if(!lbl){el.innerHTML=`<span class="trail-label">Impacts reçus</span>`;}
+  el.appendChild(chip);
+  setTimeout(()=>chip.classList.remove('new-impact'),400);
+}
+
+function updateMbBadges(){
+  const mbItems=document.querySelectorAll('.mb-item[data-mod]');
+  mbItems.forEach(el=>{
+    const mod=el.dataset.mod;
+    const cnt=impacts.filter(i=>i.affected.includes(mod)).length;
+    const badge=el.querySelector('.mb-badge');
+    if(badge){badge.textContent=cnt||'';badge.style.display=cnt?'':'none';}
+  });
+}
+
+function toggleImpactPanel(){
+  document.getElementById('impact-panel').classList.toggle('open');
+}
+function clearImpacts(){impacts=[];document.getElementById('impact-list').innerHTML='<div class="empty">Aucune modification</div>';document.getElementById('impact-count').textContent='0';document.getElementById('impact-ring').classList.remove('has-changes');updateMbBadges();}
+function exportImpacts(){
+  const txt=impacts.map(i=>`[${i.ts}] ${i.source} → ${i.affected.join(',')} | ${i.action}: ${i.entity}`).join('\n');
+  const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(txt);a.download='impacts_'+Date.now()+'.txt';a.click();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════════════════════════
+let isDark=true;
+function toggleTheme(){
+  isDark=!isDark;
+  document.documentElement.setAttribute('data-theme',isDark?'dark':'light');
+  const icon=isDark?'🌙':'☀️',lbl=isDark?'Mode clair':'Mode sombre';
+  ['theme-icon-login','theme-icon-main'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=icon;});
+  ['theme-lbl-login','theme-lbl-main'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=lbl;});
+  localStorage.setItem('ea_theme',isDark?'dark':'light');
+  // Redraw charts after theme switch
+  setTimeout(()=>renderModule(currentMod),50);
+}
+function initTheme(){
+  const saved=localStorage.getItem('ea_theme');
+  if(saved==='light'){isDark=false;document.documentElement.setAttribute('data-theme','light');['theme-icon-login','theme-icon-main'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='☀️';});['theme-lbl-login','theme-lbl-main'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Mode sombre';});}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════
+const CI={};
+function dc(id){if(CI[id]){CI[id].destroy();delete CI[id];}}
+function fmt(n){return new Intl.NumberFormat('fr-FR').format(Math.round(n))}
+function fmtE(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Math.round(n))}
+function pc(p){return{introduction:'#4b8cf5',croissance:'#10d07a',maturite:'#22d3bc',declin:'#fbbf24',elimination:'#ef4444'}[p]||'#888'}
+function bcrit(v){return{critique:'b-red',haute:'b-amb',moyenne:'b-blu',basse:'b-tel'}[v]||'b-gry'}
+function bph(v){return{introduction:'b-blu',croissance:'b-grn',maturite:'b-tel',declin:'b-amb',elimination:'b-red'}[v]||'b-gry'}
+function bst(v){return{actif:'b-grn',dégradé:'b-amb',obsolète:'b-red',planifié:'b-blu'}[v]||'b-gry'}
+function canEdit(m){return currentRole&&ROLES[currentRole]?.edit[m]}
+function pLbl(m){return canEdit(m)?`<span style="color:var(--project)">✓ Édition</span>`:`<span style="color:var(--text-ter)">🔒 Lecture · ${ROLES[currentRole]?.l}</span>`}
+function eBtn(m,fn,lbl='✏️'){if(!canEdit(m))return`<span style="opacity:.3;cursor:not-allowed;font-size:11px">🔒</span>`;return`<button class="btn btn-sm" onclick="${fn}" style="padding:3px 8px;font-size:11px">${lbl}</button>`;}
+
+function kpiH(lbl,val,dlt,dc_,bv,bc){
+  return`<div class="kpi"><div class="kpi-lbl">${lbl}</div><div class="kpi-val">${val}</div><div class="kpi-dlt ${dc_||''}">${dlt}</div>${bv!==undefined?`<div class="kpi-bar"><div class="kpi-fill" style="width:${bv}%;background:${bc||'#4b8cf5'}"></div></div>`:''}</div>`;
+}
+
 function toast(msg,type='ok'){
   const t=document.getElementById('toast');
   t.textContent=msg;
-  t.style.borderLeftColor=type==='err'?'#ef4444':'var(--accent)';
+  t.style.borderLeftColor=type==='err'?'#ef4444':'var(--portfolio)';
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2600);
 }
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// Chart color (adapts to theme)
+function chartTick(){return isDark?'#424d6a':'#9ca3af'}
+function chartGrid(){return isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.06)'}
+
+// ══════════════════════════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════════════════════════
+let currentRole=null,currentMod='synthese';
+const ACOL=['#464e68','#464e68','#464e68','#464e68','#464e68','#464e68','#464e68'];
+
+const MODULE_META={
+  synthese:{label:'Synthèse',color:'#4b8cf5',icon:'◈'},
+  portfolio:{label:'Portefeuille',color:'#4b8cf5',icon:'▣'},
+  tech:{label:'Tech & Risk',color:'#22d3bc',icon:'⬡'},
+  secu:{label:'Sécurité',color:'#f43f8a',icon:'🛡'},
+  finance:{label:'Finance IT',color:'#fb923c',icon:'$'},
+  data:{label:'Intégration',color:'#8b5cf6',icon:'⇌'},
+  project:{label:'Projets',color:'#10d07a',icon:'◷'},
+  sourcing:{label:'Sourcing',color:'#fbbf24',icon:'⊙'},
+};
+
+function buildLogin(){
+  const rg=document.getElementById('role-grid');
+  rg.innerHTML=Object.entries(ROLES).map(([k,r])=>`
+    <div class="rcard-login" data-role="${k}" onclick="selRole(this)">
+      <span class="rl-emoji">${r.e}</span>
+      <div class="rl-title">${r.l}</div>
+      <div class="rl-sub">${Object.entries(r.edit).filter(([,v])=>v).map(([m])=>MODULE_META[m]?.label||m).join(', ')||'Lecture seule'}</div>
+      <div class="rl-dots">${Object.entries(MODULE_META).map(([m,mm])=>`<div class="ldot" style="background:${r.edit[m]?mm.color:'var(--border-hi)'}" title="${mm.label}"></div>`).join('')}</div>
+    </div>`).join('');
+}
+
+let selRoleKey=null;
+function selRole(el){
+  document.querySelectorAll('.rcard-login').forEach(c=>{c.classList.remove('sel');c.style.borderColor='';c.style.borderWidth='';});
+  el.classList.add('sel');
+  selRoleKey=el.dataset.role;
+  const r=ROLES[selRoleKey];
+  el.style.borderColor=r.c;el.style.borderWidth='2px';
+  document.getElementById('login-go').classList.add('rdy');
+}
+
+function doLogin(){
+  if(!selRoleKey)return;
+  currentRole=selRoleKey;
+  document.getElementById('login-screen').classList.add('gone');
+  document.getElementById('menubar').style.display='flex';
+  document.getElementById('main-shell').style.display='flex';
+  // role badge
+  const r=ROLES[currentRole];
+  document.getElementById('chip-dot').style.background=r.c;
+  document.getElementById('chip-name').textContent=r.e+' '+r.l;
+  document.getElementById('mb-date').textContent=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+  buildNav();
+  renderModule('synthese');
+}
+
+function doLogout(){
+  document.getElementById('login-screen').classList.remove('gone');
+  document.getElementById('menubar').style.display='none';
+  document.getElementById('main-shell').style.display='none';
+  document.querySelectorAll('.rcard-login').forEach(c=>{c.classList.remove('sel');c.style.borderColor='';c.style.borderWidth='';});
+  document.getElementById('login-go').classList.remove('rdy');
+  selRoleKey=null;currentRole=null;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// NAVIGATION (top menubar)
+// ══════════════════════════════════════════════════════════════════
+function buildNav(){
+  const nav=document.getElementById('mb-nav');
+  nav.innerHTML=Object.entries(MODULE_META).map(([id,m])=>`
+    <div class="mb-item ${id==='synthese'?'active':''}" data-mod="${id}" onclick="nav('${id}',this)">
+      <div class="mb-dot" style="background:${m.color}"></div>
+      ${m.icon} ${m.label}
+      <div class="mb-badge" style="display:none" id="badge-${id}">0</div>
+    </div>`).join('');
+}
+
+function nav(id,el){
+  document.querySelectorAll('.mb-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  currentMod=id;
+  renderModule(id);
+}
+
+function renderModule(id){
+  const fns={synthese:renderSynthese,portfolio:renderPortfolio,tech:renderTech,secu:renderSecu,finance:renderFinance,data:renderData,project:renderProject,sourcing:renderSourcing};
+  if(fns[id])fns[id]();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SYNTHÈSE — vue consolidée temps réel
+// ══════════════════════════════════════════════════════════════════
+function renderSynthese(){
+  document.getElementById('perm-synthese').innerHTML=pLbl('synthese');
+  const A=D.apps,n=A.length;
+  if(!n){document.getElementById('syn-kpis').innerHTML='<div class="empty" style="grid-column:1/-1">Aucune application</div>';return;}
+  const avgF=Math.round(A.reduce((s,a)=>s+a.fonc,0)/n);
+  const avgT=Math.round(A.reduce((s,a)=>s+a.tech,0)/n);
+  const avgR=Math.round(A.reduce((s,a)=>s+a.risque,0)/n);
+  const totalC=A.reduce((s,a)=>s+a.cout,0);
+  const score=Math.round((avgF+avgT+(100-avgR))/3);
+  document.getElementById('syn-kpis').innerHTML=
+    kpiH('Applications',n,'dans le portefeuille','',n*5,'#4b8cf5')+
+    kpiH('Score maturité global',score+'/100','indice consolidé',score>=70?'up':'dn',score,'#10d07a')+
+    kpiH('Coût annuel total',fmtE(totalC),'budget IT','',75,'#fb923c')+
+    kpiH('Risque critique',A.filter(a=>a.risque>=70).length,'apps à risque ≥ 70','dn',A.filter(a=>a.risque>=70).length/n*100,'#ef4444');
+
+  // Quadrant synthèse
+  dc('syn-quad');CI['syn-quad']=new Chart(document.getElementById('syn-quad'),{type:'bubble',
+    data:{datasets:A.map(a=>({label:a.nom,data:[{x:a.tech,y:a.fonc,r:5+a.cout/30000}],
+      backgroundColor:(a.fonc>=50&&a.tech>=50?'rgba(16,208,122,.5)':a.fonc>=50?'rgba(251,146,60,.5)':a.tech>=50?'rgba(75,140,245,.5)':'rgba(239,68,68,.5)'),
+      borderColor:(a.fonc>=50&&a.tech>=50?'#10d07a':a.fonc>=50?'#fb923c':a.tech>=50?'#4b8cf5':'#ef4444'),borderWidth:1.5}))},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:18},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: F=${ctx.parsed.y} T=${ctx.parsed.x}`}}},
+      scales:{x:{min:-5,max:105,ticks:{color:chartTick()},grid:{color:chartGrid()}},y:{min:-5,max:105,ticks:{color:chartTick()},grid:{color:chartGrid()}}}}});
+
+  // Maturité gauge
+  dc('syn-maturite');CI['syn-maturite']=new Chart(document.getElementById('syn-maturite'),{type:'bar',indexAxis:'y',
+    data:{labels:['Maturité globale'],datasets:[{data:[score],backgroundColor:'#10d07a',borderRadius:4},{data:[100-score],backgroundColor:isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,display:false},y:{display:false},stacked:true}}});
+
+  // Risk bars
+  const topRisk=[...A].sort((a,b)=>b.risque-a.risque).slice(0,5);
+  document.getElementById('syn-risk-bars').innerHTML=topRisk.map(a=>`<div class="prow"><span class="plbl">${a.nom}</span><div class="pwrap"><div class="pfill" style="width:${a.risque}%;background:${a.risque>=70?'#ef4444':a.risque>=40?'#fbbf24':'#10d07a'}"></div></div><span class="pval">${a.risque}</span></div>`).join('');
+
+  // Criticité donut
+  const cm={critique:0,haute:0,moyenne:0,basse:0};A.forEach(a=>{if(cm[a.crit]!==undefined)cm[a.crit]++;});
+  dc('syn-crit');CI['syn-crit']=new Chart(document.getElementById('syn-crit'),{type:'doughnut',
+    data:{labels:['Critique','Haute','Moyenne','Basse'],datasets:[{data:Object.values(cm),backgroundColor:['#ef4444','#fbbf24','#4b8cf5','#22d3bc'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{color:chartTick(),font:{size:10},padding:6}}}}});
+  document.getElementById('syn-crit-detail').innerHTML=Object.entries(cm).map(([k,v])=>`<div class="prow"><span class="plbl">${k}</span><div class="pwrap"><div class="pfill" style="width:${n?v/n*100:0}%;background:${{critique:'#ef4444',haute:'#fbbf24',moyenne:'#4b8cf5',basse:'#22d3bc'}[k]}"></div></div><span class="pval">${v}</span></div>`).join('');
+
+  // Cycle
+  const phases=['introduction','croissance','maturite','declin','elimination'];
+  dc('syn-cycle');CI['syn-cycle']=new Chart(document.getElementById('syn-cycle'),{type:'bar',
+    data:{labels:['Intro','Crois.','Matur.','Déclin','Élim.'],datasets:[{data:phases.map(p=>A.filter(a=>a.phase===p).length),backgroundColor:phases.map(pc),borderRadius:5,barThickness:22}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:chartTick(),stepSize:1},grid:{color:chartGrid()}},x:{ticks:{color:chartTick()},grid:{display:false}}}}});
+
+  // Budget par domaine
+  const dom=[...new Set(A.map(a=>a.dom))];
+  const COLS=['#4b8cf5','#22d3bc','#fb923c','#10d07a','#f43f8a','#8b5cf6','#fbbf24'];
+  dc('syn-budget');CI['syn-budget']=new Chart(document.getElementById('syn-budget'),{type:'doughnut',
+    data:{labels:dom,datasets:[{data:dom.map(d=>A.filter(a=>a.dom===d).reduce((s,a)=>s+a.cout,0)),backgroundColor:COLS,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{color:chartTick(),font:{size:10},padding:5}}}}});
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PORTFOLIO
+// ══════════════════════════════════════════════════════════════════
+function renderPortfolio(){
+  document.getElementById('perm-portfolio').innerHTML=pLbl('portfolio');
+  document.getElementById('btn-add-app').style.display=canEdit('portfolio')?'':'none';
+  const A=D.apps,n=A.length;if(!n)return;
+  const avgF=Math.round(A.reduce((s,a)=>s+a.fonc,0)/n),avgT=Math.round(A.reduce((s,a)=>s+a.tech,0)/n);
+  document.getElementById('port-kpis').innerHTML=
+    kpiH('Applications',n,'','',n*5,'#4b8cf5')+kpiH('Fonct. moy.',avgF+'/100',avgF>=70?'↑ bon score':'↓ à améliorer',avgF>=70?'up':'dn',avgF,'#22d3bc')+kpiH('Tech. moy.',avgT+'/100',avgT>=70?'↑ solide':'↓ dette technique',avgT>=70?'up':'dn',avgT,'#10d07a')+kpiH('Apps critiques',A.filter(a=>a.crit==='critique').length,'criticité maximale','dn',A.filter(a=>a.crit==='critique').length/n*100,'#ef4444');
+  const dom=[...new Set(A.map(a=>a.dom))];
+  dc('p-fonc');CI['p-fonc']=new Chart(document.getElementById('p-fonc'),{type:'bar',indexAxis:'y',
+    data:{labels:dom,datasets:[{data:dom.map(d=>{const a=A.filter(x=>x.dom===d);return Math.round(a.reduce((s,x)=>s+x.fonc,0)/a.length)}),backgroundColor:'rgba(34,211,188,.7)',borderRadius:4,barThickness:14}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,ticks:{color:chartTick()},grid:{color:chartGrid()}},y:{ticks:{color:chartTick()},grid:{display:false}}}}});
+  dc('p-tech');CI['p-tech']=new Chart(document.getElementById('p-tech'),{type:'bar',indexAxis:'y',
+    data:{labels:dom,datasets:[{data:dom.map(d=>{const a=A.filter(x=>x.dom===d);return Math.round(a.reduce((s,x)=>s+x.tech,0)/a.length)}),backgroundColor:'rgba(75,140,245,.7)',borderRadius:4,barThickness:14}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,ticks:{color:chartTick()},grid:{color:chartGrid()}},y:{ticks:{color:chartTick()},grid:{display:false}}}}});
+  dc('p-quad');CI['p-quad']=new Chart(document.getElementById('p-quad'),{type:'bubble',
+    data:{datasets:A.map(a=>({label:a.nom,data:[{x:a.tech,y:a.fonc,r:6+a.cout/28000}],
+      backgroundColor:(a.fonc>=50&&a.tech>=50?'rgba(16,208,122,.5)':a.fonc>=50?'rgba(251,146,60,.5)':a.tech>=50?'rgba(75,140,245,.5)':'rgba(239,68,68,.5)'),
+      borderColor:(a.fonc>=50&&a.tech>=50?'#10d07a':a.fonc>=50?'#fb923c':a.tech>=50?'#4b8cf5':'#ef4444'),borderWidth:1.5}))},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:18},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: F=${ctx.parsed.y} T=${ctx.parsed.x}`}}},
+      scales:{x:{min:-5,max:105,ticks:{color:chartTick()},grid:{color:chartGrid()}},y:{min:-5,max:105,ticks:{color:chartTick()},grid:{color:chartGrid()}}}}});
+  const cm={critique:0,haute:0,moyenne:0,basse:0};A.forEach(a=>{if(cm[a.crit]!==undefined)cm[a.crit]++;});
+  dc('p-crit');CI['p-crit']=new Chart(document.getElementById('p-crit'),{type:'doughnut',
+    data:{labels:['Critique','Haute','Moyenne','Basse'],datasets:[{data:Object.values(cm),backgroundColor:['#ef4444','#fbbf24','#4b8cf5','#22d3bc'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{color:chartTick(),font:{size:10},padding:5}}}}});
+  document.getElementById('p-crit-det').innerHTML=Object.entries(cm).map(([k,v])=>`<div class="prow"><span class="plbl">${k}</span><div class="pwrap"><div class="pfill" style="width:${n?v/n*100:0}%;background:${{critique:'#ef4444',haute:'#fbbf24',moyenne:'#4b8cf5',basse:'#22d3bc'}[k]}"></div></div><span class="pval">${v}</span></div>`).join('');
+  const ph=['introduction','croissance','maturite','declin','elimination'];
+  dc('p-cycle');CI['p-cycle']=new Chart(document.getElementById('p-cycle'),{type:'bar',
+    data:{labels:['Intro','Croissance','Maturité','Déclin','Élim.'],datasets:[{data:ph.map(p=>A.filter(a=>a.phase===p).length),backgroundColor:ph.map(pc),borderRadius:5,barThickness:26}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:chartTick(),stepSize:1},grid:{color:chartGrid()}},x:{ticks:{color:chartTick()},grid:{display:false}}}}});
+  const suc=A.filter(a=>a.phase==='declin'||a.phase==='elimination');
+  document.getElementById('p-succ').innerHTML=suc.length?`<div style="font-size:10px;color:var(--text-ter);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Successeurs à identifier</div><div class="grid g2" style="gap:8px">${suc.map(a=>`<div style="background:var(--bg-raised);border:1px solid var(--border-lo);border-left:3px solid ${pc(a.phase)};border-radius:8px;padding:9px 12px;display:flex;gap:10px;align-items:center"><div style="flex:1"><div style="font-size:12px;font-weight:500">${a.nom}</div><div style="font-size:11px;color:var(--text-ter);margin-top:2px">${a.notes||'Aucune note'}</div></div><span class="badge ${bph(a.phase)}">${a.phase}</span>${eBtn('portfolio',`openAppModal(${D.apps.indexOf(a)})`)}</div>`).join('')}</div>`:'<div class="empty" style="padding:10px">Aucune application en déclin</div>';
+  document.getElementById('app-tbody').innerHTML=A.map((a,i)=>`<tr>
+    <td><strong>${a.nom}</strong><br><span style="font-size:11px;color:var(--text-ter)">${a.fourn}</span></td>
+    <td><span class="badge b-gry">${a.dom}</span></td>
+    <td><div style="display:flex;align-items:center;gap:4px"><div style="width:38px;height:4px;border-radius:2px;background:var(--bg-base)"><div style="width:${a.fonc}%;height:100%;border-radius:2px;background:#22d3bc"></div></div><span class="mono" style="font-size:11px">${a.fonc}</span></div></td>
+    <td><div style="display:flex;align-items:center;gap:4px"><div style="width:38px;height:4px;border-radius:2px;background:var(--bg-base)"><div style="width:${a.tech}%;height:100%;border-radius:2px;background:#4b8cf5"></div></div><span class="mono" style="font-size:11px">${a.tech}</span></div></td>
+    <td><span class="badge ${bcrit(a.crit)}">${a.crit}</span></td>
+    <td><span class="badge ${bph(a.phase)}">${a.phase}</span></td>
+    <td class="mono">${fmtE(a.cout)}</td>
+    <td class="mono" style="color:${a.risque>=70?'#ef4444':a.risque>=40?'#fbbf24':'#10d07a'}">${a.risque}</td>
+    <td>${eBtn('portfolio',`openAppModal(${i})`)}</td>
+  </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TECH
+// ══════════════════════════════════════════════════════════════════
+function renderTech(){
+  document.getElementById('perm-tech').innerHTML=pLbl('tech');
+  const A=D.apps,n=A.length;if(!n)return;
+  const avgR=Math.round(A.reduce((s,a)=>s+a.risque,0)/n),vieux=A.filter(a=>2025-a.mise>=10).length;
+  document.getElementById('tech-kpis').innerHTML=
+    kpiH('Risque moyen',avgR+'/100','','dn',avgR,'#ef4444')+kpiH('Apps > 10 ans',vieux,'>10 ans en service','dn',vieux/n*100,'#fbbf24')+kpiH('Tech. moy.',Math.round(A.reduce((s,a)=>s+a.tech,0)/n)+'/100','','up',Math.round(A.reduce((s,a)=>s+a.tech,0)/n),'#22d3bc')+kpiH('À risque critique',A.filter(a=>a.risque>=70).length,'risque ≥ 70','dn',A.filter(a=>a.risque>=70).length/n*100,'#ef4444');
+  dc('t-rel');CI['t-rel']=new Chart(document.getElementById('t-rel'),{type:'bubble',
+    data:{datasets:A.map((a,i)=>({label:a.nom,data:[{x:Math.cos(i/n*2*Math.PI)*36+50,y:Math.sin(i/n*2*Math.PI)*32+50,r:4+a.users/100}],backgroundColor:pc(a.phase)+'88',borderColor:pc(a.phase),borderWidth:1.5}))},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:14},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}`}}},scales:{x:{min:0,max:100,display:false},y:{min:0,max:100,display:false}}}});
+  const sorted=[...A].sort((a,b)=>a.mise-b.mise);
+  const minY=Math.min(...sorted.map(a=>a.mise))-1,maxY=2027,range=maxY-minY;
+  document.getElementById('t-gantt').innerHTML=sorted.map(a=>{const s=(a.mise-minY)/range*100,w=Math.min((2025-a.mise)/range*100+2,99-s),age=2025-a.mise;return`<div class="grow"><span class="glbl">${a.nom}</span><div class="gtrack"><div class="gbar" style="left:${s}%;width:${w}%;background:${pc(a.phase)}">${age}a</div></div><span class="gyr">${a.mise}</span></div>`;}).join('');
+  const regs=[...new Set(A.map(a=>a.reg).filter(Boolean))];
+  const RC={'Paris':'#4b8cf5','Lyon':'#22d3bc','Bordeaux':'#fb923c','Strasbourg':'#8b5cf6','Nantes':'#10d07a'};
+  document.getElementById('t-regions').innerHTML=regs.map(r=>{const ra=A.filter(a=>a.reg===r),col=RC[r]||'#888';return`<div class="rcard"><div class="rc-nm">${r}</div><div class="rc-v" style="color:${col}">${ra.length}</div><div class="rc-s">${fmt(ra.reduce((s,a)=>s+a.users,0))} users</div></div>`;}).join('');
+  dc('t-risk');CI['t-risk']=new Chart(document.getElementById('t-risk'),{type:'bar',indexAxis:'y',
+    data:{labels:A.map(a=>a.nom),datasets:[{data:A.map(a=>a.risque),backgroundColor:A.map(a=>a.risque>=70?'rgba(239,68,68,.7)':a.risque>=40?'rgba(251,191,36,.7)':'rgba(16,208,122,.7)'),borderRadius:4,barThickness:12}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,ticks:{color:chartTick()},grid:{color:chartGrid()}},y:{ticks:{color:chartTick()},grid:{display:false}}}}});
+  const suc=A.filter(a=>a.phase==='declin'||a.phase==='elimination');
+  document.getElementById('t-succ').innerHTML=suc.length?`<div class="grid g2" style="gap:8px">${suc.map(a=>`<div style="background:var(--bg-raised);border:1px solid var(--border-lo);border-left:3px solid ${pc(a.phase)};border-radius:8px;padding:9px 12px"><div style="font-size:12px;font-weight:500">${a.nom}</div><div style="font-size:11px;color:var(--text-ter);margin-top:2px">${a.dom} · ${a.fourn} · ${a.mise}</div><div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap"><span class="badge b-amb">Tech: ${a.tech}</span><span class="badge b-red">Risque: ${a.risque}</span><span class="badge ${bph(a.phase)}">${a.phase}</span></div><div style="margin-top:6px">${eBtn('tech',`openAppModal(${D.apps.indexOf(a)})`)}</div></div>`).join('')}</div>`:'<div class="empty">Aucune application en déclin</div>';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SECU
+// ══════════════════════════════════════════════════════════════════
+function renderSecu(){
+  document.getElementById('perm-secu').innerHTML=pLbl('secu');
+  const A=D.apps,n=A.length;if(!n)return;
+  document.getElementById('secu-kpis').innerHTML=
+    kpiH('Vulnérables',A.filter(a=>a.risque>=60).length,'risque ≥ 60','dn',A.filter(a=>a.risque>=60).length/n*100,'#ef4444')+kpiH('RGPD conforme','68%','apps conformes','up',68,'#10d07a')+kpiH('Score sécu',Math.round(100-A.reduce((s,a)=>s+a.risque,0)/n)+'/100','indice sécurité','up',Math.round(100-A.reduce((s,a)=>s+a.risque,0)/n),'#f43f8a')+kpiH('Incidents ouverts','4','actifs','dn',20,'#f43f8a');
+  const ph=['introduction','croissance','maturite','declin','elimination'];
+  const avgRP=ph.map(p=>{const a=A.filter(x=>x.phase===p);return a.length?Math.round(a.reduce((s,x)=>s+x.risque,0)/a.length):0});
+  dc('s-life');CI['s-life']=new Chart(document.getElementById('s-life'),{type:'bar',
+    data:{labels:['Intro','Crois.','Matur.','Déclin','Élim.'],datasets:[{label:'Sécu',data:avgRP.map(r=>100-r),backgroundColor:'rgba(244,63,138,.6)',borderRadius:4,barThickness:18},{label:'Risque',data:avgRP,backgroundColor:'rgba(239,68,68,.4)',borderRadius:4,barThickness:18}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartTick()}}},scales:{y:{max:100,ticks:{color:chartTick()},grid:{color:chartGrid()}},x:{ticks:{color:chartTick()},grid:{display:false}}}}});
+  dc('s-class');CI['s-class']=new Chart(document.getElementById('s-class'),{type:'doughnut',
+    data:{labels:['Public','Interne','Confidentiel','Secret'],datasets:[{data:[15,40,30,15],backgroundColor:['#10d07a','#4b8cf5','#fbbf24','#ef4444'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:chartTick(),font:{size:10},padding:5}}}}});
+  document.getElementById('s-class-det').innerHTML=[{l:'Public',v:15,c:'#10d07a'},{l:'Interne',v:40,c:'#4b8cf5'},{l:'Confidentiel',v:30,c:'#fbbf24'},{l:'Secret',v:15,c:'#ef4444'}].map(d=>`<div class="prow"><span class="plbl">${d.l}</span><div class="pwrap"><div class="pfill" style="width:${d.v}%;background:${d.c}"></div></div><span class="pval">${d.v}%</span></div>`).join('');
+  dc('s-radar');CI['s-radar']=new Chart(document.getElementById('s-radar'),{type:'radar',
+    data:{labels:['Auth.','Chiffrement','Patchs','Accès','Réseau','Données','Audit'],datasets:[{label:'Actuel',data:[72,80,55,68,75,60,82],borderColor:'#f43f8a',backgroundColor:'rgba(244,63,138,.08)',pointBackgroundColor:'#f43f8a'},{label:'Cible NIS2',data:[90,85,90,85,90,80,85],borderColor:chartTick(),backgroundColor:'rgba(125,133,153,.04)',borderDash:[4,4],pointBackgroundColor:chartTick()}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartTick()}}},scales:{r:{min:0,max:100,ticks:{color:chartTick(),stepSize:25},grid:{color:chartGrid()},pointLabels:{color:chartTick()},angleLines:{color:chartGrid()}}}}});
+  const rows=[{n:'SAP ERP',pd:'Oui',ds:'Financières',ch:'AES-256',rg:'Conforme',r:35},{n:'Salesforce CRM',pd:'Oui',ds:'Commerciales',ch:'TLS 1.3',rg:'Conforme',r:20},{n:'Oracle HRMS',pd:'Oui',ds:'RH·Paie',ch:'AES-128',rg:'Partiel',r:72},{n:'Sage Compta',pd:'Non',ds:'Financières',ch:'Aucun',rg:'Non conforme',r:88},{n:'ServiceNow',pd:'Non',ds:'IT',ch:'TLS 1.3',rg:'Conforme',r:15},{n:'Microsoft 365',pd:'Oui',ds:'Bureautique',ch:'E2E',rg:'Conforme',r:12}];
+  document.getElementById('secu-tbody').innerHTML=rows.map((r,i)=>`<tr><td><strong>${r.n}</strong></td><td><span class="badge ${r.pd==='Oui'?'b-amb':'b-gry'}">${r.pd}</span></td><td style="font-size:11px;color:var(--text-sec)">${r.ds}</td><td class="mono" style="font-size:11px">${r.ch}</td><td><span class="badge ${r.rg==='Conforme'?'b-grn':r.rg==='Partiel'?'b-amb':'b-red'}">${r.rg}</span></td><td class="mono" style="color:${r.r>=70?'#ef4444':r.r>=40?'#fbbf24':'#10d07a'}">${r.r}</td><td>${eBtn('secu',`openAppModal(${i%n})`)}</td></tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FINANCE
+// ══════════════════════════════════════════════════════════════════
+function renderFinance(){
+  document.getElementById('perm-finance').innerHTML=pLbl('finance');
+  const A=D.apps,n=A.length;if(!n)return;
+  const totalC=A.reduce((s,a)=>s+a.cout,0),top=A.sort((a,b)=>b.cout-a.cout)[0];
+  document.getElementById('fin-kpis').innerHTML=
+    kpiH('Coût annuel total',fmtE(totalC),'budget IT','',90,'#fb923c')+kpiH('Coût/utilisateur',fmtE(totalC/Math.max(1,A.reduce((s,a)=>s+a.users,0))),'moyen','',60,'#4b8cf5')+kpiH('Top coût',top?.nom||'—','application coûteuse','dn',100,'#ef4444')+kpiH('Économies potentielles',fmtE(totalC*.18),'optimisation 18%','up',18,'#10d07a');
+  const dom=[...new Set(A.map(a=>a.dom))];const COLS=['#4b8cf5','#22d3bc','#fb923c','#10d07a','#f43f8a','#8b5cf6','#fbbf24'];
+  dc('f-dom');CI['f-dom']=new Chart(document.getElementById('f-dom'),{type:'bar',data:{labels:dom,datasets:[{data:dom.map(d=>A.filter(a=>a.dom===d).reduce((s,a)=>s+a.cout,0)),backgroundColor:COLS,borderRadius:5,barThickness:22}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:chartTick(),callback:v=>fmtE(v)},grid:{color:chartGrid()}},x:{ticks:{color:chartTick()},grid:{display:false}}}}});
+  const fn=[...new Set(A.map(a=>a.fourn))];
+  dc('f-fourn');CI['f-fourn']=new Chart(document.getElementById('f-fourn'),{type:'doughnut',data:{labels:fn,datasets:[{data:fn.map(f=>A.filter(a=>a.fourn===f).reduce((s,a)=>s+a.cout,0)),backgroundColor:COLS,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{color:chartTick(),font:{size:10},padding:5}}}}});
+  dc('f-interv');CI['f-interv']=new Chart(document.getElementById('f-interv'),{type:'bar',data:{labels:['Maint. corrective','Maint. évolutive','Incidents','Support','Formation'],datasets:[{data:[85000,120000,45000,62000,28000],backgroundColor:['#ef4444','#4b8cf5','#f43f8a','#fbbf24','#22d3bc'],borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:chartTick(),callback:v=>fmtE(v)},grid:{color:chartGrid()}},x:{ticks:{color:chartTick(),font:{size:10}},grid:{display:false}}}}});
+  dc('f-proj');CI['f-proj']=new Chart(document.getElementById('f-proj'),{type:'line',data:{labels:['2025','2026','2027'],datasets:[{label:'Sans optim.',data:[totalC,totalC*1.04,totalC*1.08],borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.06)',fill:true,tension:.4},{label:'Avec optim.',data:[totalC,totalC*.97,totalC*.93],borderColor:'#10d07a',backgroundColor:'rgba(16,208,122,.06)',fill:true,tension:.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartTick()}}},scales:{y:{ticks:{color:chartTick(),callback:v=>fmtE(v)},grid:{color:chartGrid()}},x:{ticks:{color:chartTick()},grid:{display:false}}}}});
+  document.getElementById('fin-tbody').innerHTML=[...A].sort((a,b)=>b.cout-a.cout).map((a,i)=>{const lic=Math.round(a.cout*.45),inf=Math.round(a.cout*.2),mai=Math.round(a.cout*.15),rh=Math.round(a.cout*.2),t=a.tech>70;return`<tr><td><strong>${a.nom}</strong></td><td class="mono">${fmtE(lic)}</td><td class="mono">${fmtE(inf)}</td><td class="mono">${fmtE(mai)}</td><td class="mono">${fmtE(rh)}</td><td class="mono" style="color:#fb923c;font-weight:500">${fmtE(a.cout)}</td><td style="color:${t?'#10d07a':'#ef4444'}">${t?'▲':'▼'}</td><td>${eBtn('finance',`openAppModal(${D.apps.indexOf(a)})`)}</td></tr>`;}).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════════
+function renderData(){
+  document.getElementById('perm-data').innerHTML=pLbl('data');
+  document.getElementById('btn-add-if').style.display=canEdit('data')?'':'none';
+  const I=D.interfaces;
+  document.getElementById('data-kpis').innerHTML=
+    kpiH('Interfaces actives',I.filter(i=>i.stat==='actif').length,'en production','',I.filter(i=>i.stat==='actif').length/Math.max(1,I.length)*100,'#8b5cf6')+kpiH('Dégradées',I.filter(i=>i.stat==='dégradé'||i.stat==='obsolète').length,'à traiter','dn',30,'#ef4444')+kpiH('Flux critiques',I.filter(i=>i.crit==='critique').length,'criticité critique','dn',40,'#f43f8a')+kpiH('Apps connectées',D.apps.length,'dans le périmètre','',100,'#8b5cf6');
+  drawChord();
+  dc('d-if');CI['d-if']=new Chart(document.getElementById('d-if'),{type:'doughnut',data:{labels:['Actif','Dégradé','Obsolète','Planifié'],datasets:[{data:[I.filter(i=>i.stat==='actif').length,I.filter(i=>i.stat==='dégradé').length,I.filter(i=>i.stat==='obsolète').length,I.filter(i=>i.stat==='planifié').length],backgroundColor:['#10d07a','#fbbf24','#ef4444','#4b8cf5'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:chartTick(),font:{size:10}}}}}});
+  document.getElementById('d-if-list').innerHTML=I.slice(0,4).map((i,idx)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border-lo);font-size:12px"><span style="color:var(--text-sec)">${i.src} → ${i.dst}</span><div style="display:flex;gap:5px;align-items:center"><span class="badge ${bst(i.stat)}">${i.stat}</span>${eBtn('data',`openIfModal(${idx})`)}</div></div>`).join('');
+  document.getElementById('data-tbody').innerHTML=I.map((i,idx)=>`<tr><td><strong>${i.src}</strong></td><td>${i.dst}</td><td class="mono" style="font-size:11px">${i.type}</td><td style="font-size:11px">${i.freq}</td><td><span class="badge ${bcrit(i.crit)}">${i.crit}</span></td><td><span class="badge ${bst(i.stat)}">${i.stat}</span></td><td>${eBtn('data',`openIfModal(${idx})`)}</td></tr>`).join('');
+}
+
+function drawChord(){
+  const c=document.getElementById('d-chord');if(!c)return;
+  const ctx=c.getContext('2d'),sz=c.width,cx=sz/2,cy=sz/2,R=108,r=22;
+  ctx.clearRect(0,0,sz,sz);
+  const A=D.apps.slice(0,6),n=A.length;
+  const COLS=['#4b8cf5','#22d3bc','#f43f8a','#fb923c','#8b5cf6','#10d07a'];
+  const nodes=A.map((a,i)=>{const ang=(i/n)*2*Math.PI-Math.PI/2;return{x:cx+R*Math.cos(ang),y:cy+R*Math.sin(ang),color:COLS[i],name:a.nom.slice(0,7)};});
+  [[0,1],[0,2],[1,4],[2,3],[3,0],[4,5],[1,3]].forEach(([a,b])=>{
+    ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);
+    const mx=(nodes[a].x+nodes[b].x)/2+(nodes[b].y-nodes[a].y)*.18,my=(nodes[a].y+nodes[b].y)/2-(nodes[b].x-nodes[a].x)*.18;
+    ctx.quadraticCurveTo(mx,my,nodes[b].x,nodes[b].y);
+    ctx.strokeStyle=nodes[a].color+'44';ctx.lineWidth=2;ctx.stroke();
+  });
+  nodes.forEach(nd=>{ctx.beginPath();ctx.arc(nd.x,nd.y,r,0,2*Math.PI);ctx.fillStyle=nd.color+'bb';ctx.fill();ctx.strokeStyle=nd.color;ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 8px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(nd.name,nd.x,nd.y);});
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PROJECT
+// ══════════════════════════════════════════════════════════════════
+function renderProject(){
+  document.getElementById('perm-project').innerHTML=pLbl('project');
+  document.getElementById('btn-add-proj').style.display=canEdit('project')?'':'none';
+  const P=D.projets,n=P.length;if(!n)return;
+  const totalB=P.reduce((s,p)=>s+p.budget,0);
+  document.getElementById('proj-kpis').innerHTML=
+    kpiH('En cours',P.filter(p=>p.statut==='en cours').length,'projets actifs','',P.filter(p=>p.statut==='en cours').length/n*100,'#10d07a')+kpiH('Budget total',fmtE(totalB),'tous projets','',80,'#fb923c')+kpiH('Risque moy.',Math.round(P.reduce((s,p)=>s+p.risque,0)/n)+'/100','risque portfolio',Math.round(P.reduce((s,p)=>s+p.risque,0)/n)>60?'dn':'up',Math.round(P.reduce((s,p)=>s+p.risque,0)/n),'#ef4444')+kpiH('Valeur moy.',Math.round(P.reduce((s,p)=>s+p.val,0)/n)+'/100','valeur métier','up',Math.round(P.reduce((s,p)=>s+p.val,0)/n),'#10d07a');
+  const phases=['Q1 2025','Q2 2025','Q3 2025','Q4 2025','Q1 2026','Q2 2026'];
+  const byPh={};phases.forEach(p=>byPh[p]=[]);P.forEach(p=>{if(byPh[p.phase])byPh[p.phase].push(p);});
+  document.getElementById('proj-roadmap').innerHTML=phases.map(ph=>`<div class="rphase"><div class="rpt">${ph}</div><div class="rp-items">${(byPh[ph]||[]).length===0?`<span style="font-size:11px;color:var(--text-ter)">Aucun</span>`:byPh[ph].map(p=>`<div class="rp-card"><div class="rp-stripe" style="background:${p.color||'#4b8cf5'}"></div><div class="rp-name">${p.nom}</div><div class="rp-meta">${fmtE(p.budget)}</div><div style="margin-top:5px;display:flex;gap:5px;align-items:center"><span class="badge ${p.statut==='terminé'?'b-grn':p.statut==='en cours'?'b-blu':'b-gry'}">${p.statut}</span>${eBtn('project',`openProjModal(${P.indexOf(p)})`)}</div></div>`).join('')}</div></div>`).join('');
+  dc('pr-bubble');CI['pr-bubble']=new Chart(document.getElementById('pr-bubble'),{type:'bubble',data:{datasets:P.map(p=>({label:p.nom,data:[{x:p.risque,y:p.val,r:5+p.budget/120000}],backgroundColor:(p.color||'#888')+'77',borderColor:p.color||'#888',borderWidth:1.5}))},options:{responsive:true,maintainAspectRatio:false,layout:{padding:18},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: R=${ctx.parsed.x} V=${ctx.parsed.y}`}}},scales:{x:{min:-5,max:105,title:{display:true,text:'Risque',color:chartTick()},ticks:{color:chartTick()},grid:{color:chartGrid()}},y:{min:-5,max:105,title:{display:true,text:'Valeur',color:chartTick()},ticks:{color:chartTick()},grid:{color:chartGrid()}}}}});
+  const sts=['en cours','planifié','terminé','en attente'];
+  dc('pr-budget');CI['pr-budget']=new Chart(document.getElementById('pr-budget'),{type:'doughnut',data:{labels:sts,datasets:[{data:sts.map(s=>P.filter(p=>p.statut===s).reduce((sum,p)=>sum+p.budget,0)),backgroundColor:['#4b8cf5','#fbbf24','#10d07a','#7a84a0'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:chartTick(),font:{size:10}}}}}});
+  document.getElementById('pr-list').innerHTML=P.slice(0,5).map(p=>`<div class="prow"><span class="plbl">${p.nom}</span><div class="pwrap"><div class="pfill" style="width:${p.val}%;background:${p.color||'#4b8cf5'}"></div></div><span class="pval">${p.val}</span></div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SOURCING
+// ══════════════════════════════════════════════════════════════════
+function renderSourcing(){
+  document.getElementById('perm-sourcing').innerHTML=pLbl('sourcing');
+  document.getElementById('btn-add-fourn').style.display=canEdit('sourcing')?'':'none';
+  const F=D.fournisseurs,n=F.length;if(!n)return;
+  const avgQ=Math.round(F.reduce((s,f)=>s+f.qual,0)/n),avgC=Math.round(F.reduce((s,f)=>s+f.crit,0)/n);
+  document.getElementById('src-kpis').innerHTML=
+    kpiH('Fournisseurs',n,'','',100,'#fbbf24')+kpiH('Qualité moy.',avgQ+'/100','','up',avgQ,'#10d07a')+kpiH('Criticité moy.',avgC+'/100','dépendance',avgC>70?'dn':'',avgC,'#ef4444')+kpiH('Contrats < 2026',F.filter(f=>f.cont<'2026-01-01').length,'à renouveler','dn',F.filter(f=>f.cont<'2026-01-01').length/n*100,'#fbbf24');
+  dc('src-bubble');CI['src-bubble']=new Chart(document.getElementById('src-bubble'),{type:'bubble',data:{datasets:F.map(f=>({label:f.nom,data:[{x:f.crit,y:f.qual,r:6+f.cout/25000}],backgroundColor:(f.qual>=60&&f.crit>=60?'rgba(16,208,122,.5)':f.qual>=60?'rgba(251,191,36,.5)':f.crit>=60?'rgba(75,140,245,.5)':'rgba(239,68,68,.5)'),borderColor:(f.qual>=60&&f.crit>=60?'#10d07a':f.qual>=60?'#fbbf24':f.crit>=60?'#4b8cf5':'#ef4444'),borderWidth:1.5}))},options:{responsive:true,maintainAspectRatio:false,layout:{padding:18},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: Q=${ctx.parsed.y} C=${ctx.parsed.x}`}}},scales:{x:{min:-5,max:105,title:{display:true,text:'Criticité',color:chartTick()},ticks:{color:chartTick()},grid:{color:chartGrid()}},y:{min:-5,max:105,title:{display:true,text:'Qualité',color:chartTick()},ticks:{color:chartTick()},grid:{color:chartGrid()}}}}});
+  document.getElementById('src-rings').innerHTML=F.map((f,i)=>{const col=f.crit>=80?'#ef4444':f.crit>=60?'#fbbf24':'#10d07a';const ci=2*Math.PI*18,off=ci-(f.crit/100)*ci;return`<div class="rwrap"><div class="ring"><svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="18" stroke="${col}22" stroke-width="5" fill="none"/><circle cx="24" cy="24" r="18" stroke="${col}" stroke-width="5" fill="none" stroke-dasharray="${ci.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" stroke-linecap="round"/></svg><div class="ring-txt"><div class="ring-n" style="color:${col}">${f.crit}</div></div></div><div class="ring-i"><div class="ring-name">${f.nom}</div><div class="ring-det">${f.cat} · Q: ${f.qual}</div></div><div style="display:flex;gap:5px;align-items:center"><span class="badge ${f.crit>=80?'b-red':f.crit>=60?'b-amb':'b-grn'}">${f.crit>=80?'Critique':f.crit>=60?'Haute':'Normale'}</span>${eBtn('sourcing',`openFournModal(${i})`)}</div></div>`;}).join('');
+  document.getElementById('src-tbody').innerHTML=F.map((f,i)=>`<tr><td><strong>${f.nom}</strong></td><td><span class="badge b-gry">${f.cat}</span></td><td class="mono" style="color:${f.crit>=80?'#ef4444':f.crit>=60?'#fbbf24':'#10d07a'}">${f.crit}/100</td><td class="mono" style="color:${f.qual>=75?'#10d07a':'#fbbf24'}">${f.qual}/100</td><td class="mono" style="font-size:11px;color:var(--text-sec)">${f.cont}</td><td class="mono">${fmtE(f.cout)}</td><td><span class="badge ${f.risque>=70?'b-red':f.risque>=40?'b-amb':'b-grn'}">${f.risque>=70?'Élevé':f.risque>=40?'Moyen':'Faible'}</span></td><td>${eBtn('sourcing',`openFournModal(${i})`)}</td></tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MODALS & CRUD
+// ══════════════════════════════════════════════════════════════════
 function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+['modal-app','modal-fourn','modal-proj','modal-if','modal-tool'].forEach(id=>document.getElementById(id)?.addEventListener('click',e=>{if(e.target===document.getElementById(id))closeModal(id);}));
 
-// ============================================================
-//  INITIALISATION
-// ============================================================
-loadData();
-document.getElementById('th-date').textContent=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+// APP
+function openAppModal(idx){
+  if(!canEdit('portfolio')&&!canEdit('tech')&&!canEdit('secu')&&!canEdit('finance')){toast('Accès lecture seule','err');return;}
+  const a=idx>=0?D.apps[idx]:{};
+  document.getElementById('mapp-title').textContent=idx>=0?'Modifier l\'application':'Nouvelle application';
+  ['a-nom','a-fourn','a-reg'].forEach(id=>{document.getElementById(id).value=a[{nom:'nom','a-fourn':'fourn','a-reg':'reg'}[id]]||'';});
+  document.getElementById('a-nom').value=a.nom||'';
+  document.getElementById('a-fourn').value=a.fourn||'';
+  document.getElementById('a-reg').value=a.reg||'';
+  document.getElementById('a-dom').value=a.dom||'Finance';
+  document.getElementById('a-cout').value=a.cout||0;
+  document.getElementById('a-users').value=a.users||0;
+  document.getElementById('a-mise').value=a.mise||2020;
+  document.getElementById('a-crit').value=a.crit||'haute';
+  document.getElementById('a-phase').value=a.phase||'maturite';
+  document.getElementById('a-fonc').value=a.fonc||70;document.getElementById('av-fonc').textContent=a.fonc||70;
+  document.getElementById('a-tech').value=a.tech||60;document.getElementById('av-tech').textContent=a.tech||60;
+  document.getElementById('a-risque').value=a.risque||30;document.getElementById('av-risque').textContent=a.risque||30;
+  document.getElementById('a-notes').value=a.notes||'';
+  document.getElementById('a-idx').value=idx;
+  document.getElementById('a-del').style.display=idx>=0?'inline-flex':'none';
+  openModal('modal-app');
+}
+function saveApp(){
+  const idx=parseInt(document.getElementById('a-idx').value);
+  const a={nom:document.getElementById('a-nom').value.trim(),dom:document.getElementById('a-dom').value,fourn:document.getElementById('a-fourn').value.trim(),reg:document.getElementById('a-reg').value.trim(),cout:parseFloat(document.getElementById('a-cout').value)||0,users:parseInt(document.getElementById('a-users').value)||0,mise:parseInt(document.getElementById('a-mise').value)||2020,crit:document.getElementById('a-crit').value,phase:document.getElementById('a-phase').value,fonc:parseInt(document.getElementById('a-fonc').value)||70,tech:parseInt(document.getElementById('a-tech').value)||60,risque:parseInt(document.getElementById('a-risque').value)||30,notes:document.getElementById('a-notes').value.trim()};
+  if(!a.nom){toast('Nom obligatoire','err');return;}
+  const action=idx>=0?'Modification':'Création';
+  if(idx>=0)D.apps[idx]=a;else D.apps.push(a);
+  saveD();closeModal('modal-app');
+  recordImpact('portfolio',action,a.nom);
+  renderModule(currentMod);
+  toast(idx>=0?`${a.nom} mis à jour`:`${a.nom} ajouté`);
+}
+function delApp(){const idx=parseInt(document.getElementById('a-idx').value);if(idx<0)return;const nom=D.apps[idx].nom;D.apps.splice(idx,1);saveD();closeModal('modal-app');recordImpact('portfolio','Suppression',nom);renderModule(currentMod);toast(`${nom} supprimé`);}
 
-// Vérifier si l'utilisateur est déjà connecté
-checkSupabaseSession().then(authenticated => {
-  if (authenticated) {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('main-shell').style.display = 'flex';
-    updateRoleBadge();
-    updateNavLocks();
-    renderModule('portfolio');
-    loadDictionaryTerms();
-  } else {
-    // Afficher l'écran de connexion
-    document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('main-shell').style.display = 'none';
-  }
-});
+// FOURN
+function openFournModal(idx){
+  if(!canEdit('sourcing')){toast('Accès lecture seule','err');return;}
+  const f=idx>=0?D.fournisseurs[idx]:{};
+  document.getElementById('mf-title').textContent=idx>=0?'Modifier le fournisseur':'Nouveau fournisseur';
+  document.getElementById('f-nom').value=f.nom||'';document.getElementById('f-cat').value=f.cat||'';document.getElementById('f-cout').value=f.cout||0;document.getElementById('f-cont').value=f.cont||'';
+  document.getElementById('f-crit').value=f.crit||70;document.getElementById('fv-crit').textContent=f.crit||70;
+  document.getElementById('f-qual').value=f.qual||75;document.getElementById('fv-qual').textContent=f.qual||75;
+  document.getElementById('f-risk').value=f.risque||30;document.getElementById('fv-risk').textContent=f.risque||30;
+  document.getElementById('f-idx').value=idx;document.getElementById('f-del').style.display=idx>=0?'inline-flex':'none';
+  openModal('modal-fourn');
+}
+function saveFourn(){
+  const idx=parseInt(document.getElementById('f-idx').value);
+  const f={nom:document.getElementById('f-nom').value.trim(),cat:document.getElementById('f-cat').value.trim(),cout:parseFloat(document.getElementById('f-cout').value)||0,cont:document.getElementById('f-cont').value,crit:parseInt(document.getElementById('f-crit').value)||70,qual:parseInt(document.getElementById('f-qual').value)||75,risque:parseInt(document.getElementById('f-risk').value)||30};
+  if(!f.nom){toast('Nom obligatoire','err');return;}
+  if(idx>=0)D.fournisseurs[idx]=f;else D.fournisseurs.push(f);
+  saveD();closeModal('modal-fourn');recordImpact('sourcing',idx>=0?'Modification':'Création',f.nom);renderModule(currentMod);toast(idx>=0?'Fournisseur mis à jour':'Fournisseur ajouté');
+}
+function delFourn(){const idx=parseInt(document.getElementById('f-idx').value);if(idx<0)return;const nom=D.fournisseurs[idx].nom;D.fournisseurs.splice(idx,1);saveD();closeModal('modal-fourn');recordImpact('sourcing','Suppression',nom);renderModule(currentMod);toast(`${nom} supprimé`);}
+
+// PROJ
+function openProjModal(idx){
+  if(!canEdit('project')){toast('Accès lecture seule','err');return;}
+  const p=idx>=0?D.projets[idx]:{};
+  document.getElementById('mp-title').textContent=idx>=0?'Modifier le projet':'Nouveau projet';
+  document.getElementById('p-nom').value=p.nom||'';document.getElementById('p-phase').value=p.phase||'Q1 2026';document.getElementById('p-budget').value=p.budget||100000;document.getElementById('p-statut').value=p.statut||'planifié';
+  document.getElementById('p-risk').value=p.risque||40;document.getElementById('pv-risk').textContent=p.risque||40;
+  document.getElementById('p-val').value=p.val||70;document.getElementById('pv-val').textContent=p.val||70;
+  document.getElementById('p-idx').value=idx;document.getElementById('p-del').style.display=idx>=0?'inline-flex':'none';
+  openModal('modal-proj');
+}
+function saveProj(){
+  const idx=parseInt(document.getElementById('p-idx').value);
+  const COLS=['#4b8cf5','#10d07a','#fb923c','#f43f8a','#8b5cf6','#22d3bc'];
+  const p={nom:document.getElementById('p-nom').value.trim(),phase:document.getElementById('p-phase').value.trim(),budget:parseFloat(document.getElementById('p-budget').value)||0,statut:document.getElementById('p-statut').value,risque:parseInt(document.getElementById('p-risk').value)||40,val:parseInt(document.getElementById('p-val').value)||70,color:idx>=0?(D.projets[idx]?.color||COLS[idx%6]):COLS[D.projets.length%6]};
+  if(!p.nom){toast('Nom obligatoire','err');return;}
+  if(idx>=0)D.projets[idx]=p;else D.projets.push(p);
+  saveD();closeModal('modal-proj');recordImpact('project',idx>=0?'Modification':'Création',p.nom);renderModule(currentMod);toast(idx>=0?'Projet mis à jour':'Projet ajouté');
+}
+function delProj(){const idx=parseInt(document.getElementById('p-idx').value);if(idx<0)return;const nom=D.projets[idx].nom;D.projets.splice(idx,1);saveD();closeModal('modal-proj');recordImpact('project','Suppression',nom);renderModule(currentMod);toast(`${nom} supprimé`);}
+
+// IF
+function openIfModal(idx){
+  if(!canEdit('data')){toast('Accès lecture seule','err');return;}
+  const i=idx>=0?D.interfaces[idx]:{};
+  document.getElementById('mi-title').textContent=idx>=0?'Modifier l\'interface':'Nouvelle interface';
+  document.getElementById('i-src').value=i.src||'';document.getElementById('i-dst').value=i.dst||'';document.getElementById('i-type').value=i.type||'API REST';document.getElementById('i-freq').value=i.freq||'Quotidien';document.getElementById('i-crit').value=i.crit||'haute';document.getElementById('i-stat').value=i.stat||'actif';
+  document.getElementById('i-idx').value=idx;document.getElementById('i-del').style.display=idx>=0?'inline-flex':'none';
+  openModal('modal-if');
+}
+function saveIf(){
+  const idx=parseInt(document.getElementById('i-idx').value);
+  const i={src:document.getElementById('i-src').value.trim(),dst:document.getElementById('i-dst').value.trim(),type:document.getElementById('i-type').value,freq:document.getElementById('i-freq').value,crit:document.getElementById('i-crit').value,stat:document.getElementById('i-stat').value};
+  if(!i.src||!i.dst){toast('Source et cible obligatoires','err');return;}
+  if(idx>=0)D.interfaces[idx]=i;else D.interfaces.push(i);
+  saveD();closeModal('modal-if');recordImpact('data',idx>=0?'Modification':'Création',`${i.src}→${i.dst}`);renderModule(currentMod);toast(idx>=0?'Interface mise à jour':'Interface ajoutée');
+}
+function delIf(){const idx=parseInt(document.getElementById('i-idx').value);if(idx<0)return;const label=`${D.interfaces[idx].src}→${D.interfaces[idx].dst}`;D.interfaces.splice(idx,1);saveD();closeModal('modal-if');recordImpact('data','Suppression',label);renderModule(currentMod);toast(`Interface supprimée`);}
+
+// ══════════════════════════════════════════════════════════════════
+// TOOLS
+// ══════════════════════════════════════════════════════════════════
+function showTool(type){
+  const A=D.apps;
+  const cfg={
+    risk:{t:'↓ Réduire les risques',s:'Applications prioritaires à traiter',b:()=>{
+      const top=[...A].filter(a=>a.risque>=60).sort((a,b)=>b.risque-a.risque);
+      return(top.length?top.map(a=>`<div class="prow"><span class="plbl">${a.nom}</span><div class="pwrap"><div class="pfill" style="width:${a.risque}%;background:${a.risque>=70?'#ef4444':'#fbbf24'}"></div></div><span class="pval">${a.risque}</span></div>`).join('')+'<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:8px;padding:10px;font-size:12px;margin-top:10px">Priorité : <strong>${top[0]?.nom}</strong> (risque ${top[0]?.risque})</div>'.replace('${top[0]?.nom}',top[0]?.nom||'—').replace('${top[0]?.risque}',top[0]?.risque||0):'<div class="empty">Aucune application à risque élevé</div>');}},
+    cost:{t:'↓ Réduire les coûts',s:'Optimisations potentielles',b:()=>{const top=[...A].sort((a,b)=>b.cout-a.cout).slice(0,5);const eco=A.filter(a=>a.tech<50).reduce((s,a)=>s+a.cout*.2,0);return top.map(a=>`<div class="prow"><span class="plbl">${a.nom}</span><div class="pwrap"><div class="pfill" style="width:${top[0].cout?a.cout/top[0].cout*100:0}%;background:#fb923c"></div></div><span class="pval mono">${fmtE(a.cout)}</span></div>`).join('')+`<div style="background:rgba(16,208,122,.06);border:1px solid rgba(16,208,122,.15);border-radius:8px;padding:10px;font-size:12px;margin-top:10px">Économies estimées (tech < 50) : <strong style="color:#10d07a">${fmtE(eco)}/an</strong></div>`;}},
+    start:{t:'⚡ Démarrer rapidement',s:'Quick wins · ROI immédiat',b:()=>[{a:'Renouveler contrat Sage Compta',g:'18 k€/an',e:'Faible',d:'1 mois'},{a:'Activer SSO Microsoft 365',g:'Sécu +30%',e:'Faible',d:'2 sem.'},{a:'ServiceNow pour WMS',g:'Support -40%',e:'Moyen',d:'6 sem.'}].map(q=>`<div style="background:var(--bg-raised);border:1px solid var(--border-lo);border-radius:8px;padding:10px;margin-bottom:8px"><div style="font-size:12px;font-weight:500;margin-bottom:5px">${q.a}</div><div style="display:flex;gap:5px;flex-wrap:wrap"><span class="badge b-grn">Gain: ${q.g}</span><span class="badge b-blu">Effort: ${q.e}</span><span class="badge b-tel">Délai: ${q.d}</span></div></div>`).join('')},
+    agile:{t:'↑ Augmenter l\'agilité',s:'Score agilité par application',b:()=>{const sorted=[...A].sort((a,b)=>(a.fonc+a.tech)-(b.fonc+b.tech));const avg=Math.round(A.reduce((s,a)=>s+(a.fonc+a.tech)/2,0)/Math.max(1,A.length));return sorted.map(a=>{const sc=Math.round((a.fonc+a.tech)/2);return`<div class="prow"><span class="plbl">${a.nom}</span><div class="pwrap"><div class="pfill" style="width:${sc}%;background:${sc>=70?'#4b8cf5':sc>=50?'#22d3bc':'#fbbf24'}"></div></div><span class="pval">${sc}</span></div>`;}).join('')+`<div style="background:rgba(75,140,245,.06);border:1px solid rgba(75,140,245,.15);border-radius:8px;padding:10px;font-size:12px;margin-top:10px">Score moyen : <strong style="color:#4b8cf5">${avg}/100</strong></div>`;}},
+  };
+  const c=cfg[type];if(!c)return;
+  document.getElementById('tool-title').textContent=c.t;
+  document.getElementById('tool-sub').textContent=c.s;
+  document.getElementById('tool-body').innerHTML=c.b();
+  openModal('modal-tool');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+loadD();
+initTheme();
+buildLogin();
 </script>
 </body>
 </html>
