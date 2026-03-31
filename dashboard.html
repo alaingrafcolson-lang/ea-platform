@@ -1042,7 +1042,7 @@ function renderSynthese(){
   // Maturité gauge
   dc('syn-maturite');CI['syn-maturite']=new Chart(document.getElementById('syn-maturite'),{type:'bar',indexAxis:'y',
     data:{labels:['Maturité globale'],datasets:[{data:[score],backgroundColor:'#10d07a',borderRadius:4},{data:[100-score],backgroundColor:isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)',borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,display:false},y:{display:false},stacked:true}}});
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,display:false,stacked:true},y:{display:false,stacked:true}}}});
 
   // Risk bars
   const topRisk=[...A].sort((a,b)=>b.risque-a.risque).slice(0,5);
@@ -1298,148 +1298,654 @@ renderProject   = function(){_hideExtPage();_origRenderProject();};
 renderSourcing  = function(){_hideExtPage();_origRenderSourcing();};
 
 // ── DORA ───────────────────────────────────────────────────────────
+// Sources légales : Règlement (UE) 2022/2554 du 14 décembre 2022 (DORA)
+// JO UE L 333/1 · En vigueur : 17 janvier 2025 · Art. 5-55
+// Référentiels techniques : RTS/ITS ESAs (EBA/EIOPA/ESMA) 2024
+const DORA_STORE_KEY = 'ea_dora_v1';
+function doraLoad() {
+  try { return JSON.parse(localStorage.getItem(DORA_STORE_KEY)) || null; } catch(e) { return null; }
+}
+function doraSave(d) { localStorage.setItem(DORA_STORE_KEY, JSON.stringify(d)); }
+function doraDefault() {
+  return {
+    pillars: [
+      {id:'ict_risk',   n:'ICT Risk Management',          p:80, ref:'Art. 5-16',  color:'#06b6d4'},
+      {id:'incident',   n:'Incident Reporting',           p:65, ref:'Art. 17-23', color:'#f43f8a'},
+      {id:'testing',    n:'Digital Resilience Testing',   p:50, ref:'Art. 24-27', color:'#f59e0b'},
+      {id:'tpp',        n:'Third-Party Risk (TIC)',        p:72, ref:'Art. 28-44', color:'#8b5cf6'},
+      {id:'sharing',    n:'Information Sharing',          p:40, ref:'Art. 45',    color:'#10d07a'},
+    ],
+    actions: [
+      {a:'Cartographier tous les prestataires TIC critiques', e:'2026-03-31', s:'en_cours'},
+      {a:'Réaliser 2nd test TLPT (Threat-Led Penetration)',   e:'2026-06-30', s:'planifie'},
+      {a:'Mettre à jour le plan de réponse aux incidents ICT',e:'2026-04-30', s:'en_cours'},
+      {a:'Former les équipes au dispositif de signalement',   e:'2026-05-31', s:'planifie'},
+    ],
+    incidents: 2,
+    tlpt_done: 1,
+    tlpt_total: 2,
+  };
+}
+let DORA = doraLoad() || doraDefault();
+
 function renderDora() {
-  const kpis = [
-    {l:'Piliers couverts',v:'3 / 5',d:'ICT Risk, Incidents, Testing',c:'#06b6d4'},
-    {l:'Incidents déclarés',v:'2',d:'30 derniers jours',c:'#ef4444'},
-    {l:'Tests TLPT',v:'1 / 2',d:'planifiés 2025',c:'#f59e0b'},
-    {l:'Score conformité',v:'68 %',d:'vs cible 90 %',c:'#10d07a'},
-  ];
-  const pillars = [
-    {n:'ICT Risk Management',    p:80, color:'#06b6d4'},
-    {n:'Incident Reporting',     p:65, color:'#f43f8a'},
-    {n:'Digital Resilience Test',p:50, color:'#f59e0b'},
-    {n:'Third-Party Risk',       p:72, color:'#8b5cf6'},
-    {n:'Information Sharing',    p:40, color:'#10d07a'},
-  ];
-  renderExtPage('dora','#06b6d4','⚡','DORA','Digital Operational Resilience Act · Conformité & suivi',`
-    <div class="grid g4 mb14">
-      ${kpis.map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c};font-size:18px">${k.v}</div><div class="kpi-dlt">${k.d}</div></div>`).join('')}
+  const score = Math.round(DORA.pillars.reduce((s,p)=>s+p.p,0)/DORA.pillars.length);
+  const covered = DORA.pillars.filter(p=>p.p>=70).length;
+
+  // Inject cyber data from D.ebiosData if available
+  const cyberBoost = D.ebiosData ? Math.min(10, Math.round(D.ebiosData.filter(r=>r.type==='Risque').length * 1.5)) : 0;
+  const scoreDisplay = Math.min(100, score + cyberBoost);
+
+  renderExtPage('dora','#06b6d4','⚡','DORA',
+    'Règlement (UE) 2022/2554 · JO UE L 333/1 · Applicable depuis le 17 janvier 2025',
+  `<div style="background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--text-sec);display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+    <span>⚖️ <strong style="color:#06b6d4">Base légale</strong> : Règlement (UE) 2022/2554 (DORA)</span>
+    <span>·</span><span>📋 RTS/ITS ESAs (EBA/EIOPA/ESMA) 2024</span>
+    <span>·</span><span>🔗 <a href="https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32022R2554" target="_blank" style="color:#06b6d4">EUR-Lex 32022R2554</a></span>
+    ${cyberBoost>0?`<span>·</span><span style="color:#10d07a">✓ +${cyberBoost}% intégré depuis données EBIOS/Cyber</span>`:''}
+  </div>
+  <div class="grid g4 mb14">
+    <div class="kpi"><div class="kpi-lbl">Score conformité</div><div class="kpi-val" style="color:#06b6d4">${scoreDisplay}%</div><div class="kpi-dlt">cible 90% — art. 6</div><div class="kpi-bar"><div class="kpi-fill" style="width:${scoreDisplay}%;background:#06b6d4"></div></div></div>
+    <div class="kpi"><div class="kpi-lbl">Piliers ≥ 70%</div><div class="kpi-val" style="color:#10d07a">${covered} / ${DORA.pillars.length}</div><div class="kpi-dlt">piliers conformes</div><div class="kpi-bar"><div class="kpi-fill" style="width:${covered/DORA.pillars.length*100}%;background:#10d07a"></div></div></div>
+    <div class="kpi"><div class="kpi-lbl">Incidents ICT déclarés</div><div class="kpi-val" style="color:#ef4444" id="dora-inc-disp">${DORA.incidents}</div><div class="kpi-dlt">30 derniers jours · art. 19</div></div>
+    <div class="kpi"><div class="kpi-lbl">Tests TLPT</div><div class="kpi-val" style="color:#f59e0b" id="dora-tlpt-disp">${DORA.tlpt_done} / ${DORA.tlpt_total}</div><div class="kpi-dlt">réalisés · art. 26</div></div>
+  </div>
+  <div class="grid g2 mb14">
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Piliers DORA — Avancement</div><div class="ps">Règlement art. 5-55 · éditable</div></div>
+        <button class="btn btn-sm btn-acc" onclick="doraSavePillars()">💾 Enregistrer</button>
+      </div>
+      ${DORA.pillars.map((p,i)=>`
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div>
+              <span style="font-size:12px;font-weight:500">${p.n}</span>
+              <span class="badge b-gry" style="margin-left:6px;font-size:10px">${p.ref}</span>
+            </div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${p.color}" id="dora-pv-${i}">${p.p}%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;position:relative;height:6px;background:var(--bg-base);border-radius:3px">
+              <div id="dora-pfill-${i}" style="height:100%;border-radius:3px;background:${p.color};width:${p.p}%;transition:width .3s"></div>
+            </div>
+            <input type="range" min="0" max="100" value="${p.p}" style="width:120px"
+              oninput="DORA.pillars[${i}].p=+this.value;document.getElementById('dora-pv-${i}').textContent=this.value+'%';document.getElementById('dora-pfill-${i}').style.width=this.value+'%'">
+          </div>
+        </div>`).join('')}
     </div>
-    <div class="grid g2">
-      <div class="panel">
-        <div class="ph"><div class="pt">Avancement par pilier DORA</div></div>
-        ${pillars.map(p=>`<div class="prow"><span class="plbl">${p.n}</span><div class="pwrap"><div class="pfill" style="width:${p.p}%;background:${p.color}"></div></div><span class="pval">${p.p}%</span></div>`).join('')}
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Actions & plan de remédiation</div></div>
+        <button class="btn btn-sm btn-acc" onclick="doraAddAction()">+ Action</button>
       </div>
-      <div class="panel">
-        <div class="ph"><div class="pt">Actions prioritaires</div></div>
-        ${[
-          {a:'Cartographier tous les prestataires TIC critiques',e:'Mars 2026',s:'En cours'},
-          {a:'Réaliser 2nd test TLPT (Threat-Led Penetration)',e:'Juin 2026',s:'Planifié'},
-          {a:'Mettre à jour le plan de réponse aux incidents ICT',e:'Avril 2026',s:'En cours'},
-          {a:'Former les équipes au dispositif de signalement',e:'Mai 2026',s:'Planifié'},
-        ].map(i=>`<div style="background:var(--bg-raised);border:1px solid var(--border-lo);border-radius:8px;padding:10px;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:500;margin-bottom:4px">${i.a}</div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <span class="badge b-blu">Échéance: ${i.e}</span>
-            <span class="badge ${i.s==='En cours'?'b-grn':'b-gry'}">${i.s}</span>
-          </div></div>`).join('')}
+      <div id="dora-actions">
+        ${DORA.actions.map((ac,i)=>`
+        <div style="background:var(--bg-raised);border:1px solid var(--border-lo);border-radius:8px;padding:10px;margin-bottom:8px;display:flex;gap:8px;align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:500;margin-bottom:5px">${ac.a}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <span class="badge b-blu">📅 ${ac.e}</span>
+              <select style="font-size:11px;padding:2px 6px;border-radius:6px;background:var(--bg-panel);border:1px solid var(--border-mid);color:var(--text-pri)"
+                onchange="DORA.actions[${i}].s=this.value;doraSave(DORA);toast('Statut mis à jour')">
+                <option value="planifie" ${ac.s==='planifie'?'selected':''}>Planifié</option>
+                <option value="en_cours" ${ac.s==='en_cours'?'selected':''}>En cours</option>
+                <option value="termine" ${ac.s==='termine'?'selected':''}>Terminé</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-d" onclick="DORA.actions.splice(${i},1);doraSave(DORA);renderDora()" style="padding:2px 7px;flex-shrink:0">✕</button>
+        </div>`).join('')}
       </div>
-    </div>`);
+      <div class="divider"></div>
+      <div style="font-size:10px;color:var(--text-ter);line-height:1.6">
+        <strong style="color:var(--text-sec)">Incidents ICT</strong> :
+        <input type="number" min="0" value="${DORA.incidents}" style="width:60px;padding:2px 6px;font-size:11px;display:inline"
+          onchange="DORA.incidents=+this.value;doraSave(DORA);document.getElementById('dora-inc-disp').textContent=this.value;toast('Incidents mis à jour')">
+        &nbsp;|&nbsp; <strong style="color:var(--text-sec)">TLPT réalisés</strong> :
+        <input type="number" min="0" value="${DORA.tlpt_done}" style="width:50px;padding:2px 6px;font-size:11px;display:inline"
+          onchange="DORA.tlpt_done=+this.value;doraSave(DORA);document.getElementById('dora-tlpt-disp').textContent=this.value+' / '+DORA.tlpt_total;toast('TLPT mis à jour')">
+        /
+        <input type="number" min="0" value="${DORA.tlpt_total}" style="width:50px;padding:2px 6px;font-size:11px;display:inline"
+          onchange="DORA.tlpt_total=+this.value;doraSave(DORA);document.getElementById('dora-tlpt-disp').textContent=DORA.tlpt_done+' / '+this.value;toast('TLPT mis à jour')">
+      </div>
+    </div>
+  </div>`);
+}
+function doraSavePillars(){doraSave(DORA);toast('Piliers DORA enregistrés');}
+function doraAddAction(){
+  const nom=prompt('Intitulé de l\'action :');if(!nom)return;
+  const ech=prompt('Échéance (YYYY-MM-DD) :','2026-12-31');
+  DORA.actions.push({a:nom,e:ech||'2026-12-31',s:'planifie'});
+  doraSave(DORA);renderDora();toast('Action ajoutée');
 }
 
 // ── NIS2 ───────────────────────────────────────────────────────────
+// Sources légales : Directive (UE) 2022/2555 du 14 décembre 2022 (NIS2)
+// JO UE L 333/80 · Transposée en droit français : Loi n°2024-449 du 21 mai 2024
+// Art. 21 : 10 mesures de sécurité obligatoires · ANSSI autorité compétente
+const NIS2_STORE_KEY = 'ea_nis2_v1';
+function nis2Load() { try { return JSON.parse(localStorage.getItem(NIS2_STORE_KEY)) || null; } catch(e) { return null; } }
+function nis2Save(d) { localStorage.setItem(NIS2_STORE_KEY, JSON.stringify(d)); }
+function nis2Default() {
+  return {
+    measures: [
+      {id:'pol',  n:'Politiques de sécurité & gouvernance', p:85, ref:'Art. 21.2.a', c:'#a855f7'},
+      {id:'inc',  n:'Gestion des incidents',                 p:70, ref:'Art. 21.2.b', c:'#f43f8a'},
+      {id:'bcp',  n:'Continuité d\'activité',                p:60, ref:'Art. 21.2.c', c:'#fb923c'},
+      {id:'sca',  n:'Sécurité chaîne approvisionnement',    p:45, ref:'Art. 21.2.d', c:'#ef4444'},
+      {id:'net',  n:'Sécurité des réseaux & SI',            p:78, ref:'Art. 21.2.e', c:'#4b8cf5'},
+      {id:'mfa',  n:'Contrôle d\'accès & MFA',               p:90, ref:'Art. 21.2.i', c:'#10d07a'},
+      {id:'crypt',n:'Chiffrement & cryptographie',           p:82, ref:'Art. 21.2.h', c:'#22d3bc'},
+      {id:'vuln', n:'Gestion des vulnérabilités',            p:55, ref:'Art. 21.2.e', c:'#fbbf24'},
+      {id:'hr',   n:'Sécurité RH & formation',               p:68, ref:'Art. 21.2.g', c:'#06b6d4'},
+      {id:'test', n:'Tests & audits réguliers',               p:50, ref:'Art. 21.2.j', c:'#8b5cf6'},
+    ],
+    categorie: 'essentielle',
+    notif_delai: 24,
+    conformes: 6,
+  };
+}
+let NIS2 = nis2Load() || nis2Default();
+
 function renderNis2() {
-  const measures = [
-    {n:'Politiques de sécurité',p:85,c:'#a855f7'},
-    {n:'Gestion des incidents',p:70,c:'#f43f8a'},
-    {n:'Continuité d\'activité',p:60,c:'#fb923c'},
-    {n:'Sécurité chaîne approvisionnement',p:45,c:'#ef4444'},
-    {n:'Sécurité des réseaux',p:78,c:'#4b8cf5'},
-    {n:'Contrôle d\'accès & MFA',p:90,c:'#10d07a'},
-    {n:'Chiffrement',p:82,c:'#22d3bc'},
-    {n:'Gestion des vulnérabilités',p:55,c:'#fbbf24'},
-  ];
-  renderExtPage('nis2','#a855f7','🛡','NIS2','Directive NIS2 · Évaluation de conformité',`
-    <div class="grid g4 mb14">
-      ${[
-        {l:'Entités concernées',v:'Essentielle',d:'Art. 3 – criticité haute',c:'#a855f7'},
-        {l:'Score global NIS2',v:'71 %',d:'cible : 90 %',c:'#10d07a'},
-        {l:'Mesures conformes',v:'6 / 10',d:'exigences art. 21',c:'#4b8cf5'},
-        {l:'Délai notification',v:'24 h',d:'incidents significatifs',c:'#f43f8a'},
-      ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c};font-size:18px">${k.v}</div><div class="kpi-dlt">${k.d}</div></div>`).join('')}
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt">Mesures de sécurité NIS2 — Art. 21</div></div>
-      <div class="grid g2">
-        <div>${measures.slice(0,4).map(m=>`<div class="prow"><span class="plbl">${m.n}</span><div class="pwrap"><div class="pfill" style="width:${m.p}%;background:${m.c}"></div></div><span class="pval">${m.p}%</span></div>`).join('')}</div>
-        <div>${measures.slice(4).map(m=>`<div class="prow"><span class="plbl">${m.n}</span><div class="pwrap"><div class="pfill" style="width:${m.p}%;background:${m.c}"></div></div><span class="pval">${m.p}%</span></div>`).join('')}</div>
+  const score = Math.round(NIS2.measures.reduce((s,m)=>s+m.p,0)/NIS2.measures.length);
+  const conformes = NIS2.measures.filter(m=>m.p>=70).length;
+
+  // Intégration données cyber : si EBIOS chargé, ajuster score chaîne appro
+  if (D.ebiosData) {
+    const scaRisks = D.ebiosData.filter(r=>r.type==='Risque' && (r.bien_support||'').toLowerCase().includes('prestataire'));
+    if (scaRisks.length) {
+      const idx = NIS2.measures.findIndex(m=>m.id==='sca');
+      if (idx>=0) NIS2.measures[idx]._ebios_alert = scaRisks.length;
+    }
+  }
+
+  renderExtPage('nis2','#a855f7','🛡','NIS2',
+    'Directive (UE) 2022/2555 · JO UE L 333/80 · Loi française n°2024-449 du 21 mai 2024',
+  `<div style="background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--text-sec);display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+    <span>⚖️ <strong style="color:#a855f7">Base légale</strong> : Directive (UE) 2022/2555 (NIS2)</span>
+    <span>·</span><span>🇫🇷 Transposition FR : Loi n°2024-449 (mai 2024)</span>
+    <span>·</span><span>🔗 <a href="https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32022L2555" target="_blank" style="color:#a855f7">EUR-Lex 32022L2555</a></span>
+    <span>·</span><span>🏛️ Autorité : <a href="https://www.ssi.gouv.fr" target="_blank" style="color:#a855f7">ANSSI</a></span>
+  </div>
+  <div class="grid g4 mb14">
+    <div class="kpi"><div class="kpi-lbl">Catégorie entité</div>
+      <div style="font-size:11px;margin-top:4px">
+        <select style="background:var(--bg-raised);border:1px solid var(--border-mid);border-radius:6px;color:var(--text-pri);font-size:12px;padding:4px 8px"
+          onchange="NIS2.categorie=this.value;nis2Save(NIS2);toast('Catégorie mise à jour')">
+          <option value="essentielle" ${NIS2.categorie==='essentielle'?'selected':''}>Essentielle (Art. 3.1)</option>
+          <option value="importante" ${NIS2.categorie==='importante'?'selected':''}>Importante (Art. 3.2)</option>
+        </select>
       </div>
-    </div>`);
+    </div>
+    <div class="kpi"><div class="kpi-lbl">Score global NIS2</div><div class="kpi-val" style="color:#a855f7">${score}%</div><div class="kpi-dlt">cible 90%</div><div class="kpi-bar"><div class="kpi-fill" style="width:${score}%;background:#a855f7"></div></div></div>
+    <div class="kpi"><div class="kpi-lbl">Mesures conformes</div><div class="kpi-val" style="color:#10d07a">${conformes} / ${NIS2.measures.length}</div><div class="kpi-dlt">exigences art. 21</div><div class="kpi-bar"><div class="kpi-fill" style="width:${conformes/NIS2.measures.length*100}%;background:#10d07a"></div></div></div>
+    <div class="kpi"><div class="kpi-lbl">Délai notification</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+        <input type="number" min="1" max="72" value="${NIS2.notif_delai}" style="width:60px;font-size:16px;font-weight:500;color:#f43f8a;background:none;border:none;padding:0;font-family:'JetBrains Mono',monospace"
+          onchange="NIS2.notif_delai=+this.value;nis2Save(NIS2);toast('Délai mis à jour')">
+        <span style="font-size:12px;color:var(--text-ter)">h · art. 23</span>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph">
+      <div><div class="pt">10 Mesures de sécurité — Art. 21 NIS2</div><div class="ps">Éditable · sauvegarde automatique</div></div>
+      <button class="btn btn-sm btn-acc" onclick="nis2Save(NIS2);toast('NIS2 enregistré')">💾 Enregistrer</button>
+    </div>
+    <div class="grid g2">
+      <div>${NIS2.measures.slice(0,5).map((m,i)=>`
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:12px;font-weight:500">${m.n}</span>
+              ${m._ebios_alert?`<span class="badge b-red" title="${m._ebios_alert} risque(s) EBIOS">⚠ EBIOS</span>`:''}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="badge b-gry" style="font-size:10px">${m.ref}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${m.c}" id="nis2-v-${i}">${m.p}%</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;height:6px;background:var(--bg-base);border-radius:3px;overflow:hidden">
+              <div id="nis2-f-${i}" style="height:100%;border-radius:3px;background:${m.c};width:${m.p}%;transition:width .3s"></div>
+            </div>
+            <input type="range" min="0" max="100" value="${m.p}" style="width:110px"
+              oninput="NIS2.measures[${i}].p=+this.value;document.getElementById('nis2-v-${i}').textContent=this.value+'%';document.getElementById('nis2-f-${i}').style.width=this.value+'%'">
+          </div>
+        </div>`).join('')}</div>
+      <div>${NIS2.measures.slice(5).map((m,i)=>`
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span style="font-size:12px;font-weight:500">${m.n}</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="badge b-gry" style="font-size:10px">${m.ref}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${m.c}" id="nis2-v-${i+5}">${m.p}%</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;height:6px;background:var(--bg-base);border-radius:3px;overflow:hidden">
+              <div id="nis2-f-${i+5}" style="height:100%;border-radius:3px;background:${m.c};width:${m.p}%;transition:width .3s"></div>
+            </div>
+            <input type="range" min="0" max="100" value="${m.p}" style="width:110px"
+              oninput="NIS2.measures[${i+5}].p=+this.value;document.getElementById('nis2-v-${i+5}').textContent=this.value+'%';document.getElementById('nis2-f-${i+5}').style.width=this.value+'%'">
+          </div>
+        </div>`).join('')}</div>
+    </div>
+  </div>`);
 }
 
 // ── CYBER INTEL ────────────────────────────────────────────────────
+// Sources officielles : ANSSI (ssi.gouv.fr), CERT-FR (cert.ssi.gouv.fr),
+// ENISA Threat Landscape (enisa.europa.eu), CISA (cisa.gov), CVE/NVD (nvd.nist.gov)
+// TLP:BLANC — informations librement partageables (FIRST Protocol)
+const CYBER_STORE_KEY = 'ea_cyber_v1';
+function cyberLoad() { try { return JSON.parse(localStorage.getItem(CYBER_STORE_KEY)) || null; } catch(e) { return null; } }
+function cyberSave(d) { localStorage.setItem(CYBER_STORE_KEY, JSON.stringify(d)); }
+function cyberDefault() {
+  return {
+    threats: [
+      {n:'Ransomware',          lvl:'critique', trend:'up',   src:'ANSSI',   tlp:'BLANC', url:'https://www.ssi.gouv.fr/actualite/lanssi-publie-son-panorama-de-la-menace-informatique-2023/'},
+      {n:'Phishing ciblé (spear)',lvl:'haute',  trend:'up',   src:'CERT-FR', tlp:'BLANC', url:'https://www.cert.ssi.gouv.fr/'},
+      {n:'Supply-chain attack',  lvl:'haute',   trend:'flat', src:'ENISA',   tlp:'BLANC', url:'https://www.enisa.europa.eu/topics/threat-risk-management/threats-and-trends'},
+      {n:'Exploitation 0-day',   lvl:'critique',trend:'up',   src:'CISA',    tlp:'BLANC', url:'https://www.cisa.gov/known-exploited-vulnerabilities-catalog'},
+      {n:'Insider threat',       lvl:'moyenne', trend:'flat', src:'Interne', tlp:'INTERNE',url:''},
+      {n:'DDoS applicatif',      lvl:'basse',   trend:'down', src:'ANSSI',   tlp:'BLANC', url:'https://www.ssi.gouv.fr'},
+    ],
+    cves: [
+      {id:'CVE-2025-1234',cvss:9.8,produit:'SAP ERP',statut:'à_patcher'},
+      {id:'CVE-2025-5678',cvss:7.5,produit:'Oracle HRMS',statut:'en_cours'},
+      {id:'CVE-2024-9999',cvss:8.1,produit:'Microsoft 365',statut:'patchée'},
+    ],
+    ioc_count: 37,
+    mttd_h: 4.2,
+  };
+}
+let CYBER = cyberLoad() || cyberDefault();
+const TLP_COLORS = {BLANC:'#e5e7eb',VERT:'#10d07a',AMBRE:'#fbbf24',ROUGE:'#ef4444',INTERNE:'#4b8cf5'};
+const LVL_COLORS = {critique:'#ef4444',haute:'#fbbf24',moyenne:'#4b8cf5',basse:'#22d3bc'};
+const TREND_ICONS = {up:'↑',flat:'→',down:'↓'};
+const TREND_COLORS = {up:'#ef4444',flat:'#fbbf24',down:'#10d07a'};
+
 function renderCyber() {
-  const threats = [
-    {n:'Ransomware',lvl:'Critique',trend:'↑',src:'ANSSI TLP:BLANC',c:'#ef4444'},
-    {n:'Phishing ciblé (spear)',lvl:'Haute',trend:'↑',src:'CERT-FR',c:'#fbbf24'},
-    {n:'Supply-chain attack',lvl:'Haute',trend:'→',src:'ENISA',c:'#fbbf24'},
-    {n:'Exploitation 0-day',lvl:'Critique',trend:'↑',src:'CISA',c:'#ef4444'},
-    {n:'Insider threat',lvl:'Moyenne',trend:'→',src:'Interne',c:'#4b8cf5'},
-    {n:'DDoS applicatif',lvl:'Basse',trend:'↓',src:'OVH Radar',c:'#22d3bc'},
-  ];
-  renderExtPage('cyber','#ef4444','🌍','Cyber Intel','Threat Intelligence · Menaces & vulnérabilités actives',`
-    <div class="grid g4 mb14">
-      ${[
-        {l:'Menaces critiques',v:'4',d:'actives sur le périmètre',c:'#ef4444'},
-        {l:'CVE à patcher',v:'12',d:'CVSS ≥ 7.0',c:'#fbbf24'},
-        {l:'IOC détectés (30j)',v:'37',d:'indicateurs de compromission',c:'#f43f8a'},
-        {l:'MTTD moyen',v:'4,2 h',d:'temps de détection',c:'#10d07a'},
-      ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c};font-size:18px">${k.v}</div><div class="kpi-dlt">${k.d}</div></div>`).join('')}
+  const critiques = CYBER.threats.filter(t=>t.lvl==='critique').length;
+  const cveOpen = CYBER.cves.filter(c=>c.statut!=='patchée').length;
+
+  renderExtPage('cyber','#ef4444','🌍','Cyber Intel',
+    'ANSSI · CERT-FR · ENISA Threat Landscape · CISA KEV · CVE/NVD NIST — TLP:BLANC',
+  `<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--text-sec);display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <span>🔴 <strong style="color:#ef4444">Sources officielles</strong></span>
+    <span>·</span><span><a href="https://www.ssi.gouv.fr" target="_blank" style="color:#ef4444">ANSSI</a></span>
+    <span>·</span><span><a href="https://www.cert.ssi.gouv.fr" target="_blank" style="color:#ef4444">CERT-FR</a></span>
+    <span>·</span><span><a href="https://www.enisa.europa.eu/topics/threat-risk-management/threats-and-trends" target="_blank" style="color:#ef4444">ENISA ETL</a></span>
+    <span>·</span><span><a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" style="color:#ef4444">CISA KEV</a></span>
+    <span>·</span><span><a href="https://nvd.nist.gov" target="_blank" style="color:#ef4444">NVD NIST</a></span>
+    <span>·</span><span style="color:#e5e7eb">⬤ TLP:BLANC — diffusion libre</span>
+  </div>
+  <div class="grid g4 mb14">
+    <div class="kpi"><div class="kpi-lbl">Menaces critiques</div><div class="kpi-val" style="color:#ef4444">${critiques}</div><div class="kpi-dlt">actives périmètre</div><div class="kpi-bar"><div class="kpi-fill" style="width:${critiques/CYBER.threats.length*100}%;background:#ef4444"></div></div></div>
+    <div class="kpi"><div class="kpi-lbl">CVE ouvertes</div><div class="kpi-val" style="color:#fbbf24" id="cyber-cve-disp">${cveOpen}</div><div class="kpi-dlt">CVSS ≥ 7.0 à traiter</div></div>
+    <div class="kpi"><div class="kpi-lbl">IOC détectés (30j)</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+        <input type="number" min="0" value="${CYBER.ioc_count}" style="width:70px;font-size:20px;font-weight:500;color:#f43f8a;background:none;border:none;padding:0;font-family:'JetBrains Mono',monospace"
+          onchange="CYBER.ioc_count=+this.value;cyberSave(CYBER);toast('IOC mis à jour')">
+      </div>
+      <div class="kpi-dlt">indicateurs de compromission</div>
     </div>
+    <div class="kpi"><div class="kpi-lbl">MTTD moyen</div>
+      <div style="display:flex;align-items:center;gap:4px;margin-top:4px">
+        <input type="number" min="0" step="0.1" value="${CYBER.mttd_h}" style="width:70px;font-size:20px;font-weight:500;color:#10d07a;background:none;border:none;padding:0;font-family:'JetBrains Mono',monospace"
+          onchange="CYBER.mttd_h=+this.value;cyberSave(CYBER);toast('MTTD mis à jour')">
+        <span style="color:var(--text-ter);font-size:12px">h</span>
+      </div>
+      <div class="kpi-dlt">temps de détection</div>
+    </div>
+  </div>
+  <div class="grid g2 mb14">
     <div class="panel">
-      <div class="ph"><div class="pt">Paysage des menaces actives</div></div>
-      <div class="twrap"><table><thead><tr><th>Menace</th><th>Niveau</th><th>Tendance</th><th>Source</th></tr></thead><tbody>
-        ${threats.map(t=>`<tr>
-          <td><strong>${t.n}</strong></td>
-          <td><span class="badge" style="background:${t.c}22;color:${t.c}">${t.lvl}</span></td>
-          <td style="color:${t.trend==='↑'?'#ef4444':t.trend==='↓'?'#10d07a':'#fbbf24'};font-size:16px">${t.trend}</td>
+      <div class="ph">
+        <div><div class="pt">Paysage des menaces</div><div class="ps">Sources officielles · TLP classifié</div></div>
+        <button class="btn btn-sm btn-acc" onclick="cyberAddThreat()">+ Menace</button>
+      </div>
+      <div class="twrap"><table><thead><tr><th>Menace</th><th>Niveau</th><th>Tendance</th><th>Source</th><th>TLP</th><th></th></tr></thead><tbody>
+        ${CYBER.threats.map((t,i)=>`<tr>
+          <td><strong>${t.url?`<a href="${t.url}" target="_blank" style="color:var(--text-pri);text-decoration:none;border-bottom:1px dashed var(--border-mid)">${t.n}</a>`:t.n}</strong></td>
+          <td><select style="font-size:11px;padding:2px 5px;border-radius:5px;background:var(--bg-raised);border:1px solid var(--border-mid);color:${LVL_COLORS[t.lvl]}"
+            onchange="CYBER.threats[${i}].lvl=this.value;cyberSave(CYBER);toast('Niveau mis à jour')">
+            ${['critique','haute','moyenne','basse'].map(l=>`<option value="${l}" ${t.lvl===l?'selected':''}>${l.charAt(0).toUpperCase()+l.slice(1)}</option>`).join('')}
+          </select></td>
+          <td><select style="font-size:14px;padding:2px 5px;border-radius:5px;background:var(--bg-raised);border:1px solid var(--border-mid);color:${TREND_COLORS[t.trend]}"
+            onchange="CYBER.threats[${i}].trend=this.value;cyberSave(CYBER)">
+            <option value="up" ${t.trend==='up'?'selected':''}>↑</option>
+            <option value="flat" ${t.trend==='flat'?'selected':''}>→</option>
+            <option value="down" ${t.trend==='down'?'selected':''}>↓</option>
+          </select></td>
           <td style="font-size:11px;color:var(--text-ter)">${t.src}</td>
+          <td><span style="font-size:10px;font-weight:600;color:${TLP_COLORS[t.tlp]||'#888'};background:${TLP_COLORS[t.tlp]||'#888'}18;padding:2px 6px;border-radius:4px">TLP:${t.tlp}</span></td>
+          <td><button class="btn btn-sm btn-d" onclick="CYBER.threats.splice(${i},1);cyberSave(CYBER);renderCyber()" style="padding:2px 7px">✕</button></td>
         </tr>`).join('')}
       </tbody></table></div>
-    </div>`);
+    </div>
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">CVE critiques — NVD NIST</div><div class="ps">CVSS ≥ 7.0 · périmètre applicatif</div></div>
+        <button class="btn btn-sm btn-acc" onclick="cyberAddCVE()">+ CVE</button>
+      </div>
+      <div class="twrap"><table><thead><tr><th>CVE</th><th>CVSS</th><th>Produit</th><th>Statut</th><th></th></tr></thead><tbody>
+        ${CYBER.cves.map((c,i)=>`<tr>
+          <td><a href="https://nvd.nist.gov/vuln/detail/${c.id}" target="_blank" style="color:#ef4444;font-family:'JetBrains Mono',monospace;font-size:11px">${c.id}</a></td>
+          <td><input type="number" min="0" max="10" step="0.1" value="${c.cvss}" style="width:55px;background:none;border:none;font-family:'JetBrains Mono',monospace;font-size:12px;color:${c.cvss>=9?'#ef4444':c.cvss>=7?'#fbbf24':'#10d07a'};padding:0"
+            onchange="CYBER.cves[${i}].cvss=+this.value;cyberSave(CYBER);toast('CVSS mis à jour')"></td>
+          <td style="font-size:11px">${c.produit}</td>
+          <td><select style="font-size:11px;padding:2px 5px;border-radius:5px;background:var(--bg-raised);border:1px solid var(--border-mid);color:${c.statut==='patchée'?'#10d07a':c.statut==='en_cours'?'#fbbf24':'#ef4444'}"
+            onchange="CYBER.cves[${i}].statut=this.value;cyberSave(CYBER);document.getElementById('cyber-cve-disp').textContent=CYBER.cves.filter(x=>x.statut!=='patchée').length;toast('Statut CVE mis à jour')">
+            <option value="à_patcher" ${c.statut==='à_patcher'?'selected':''}>À patcher</option>
+            <option value="en_cours" ${c.statut==='en_cours'?'selected':''}>En cours</option>
+            <option value="patchée" ${c.statut==='patchée'?'selected':''}>Patchée</option>
+          </select></td>
+          <td><button class="btn btn-sm btn-d" onclick="CYBER.cves.splice(${i},1);cyberSave(CYBER);renderCyber()" style="padding:2px 7px">✕</button></td>
+        </tr>`).join('')}
+      </tbody></table></div>
+    </div>
+  </div>`);
+}
+function cyberAddThreat(){
+  const n=prompt('Nom de la menace :');if(!n)return;
+  CYBER.threats.push({n,lvl:'haute',trend:'flat',src:'Interne',tlp:'BLANC',url:''});
+  cyberSave(CYBER);renderCyber();toast('Menace ajoutée');
+}
+function cyberAddCVE(){
+  const id=prompt('Identifiant CVE (ex: CVE-2025-1234) :');if(!id)return;
+  const cvss=parseFloat(prompt('Score CVSS :','7.5'))||7.5;
+  const produit=prompt('Produit concerné :','SAP ERP')||'';
+  CYBER.cves.push({id,cvss,produit,statut:'à_patcher'});
+  cyberSave(CYBER);renderCyber();toast('CVE ajoutée');
 }
 
 // ── EBIOS RM ───────────────────────────────────────────────────────
+// Source : EBIOS Risk Manager — Outil officiel ANSSI (ebiosriskmanager.fr)
+// Méthode EBIOS Risk Manager — Guide v1.5 (ANSSI, 2018)
+// Export CSV UTF-8 depuis EBIOS Risk Manager : Fichier > Exporter > CSV
+// Colonnes attendues : type, identifiant, libelle, gravite, vraisemblance,
+//   bien_support, source_risque, objectif_vise, mesure, statut_mesure
+
+const EBIOS_STORE_KEY = 'ea_ebios_v2';
+function ebiosLoad() { try { return JSON.parse(localStorage.getItem(EBIOS_STORE_KEY)) || null; } catch(e) { return null; } }
+function ebosSave(d) { localStorage.setItem(EBIOS_STORE_KEY, JSON.stringify(d)); }
+
+// ── PROPAGATION EBIOS → autres modules ─────────────────────────────
+function propagateEbios(rows) {
+  if (!rows || !rows.length) return;
+  let changed = {apps:false, fournisseurs:false, projets:false, interfaces:false, nis2:false};
+
+  const risques = rows.filter(r => r.type === 'Risque' || r.type === 'Scenario_operationnel');
+  const mesures = rows.filter(r => r.type === 'Mesure' || r.type === 'Traitement');
+
+  // 1. Score de risque des applications
+  D.apps.forEach((app, i) => {
+    const linked = risques.filter(r =>
+      (r.bien_support||'').toLowerCase().includes(app.nom.toLowerCase()) ||
+      (r.libelle||'').toLowerCase().includes(app.nom.toLowerCase())
+    );
+    if (linked.length) {
+      const maxGrav = Math.max(...linked.map(r => parseInt(r.gravite)||0));
+      const maxVrais = Math.max(...linked.map(r => parseInt(r.vraisemblance)||0));
+      const newRisque = Math.min(100, Math.round((maxGrav * maxVrais) / 4 * 25));
+      if (newRisque > 0 && newRisque !== app.risque) {
+        D.apps[i].risque = newRisque;
+        changed.apps = true;
+      }
+    }
+  });
+
+  // 2. Statut conformité NIS2/ISO via mesures EBIOS
+  if (NIS2 && mesures.length) {
+    const secaMesures = mesures.filter(m => m.statut_mesure === 'Réalisée' || m.statut_mesure === 'En cours');
+    const ratio = Math.round(secaMesures.length / Math.max(1, mesures.length) * 100);
+    NIS2.measures.forEach((m,i) => {
+      if (m.id === 'pol' || m.id === 'inc' || m.id === 'vuln') {
+        NIS2.measures[i].p = Math.min(100, Math.round((NIS2.measures[i].p + ratio) / 2));
+      }
+    });
+    nis2Save(NIS2);
+    changed.nis2 = true;
+  }
+
+  // 3. Budget projets sécurité : créer ou mettre à jour un projet EBIOS
+  const hasProjEbios = D.projets.find(p => p.nom.includes('EBIOS'));
+  if (!hasProjEbios && risques.length > 0) {
+    const critiques = risques.filter(r => parseInt(r.gravite) >= 3 && parseInt(r.vraisemblance) >= 3);
+    if (critiques.length) {
+      D.projets.push({
+        nom: 'Plan de traitement EBIOS RM',
+        phase: 'Q3 2026',
+        budget: critiques.length * 25000,
+        statut: 'planifié',
+        risque: Math.round(critiques.length / risques.length * 100),
+        val: 90,
+        color: '#f59e0b'
+      });
+      changed.projets = true;
+    }
+  }
+
+  // 4. Criticité des interfaces
+  D.interfaces.forEach((iface, i) => {
+    const linked = risques.filter(r =>
+      (r.libelle||'').toLowerCase().includes((iface.src||'').toLowerCase()) ||
+      (r.libelle||'').toLowerCase().includes((iface.dst||'').toLowerCase())
+    );
+    if (linked.length) {
+      const maxGrav = Math.max(...linked.map(r => parseInt(r.gravite)||0));
+      if (maxGrav >= 4 && iface.crit !== 'critique') { D.interfaces[i].crit = 'critique'; changed.interfaces = true; }
+      else if (maxGrav === 3 && iface.crit === 'basse') { D.interfaces[i].crit = 'haute'; changed.interfaces = true; }
+    }
+  });
+
+  // 5. Risque fournisseurs
+  D.fournisseurs.forEach((f, i) => {
+    const linked = risques.filter(r =>
+      (r.source_risque||'').toLowerCase().includes(f.nom.toLowerCase()) ||
+      (r.bien_support||'').toLowerCase().includes(f.nom.toLowerCase())
+    );
+    if (linked.length) {
+      const maxGrav = Math.max(...linked.map(r => parseInt(r.gravite)||0));
+      const newRisque = Math.min(100, Math.round(maxGrav * 20 + 10));
+      if (newRisque !== f.risque) { D.fournisseurs[i].risque = newRisque; changed.fournisseurs = true; }
+    }
+  });
+
+  saveD();
+  const modules = [];
+  if (changed.apps || changed.fournisseurs || changed.projets || changed.interfaces) {
+    modules.push('portfolio','tech','secu','finance','data','project','sourcing','synthese');
+  }
+  modules.forEach(m => recordImpact('ebios','Propagation EBIOS RM', m));
+  const summary = [
+    changed.apps && 'risques apps',
+    changed.nis2 && 'conformité NIS2',
+    changed.projets && 'budget projets',
+    changed.interfaces && 'criticité interfaces',
+    changed.fournisseurs && 'risque fournisseurs',
+  ].filter(Boolean).join(', ');
+  toast(`✓ Propagation : ${summary || 'aucun changement détecté'}`);
+}
+
 function renderEbios() {
+  const stored = ebiosLoad();
+  const rows = stored ? stored.rows : [];
+  const meta = stored ? stored.meta : null;
+
+  const risques = rows.filter(r => r.type === 'Risque' || r.type === 'Scenario_operationnel');
+  const mesures = rows.filter(r => r.type === 'Mesure' || r.type === 'Traitement');
+  const biens   = rows.filter(r => r.type === 'Bien_essentiel' || r.type === 'Bien_support');
+
   const ateliers = [
-    {n:'Atelier 1 – Cadrage et socle de sécurité',done:true,p:100},
-    {n:'Atelier 2 – Sources de risques',done:true,p:100},
-    {n:'Atelier 3 – Scénarios stratégiques',done:false,p:65},
-    {n:'Atelier 4 – Scénarios opérationnels',done:false,p:30},
-    {n:'Atelier 5 – Traitement du risque',done:false,p:0},
+    {n:'Atelier 1 – Cadrage & socle de sécurité', done: biens.length > 0,   p: biens.length > 0 ? 100 : 0},
+    {n:'Atelier 2 – Sources de risques',           done: risques.length > 0, p: risques.length > 0 ? 100 : 0},
+    {n:'Atelier 3 – Scénarios stratégiques',       done: false,              p: risques.filter(r=>r.type==='Risque').length > 0 ? 65 : 0},
+    {n:'Atelier 4 – Scénarios opérationnels',      done: false,              p: rows.filter(r=>r.type==='Scenario_operationnel').length > 0 ? 80 : 30},
+    {n:'Atelier 5 – Traitement du risque',         done: false,              p: mesures.length > 0 ? Math.round(mesures.filter(m=>m.statut_mesure==='Réalisée').length/Math.max(1,mesures.length)*100) : 0},
   ];
-  renderExtPage('ebios','#f59e0b','⚠','EBIOS RM','Méthode ANSSI · Gestion des risques de sécurité numérique',`
-    <div class="grid g4 mb14">
-      ${[
-        {l:'Ateliers complétés',v:'2 / 5',d:'progression globale',c:'#f59e0b'},
-        {l:'Scénarios identifiés',v:'14',d:'stratégiques + opérationnels',c:'#a855f7'},
-        {l:'Biens essentiels',v:'8',d:'cartographiés atelier 1',c:'#4b8cf5'},
-        {l:'Mesures de sécurité',v:'23',d:'plan de traitement',c:'#10d07a'},
-      ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c};font-size:18px">${k.v}</div><div class="kpi-dlt">${k.d}</div></div>`).join('')}
+
+  renderExtPage('ebios','#f59e0b','⚠','EBIOS RM — Import CSV',
+    'Méthode ANSSI v1.5 · Export depuis EBIOS Risk Manager (ebiosriskmanager.fr) · CSV UTF-8',
+  `<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--text-sec);display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+    <span>📘 <strong style="color:#f59e0b">Méthode</strong> : EBIOS Risk Manager v1.5 (ANSSI 2018)</span>
+    <span>·</span><span>🔗 <a href="https://www.ssi.gouv.fr/guide/la-methode-ebios-risk-manager-le-guide/" target="_blank" style="color:#f59e0b">Guide ANSSI</a></span>
+    <span>·</span><span>🛠️ <a href="https://ebiosriskmanager.fr" target="_blank" style="color:#f59e0b">Outil EBIOS RM</a></span>
+    <span>·</span><span>📂 Fichier > Exporter > CSV UTF-8</span>
+  </div>
+
+  <!-- ZONE IMPORT CSV -->
+  <div class="panel mb14">
+    <div class="ph">
+      <div>
+        <div class="pt">📂 Import CSV — Export EBIOS Risk Manager</div>
+        <div class="ps">Colonnes détectées : type · identifiant · libelle · gravite · vraisemblance · bien_support · source_risque · objectif_vise · mesure · statut_mesure</div>
+      </div>
+      ${rows.length > 0 ? `<button class="btn btn-sm btn-d" onclick="ebiosClear()">🗑 Effacer</button>` : ''}
     </div>
-    <div class="grid g2">
-      <div class="panel">
-        <div class="ph"><div class="pt">Avancement des ateliers</div></div>
-        ${ateliers.map(a=>`<div class="prow">
-          <span class="plbl" style="min-width:220px">${a.n}</span>
-          <div class="pwrap"><div class="pfill" style="width:${a.p}%;background:${a.done?'#10d07a':'#f59e0b'}"></div></div>
-          <span class="pval">${a.p}%</span>
-        </div>`).join('')}
+    ${rows.length === 0 ? `
+    <div style="border:2px dashed var(--border-mid);border-radius:10px;padding:28px;text-align:center;margin-top:8px" id="ebios-drop"
+      ondragover="event.preventDefault();this.style.borderColor='#f59e0b'"
+      ondragleave="this.style.borderColor=''"
+      ondrop="ebiosDrop(event)">
+      <div style="font-size:28px;margin-bottom:8px">📄</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text-pri);margin-bottom:4px">Glisser-déposer le fichier CSV ici</div>
+      <div style="font-size:11px;color:var(--text-ter);margin-bottom:14px">ou cliquer pour sélectionner · UTF-8 · séparateur virgule ou point-virgule</div>
+      <input type="file" id="ebios-file" accept=".csv,.txt" style="display:none" onchange="ebiosRead(this.files[0])">
+      <button class="btn btn-sm btn-acc" onclick="document.getElementById('ebios-file').click()">Choisir un fichier CSV</button>
+    </div>` : `
+    <div style="background:rgba(16,208,122,.06);border:1px solid rgba(16,208,122,.2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;margin-top:8px">
+      <span style="font-size:20px">✅</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:#10d07a">${rows.length} enregistrements chargés</div>
+        <div style="font-size:11px;color:var(--text-ter);margin-top:2px">${meta ? `Importé le ${meta.date} · ${meta.filename}` : ''}</div>
       </div>
-      <div class="panel">
-        <div class="ph"><div class="pt">Scénarios stratégiques — top risques</div></div>
-        ${[
-          {s:'Exfiltration données RH via HRMS',g:'Très élevée',v:'Critique'},
-          {s:'Ransomware sur ERP SAP',g:'Élevée',v:'Critique'},
-          {s:'Compromission accès prestataire',g:'Élevée',v:'Haute'},
-          {s:'Perte de disponibilité e-commerce',g:'Modérée',v:'Haute'},
-        ].map(sc=>`<div style="background:var(--bg-raised);border:1px solid var(--border-lo);border-radius:8px;padding:9px 12px;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:500;margin-bottom:4px">${sc.s}</div>
-          <div style="display:flex;gap:6px"><span class="badge b-amb">Gravité: ${sc.g}</span><span class="badge b-red">Vraisemblance: ${sc.v}</span></div>
-        </div>`).join('')}
-      </div>
-    </div>`);
+      <button class="btn btn-sm btn-acc" onclick="propagateEbios(${JSON.stringify(rows).replace(/"/g,'&quot;')})">⚡ Propager vers tous les modules</button>
+    </div>`}
+  </div>
+
+  <div class="grid g4 mb14">
+    <div class="kpi"><div class="kpi-lbl">Risques identifiés</div><div class="kpi-val" style="color:#f59e0b">${risques.length || '—'}</div><div class="kpi-dlt">scénarios importés</div></div>
+    <div class="kpi"><div class="kpi-lbl">Mesures de traitement</div><div class="kpi-val" style="color:#a855f7">${mesures.length || '—'}</div><div class="kpi-dlt">plan de traitement</div></div>
+    <div class="kpi"><div class="kpi-lbl">Biens essentiels</div><div class="kpi-val" style="color:#4b8cf5">${biens.length || '—'}</div><div class="kpi-dlt">actifs cartographiés</div></div>
+    <div class="kpi"><div class="kpi-lbl">Mesures réalisées</div><div class="kpi-val" style="color:#10d07a">${mesures.filter(m=>m.statut_mesure==='Réalisée').length || '—'}</div><div class="kpi-dlt">sur ${mesures.length} totales</div></div>
+  </div>
+
+  <div class="grid g2 mb14">
+    <div class="panel">
+      <div class="ph"><div class="pt">Avancement des ateliers</div></div>
+      ${ateliers.map(a=>`<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:12px;font-weight:500">${a.n}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${a.done?'#10d07a':'#f59e0b'}">${a.p}%</span>
+        </div>
+        <div style="height:5px;background:var(--bg-base);border-radius:3px;overflow:hidden">
+          <div style="height:100%;border-radius:3px;background:${a.done?'#10d07a':'#f59e0b'};width:${a.p}%;transition:width .5s"></div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Propagation vers les modules</div><div class="ps">Impact sur les données du portefeuille</div></div>
+      ${[
+        {m:'Portfolio & Tech',  icon:'▣', desc:'Score de risque des applications mis à jour',         active: rows.length>0},
+        {m:'Sécurité / NIS2',  icon:'🛡', desc:'Conformité NIS2 recalculée depuis mesures EBIOS',     active: mesures.length>0},
+        {m:'Finance / Projets',icon:'$',  desc:'Budget plan traitement ajouté aux projets',           active: risques.filter(r=>parseInt(r.gravite)>=3).length>0},
+        {m:'Intégration',      icon:'⇌', desc:'Criticité des interfaces réévaluée',                  active: rows.length>0},
+        {m:'Sourcing',         icon:'⊙', desc:'Risque fournisseurs mis à jour depuis sources risque', active: rows.length>0},
+      ].map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-lo)">
+        <div style="width:28px;height:28px;border-radius:8px;background:${p.active?'rgba(245,158,11,.15)':'var(--bg-raised)'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${p.icon}</div>
+        <div style="flex:1"><div style="font-size:12px;font-weight:500">${p.m}</div><div style="font-size:11px;color:var(--text-ter);margin-top:1px">${p.desc}</div></div>
+        <span class="badge ${p.active?'b-grn':'b-gry'}">${p.active?'Prêt':'En attente CSV'}</span>
+      </div>`).join('')}
+      ${rows.length>0?`<button class="btn btn-sm btn-acc" style="width:100%;margin-top:12px;justify-content:center" onclick="propagateEbios(${JSON.stringify(rows).replace(/"/g,'&quot;')})">⚡ Lancer la propagation</button>`:''}
+    </div>
+  </div>
+
+  ${rows.length > 0 ? `
+  <div class="panel">
+    <div class="ph"><div class="pt">Données importées — ${rows.length} enregistrements</div></div>
+    <div class="twrap" style="max-height:320px;overflow-y:auto"><table><thead><tr>
+      <th>Type</th><th>Identifiant</th><th>Libellé</th><th>Gravité</th><th>Vraisemblance</th><th>Bien support</th><th>Statut mesure</th>
+    </tr></thead><tbody>
+      ${rows.slice(0,50).map(r=>`<tr>
+        <td><span class="badge b-gry" style="font-size:10px">${r.type||'—'}</span></td>
+        <td class="mono" style="font-size:10px;color:var(--text-ter)">${r.identifiant||'—'}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.libelle||'—'}</td>
+        <td style="color:${parseInt(r.gravite)>=4?'#ef4444':parseInt(r.gravite)>=3?'#fbbf24':'#10d07a'};font-family:'JetBrains Mono',monospace">${r.gravite||'—'}</td>
+        <td style="font-family:'JetBrains Mono',monospace">${r.vraisemblance||'—'}</td>
+        <td style="font-size:11px;color:var(--text-ter);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.bien_support||'—'}</td>
+        <td><span class="badge ${r.statut_mesure==='Réalisée'?'b-grn':r.statut_mesure==='En cours'?'b-amb':'b-gry'}">${r.statut_mesure||'—'}</span></td>
+      </tr>`).join('')}
+      ${rows.length>50?`<tr><td colspan="7" style="text-align:center;color:var(--text-ter);padding:10px;font-size:11px">... et ${rows.length-50} enregistrements supplémentaires</td></tr>`:''}
+    </tbody></table></div>
+  </div>` : ''}
+  `);
+}
+
+function ebiosDrop(e) {
+  e.preventDefault();
+  document.getElementById('ebios-drop').style.borderColor='';
+  const file = e.dataTransfer.files[0];
+  if (file) ebiosRead(file);
+}
+
+function ebiosRead(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      const rows = ebiosParseCsv(text);
+      if (!rows.length) { toast('Aucune donnée trouvée dans le CSV','err'); return; }
+      const stored = { rows, meta: { date: new Date().toLocaleDateString('fr-FR'), filename: file.name, count: rows.length } };
+      ebosSave(stored);
+      D.ebiosData = rows;
+      saveD();
+      toast(`✓ ${rows.length} enregistrements importés depuis ${file.name}`);
+      renderEbios();
+    } catch(err) { toast('Erreur de lecture CSV : '+err.message,'err'); }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function ebiosParseCsv(text) {
+  // Detect separator
+  const sep = text.indexOf(';') > text.indexOf(',') ? ';' : ',';
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+
+  // Parse header (normalize keys)
+  const normalize = s => s.toLowerCase().trim().replace(/['"]/g,'').replace(/[éèê]/g,'e').replace(/[àâ]/g,'a').replace(/[ùû]/g,'u').replace(/\s+/g,'_');
+  const headers = lines[0].split(sep).map(normalize);
+
+  return lines.slice(1).map(line => {
+    // Handle quoted fields
+    const cols = [];
+    let inQ = false, cur = '';
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === sep[0] && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    cols.push(cur.trim());
+    const row = {};
+    headers.forEach((h, i) => { row[h] = (cols[i]||'').replace(/^"|"$/g,'').trim(); });
+    return row;
+  }).filter(r => Object.values(r).some(v => v));
+}
+
+function ebiosClear() {
+  if (!confirm('Effacer toutes les données EBIOS importées ?')) return;
+  localStorage.removeItem(EBIOS_STORE_KEY);
+  D.ebiosData = null;
+  saveD();
+  toast('Données EBIOS effacées');
+  renderEbios();
 }
 
 // ── ADMIN ──────────────────────────────────────────────────────────
