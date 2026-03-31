@@ -943,37 +943,42 @@ function doLogout(){
 // ══════════════════════════════════════════════════════════════════
 // NAVIGATION (top menubar)
 // ══════════════════════════════════════════════════════════════════
-// --- DÉFINITION ORIGINALE (À REMETTRE ICI) ---
+const EXTENDED_MODULES = [
+  { id: 'dora',       label: 'DORA',       color: '#06b6d4', icon: '⚡' },
+  { id: 'nis2',       label: 'NIS2',       color: '#a855f7', icon: '🛡' },
+  { id: 'cyber',      label: 'Cyber Intel',color: '#ef4444', icon: '🌍' },
+  { id: 'ebios',      label: 'EBIOS RM',   color: '#f59e0b', icon: '⚠' },
+  { id: 'admin',      label: 'Admin',      color: '#64748b', icon: '🔑' },
+  { id: 'messagerie', label: 'Messages',   color: '#0ea5e9', icon: '✉' },
+];
+
+function nav(id, el) {
+  currentMod = id;
+  document.querySelectorAll('.mb-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  // hide all standard pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // show standard page if it exists
+  const pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('active');
+  renderModule(id);
+}
+
 function buildNav() {
-  const nav = document.getElementById('mb-nav');
-  nav.innerHTML = Object.entries(MODULE_META).map(([id, m]) => `
+  const navEl = document.getElementById('mb-nav');
+  // Core modules
+  navEl.innerHTML = Object.entries(MODULE_META).map(([id, m]) => `
     <div class="mb-item ${id === 'synthese' ? 'active' : ''}" data-mod="${id}" onclick="nav('${id}', this)">
       <div class="mb-dot" style="background:${m.color}"></div>
       ${m.icon} ${m.label}
       <div class="mb-badge" style="display:none" id="badge-${id}">0</div>
     </div>`).join('');
-}
-
-// --- VOTRE EXTENSION (QUI RESTE ICI) ---
-const origBuildNav = buildNav;
-buildNav = function() {
-  origBuildNav();
-  const nav = document.getElementById('mb-nav');
-  
+  // Separator
   const sep = document.createElement('div');
   sep.style.cssText = 'width:1px;height:20px;background:var(--border-mid);flex-shrink:0;margin:0 10px;align-self:center';
-  nav.appendChild(sep);
-
-  const extendedLinks = [
-    { id: 'dora', label: 'DORA', color: '#06b6d4', icon: '⚡' },
-    { id: 'nis2', label: 'NIS2', color: '#a855f7', icon: '🛡' },
-    { id: 'cyber', label: 'Cyber Intel', color: '#ef4444', icon: '🌍' },
-    { id: 'ebios', label: 'EBIOS RM', color: '#f59e0b', icon: '⚠' },
-    { id: 'admin', label: 'Admin', color: '#64748b', icon: '🔑' },
-    { id: 'messagerie', label: 'Messages', color: '#0ea5e9', icon: '✉' }
-  ];
-
-  extendedLinks.forEach(link => {
+  navEl.appendChild(sep);
+  // Extended modules
+  EXTENDED_MODULES.forEach(link => {
     const el = document.createElement('div');
     el.className = 'mb-item';
     el.dataset.mod = link.id;
@@ -983,27 +988,29 @@ buildNav = function() {
       ${link.icon} ${link.label}
       <div class="mb-badge" style="display:none" id="badge-${link.id}">0</div>
     `;
-    nav.appendChild(el);
+    navEl.appendChild(el);
   });
-};
+}
 
-const origRenderModule = renderModule;
-renderModule = function(id) {
-  const ext = {
-    dora: renderDora,
-    nis2: renderNis2,
-    cyber: renderCyber,
-    admin: renderAdmin,
-    ebios: renderEbios,
-    messagerie: renderMessagerie
+function renderModule(id) {
+  currentMod = id;
+  const fns = {
+    synthese:   renderSynthese,
+    portfolio:  renderPortfolio,
+    tech:       renderTech,
+    secu:       renderSecu,
+    finance:    renderFinance,
+    data:       renderData,
+    project:    renderProject,
+    sourcing:   renderSourcing,
+    dora:       renderDora,
+    nis2:       renderNis2,
+    cyber:      renderCyber,
+    admin:      renderAdmin,
+    ebios:      renderEbios,
+    messagerie: renderMessagerie,
   };
-  if (ext[id]) ext[id]();
-  else origRenderModule(id);
-};
-
-function renderModule(id){
-  const fns={synthese:renderSynthese,portfolio:renderPortfolio,tech:renderTech,secu:renderSecu,finance:renderFinance,data:renderData,project:renderProject,sourcing:renderSourcing};
-  if(fns[id])fns[id]();
+  if (fns[id]) fns[id]();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1239,6 +1246,266 @@ function renderSourcing(){
   dc('src-bubble');CI['src-bubble']=new Chart(document.getElementById('src-bubble'),{type:'bubble',data:{datasets:F.map(f=>({label:f.nom,data:[{x:f.crit,y:f.qual,r:6+f.cout/25000}],backgroundColor:(f.qual>=60&&f.crit>=60?'rgba(16,208,122,.5)':f.qual>=60?'rgba(251,191,36,.5)':f.crit>=60?'rgba(75,140,245,.5)':'rgba(239,68,68,.5)'),borderColor:(f.qual>=60&&f.crit>=60?'#10d07a':f.qual>=60?'#fbbf24':f.crit>=60?'#4b8cf5':'#ef4444'),borderWidth:1.5}))},options:{responsive:true,maintainAspectRatio:false,layout:{padding:18},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: Q=${ctx.parsed.y} C=${ctx.parsed.x}`}}},scales:{x:{min:-5,max:105,title:{display:true,text:'Criticité',color:chartTick()},ticks:{color:chartTick()},grid:{color:chartGrid()}},y:{min:-5,max:105,title:{display:true,text:'Qualité',color:chartTick()},ticks:{color:chartTick()},grid:{color:chartGrid()}}}}});
   document.getElementById('src-rings').innerHTML=F.map((f,i)=>{const col=f.crit>=80?'#ef4444':f.crit>=60?'#fbbf24':'#10d07a';const ci=2*Math.PI*18,off=ci-(f.crit/100)*ci;return`<div class="rwrap"><div class="ring"><svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="18" stroke="${col}22" stroke-width="5" fill="none"/><circle cx="24" cy="24" r="18" stroke="${col}" stroke-width="5" fill="none" stroke-dasharray="${ci.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" stroke-linecap="round"/></svg><div class="ring-txt"><div class="ring-n" style="color:${col}">${f.crit}</div></div></div><div class="ring-i"><div class="ring-name">${f.nom}</div><div class="ring-det">${f.cat} · Q: ${f.qual}</div></div><div style="display:flex;gap:5px;align-items:center"><span class="badge ${f.crit>=80?'b-red':f.crit>=60?'b-amb':'b-grn'}">${f.crit>=80?'Critique':f.crit>=60?'Haute':'Normale'}</span>${eBtn('sourcing',`openFournModal(${i})`)}</div></div>`;}).join('');
   document.getElementById('src-tbody').innerHTML=F.map((f,i)=>`<tr><td><strong>${f.nom}</strong></td><td><span class="badge b-gry">${f.cat}</span></td><td class="mono" style="color:${f.crit>=80?'#ef4444':f.crit>=60?'#fbbf24':'#10d07a'}">${f.crit}/100</td><td class="mono" style="color:${f.qual>=75?'#10d07a':'#fbbf24'}">${f.qual}/100</td><td class="mono" style="font-size:11px;color:var(--text-sec)">${f.cont}</td><td class="mono">${fmtE(f.cout)}</td><td><span class="badge ${f.risque>=70?'b-red':f.risque>=40?'b-amb':'b-grn'}">${f.risque>=70?'Élevé':f.risque>=40?'Moyen':'Faible'}</span></td><td>${eBtn('sourcing',`openFournModal(${i})`)}</td></tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// EXTENDED MODULES — DORA · NIS2 · CYBER · ADMIN · EBIOS · MSG
+// ══════════════════════════════════════════════════════════════════
+
+function renderExtPage(id, color, icon, title, sub, bodyHtml) {
+  // Hide all standard pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // Render into a dedicated container
+  let wrap = document.getElementById('ext-page-container');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'ext-page-container';
+    document.getElementById('main-content').appendChild(wrap);
+  }
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <div class="page active" style="display:block">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-title" style="color:${color}">${icon} ${title}</div>
+          <div class="sec-sub">${sub}</div>
+        </div>
+      </div>
+      ${bodyHtml}
+    </div>`;
+}
+
+// Hide ext container when switching to a standard module
+const _origRenderSynthese  = renderSynthese;
+const _origRenderPortfolio = renderPortfolio;
+const _origRenderTech      = renderTech;
+const _origRenderSecu      = renderSecu;
+const _origRenderFinance   = renderFinance;
+const _origRenderData      = renderData;
+const _origRenderProject   = renderProject;
+const _origRenderSourcing  = renderSourcing;
+function _hideExtPage() {
+  const w = document.getElementById('ext-page-container');
+  if (w) w.style.display = 'none';
+}
+renderSynthese  = function(){_hideExtPage();_origRenderSynthese();};
+renderPortfolio = function(){_hideExtPage();_origRenderPortfolio();};
+renderTech      = function(){_hideExtPage();_origRenderTech();};
+renderSecu      = function(){_hideExtPage();_origRenderSecu();};
+renderFinance   = function(){_hideExtPage();_origRenderFinance();};
+renderData      = function(){_hideExtPage();_origRenderData();};
+renderProject   = function(){_hideExtPage();_origRenderProject();};
+renderSourcing  = function(){_hideExtPage();_origRenderSourcing();};
+
+// ── DORA ───────────────────────────────────────────────────────────
+function renderDora() {
+  const kpis = [
+    {l:'Piliers couverts',v:'3 / 5',d:'ICT Risk, Incidents, Testing',c:'#06b6d4'},
+    {l:'Incidents déclarés',v:'2',d:'30 derniers jours',c:'#ef4444'},
+    {l:'Tests TLPT',v:'1 / 2',d:'planifiés 2025',c:'#f59e0b'},
+    {l:'Score conformité',v:'68 %',d:'vs cible 90 %',c:'#10d07a'},
+  ];
+  const pillars = [
+    {n:'ICT Risk Management',    p:80, color:'#06b6d4'},
+    {n:'Incident Reporting',     p:65, color:'#f43f8a'},
+    {n:'Digital Resilience Test',p:50, color:'#f59e0b'},
+    {n:'Third-Party Risk',       p:72, color:'#8b5cf6'},
+    {n:'Information Sharing',    p:40, color:'#10d07a'},
+  ];
+  renderExtPage('dora','#06b6d4','⚡','DORA','Digital Operational Resilience Act · Conformité & suivi',`
+    <div class="grid g4 mb14">
+      ${kpis.map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c};font-size:18px">${k.v}</div><div class="kpi-dlt">${k.d}</div></div>`).join('')}
+    </div>
+    <div class="grid g2">
+      <div class="panel">
+        <div class="ph"><div class="pt">Avancement par pilier DORA</div></div>
+        ${pillars.map(p=>`<div class="prow"><span class="plbl">${p.n}</span><div class="pwrap"><div class="pfill" style="width:${p.p}%;background:${p.color}"></div></div><span class="pval">${p.p}%</span></div>`).join('')}
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="pt">Actions prioritaires</div></div>
+        ${[
+          {a:'Cartographier tous les prestataires TIC critiques',e:'Mars 2026',s:'En cours'},
+          {a:'Réaliser 2nd test TLPT (Threat-Led Penetration)',e:'Juin 2026',s:'Planifié'},
+          {a:'Mettre à jour le plan de réponse aux incidents ICT',e:'Avril 2026',s:'En cours'},
+          {a:'Former les équipes au dispositif de signalement',e:'Mai 2026',s:'Planifié'},
+        ].map(i=>`<div style="background:var(--bg-raised);border:1px solid var(--border-lo);border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:500;margin-bottom:4px">${i.a}</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="badge b-blu">Échéance: ${i.e}</span>
+            <span class="badge ${i.s==='En cours'?'b-grn':'b-gry'}">${i.s}</span>
+          </div></div>`).join('')}
+      </div>
+    </div>`);
+}
+
+// ── NIS2 ───────────────────────────────────────────────────────────
+function renderNis2() {
+  const measures = [
+    {n:'Politiques de sécurité',p:85,c:'#a855f7'},
+    {n:'Gestion des incidents',p:70,c:'#f43f8a'},
+    {n:'Continuité d\'activité',p:60,c:'#fb923c'},
+    {n:'Sécurité chaîne approvisionnement',p:45,c:'#ef4444'},
+    {n:'Sécurité des réseaux',p:78,c:'#4b8cf5'},
+    {n:'Contrôle d\'accès & MFA',p:90,c:'#10d07a'},
+    {n:'Chiffrement',p:82,c:'#22d3bc'},
+    {n:'Gestion des vulnérabilités',p:55,c:'#fbbf24'},
+  ];
+  renderExtPage('nis2','#a855f7','🛡','NIS2','Directive NIS2 · Évaluation de conformité',`
+    <div class="grid g4 mb14">
+      ${[
+        {l:'Entités concernées',v:'Essentielle',d:'Art. 3 – criticité haute',c:'#a855f7'},
+        {l:'Score global NIS2',v:'71 %',d:'cible : 90 %',c:'#10d07a'},
+        {l:'Mesures conformes',v:'6 / 10',d:'exigences art. 21',c:'#4b8cf5'},
+        {l:'Délai notification',v:'24 h',d:'incidents significatifs',c:'#f43f8a'},
+      ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c};font-size:18px">${k.v}</div><div class="kpi-dlt">${k.d}</div></div>`).join('')}
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Mesures de sécurité NIS2 — Art. 21</div></div>
+      <div class="grid g2">
+        <div>${measures.slice(0,4).map(m=>`<div class="prow"><span class="plbl">${m.n}</span><div class="pwrap"><div class="pfill" style="width:${m.p}%;background:${m.c}"></div></div><span class="pval">${m.p}%</span></div>`).join('')}</div>
+        <div>${measures.slice(4).map(m=>`<div class="prow"><span class="plbl">${m.n}</span><div class="pwrap"><div class="pfill" style="width:${m.p}%;background:${m.c}"></div></div><span class="pval">${m.p}%</span></div>`).join('')}</div>
+      </div>
+    </div>`);
+}
+
+// ── CYBER INTEL ────────────────────────────────────────────────────
+function renderCyber() {
+  const threats = [
+    {n:'Ransomware',lvl:'Critique',trend:'↑',src:'ANSSI TLP:BLANC',c:'#ef4444'},
+    {n:'Phishing ciblé (spear)',lvl:'Haute',trend:'↑',src:'CERT-FR',c:'#fbbf24'},
+    {n:'Supply-chain attack',lvl:'Haute',trend:'→',src:'ENISA',c:'#fbbf24'},
+    {n:'Exploitation 0-day',lvl:'Critique',trend:'↑',src:'CISA',c:'#ef4444'},
+    {n:'Insider threat',lvl:'Moyenne',trend:'→',src:'Interne',c:'#4b8cf5'},
+    {n:'DDoS applicatif',lvl:'Basse',trend:'↓',src:'OVH Radar',c:'#22d3bc'},
+  ];
+  renderExtPage('cyber','#ef4444','🌍','Cyber Intel','Threat Intelligence · Menaces & vulnérabilités actives',`
+    <div class="grid g4 mb14">
+      ${[
+        {l:'Menaces critiques',v:'4',d:'actives sur le périmètre',c:'#ef4444'},
+        {l:'CVE à patcher',v:'12',d:'CVSS ≥ 7.0',c:'#fbbf24'},
+        {l:'IOC détectés (30j)',v:'37',d:'indicateurs de compromission',c:'#f43f8a'},
+        {l:'MTTD moyen',v:'4,2 h',d:'temps de détection',c:'#10d07a'},
+      ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c};font-size:18px">${k.v}</div><div class="kpi-dlt">${k.d}</div></div>`).join('')}
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Paysage des menaces actives</div></div>
+      <div class="twrap"><table><thead><tr><th>Menace</th><th>Niveau</th><th>Tendance</th><th>Source</th></tr></thead><tbody>
+        ${threats.map(t=>`<tr>
+          <td><strong>${t.n}</strong></td>
+          <td><span class="badge" style="background:${t.c}22;color:${t.c}">${t.lvl}</span></td>
+          <td style="color:${t.trend==='↑'?'#ef4444':t.trend==='↓'?'#10d07a':'#fbbf24'};font-size:16px">${t.trend}</td>
+          <td style="font-size:11px;color:var(--text-ter)">${t.src}</td>
+        </tr>`).join('')}
+      </tbody></table></div>
+    </div>`);
+}
+
+// ── EBIOS RM ───────────────────────────────────────────────────────
+function renderEbios() {
+  const ateliers = [
+    {n:'Atelier 1 – Cadrage et socle de sécurité',done:true,p:100},
+    {n:'Atelier 2 – Sources de risques',done:true,p:100},
+    {n:'Atelier 3 – Scénarios stratégiques',done:false,p:65},
+    {n:'Atelier 4 – Scénarios opérationnels',done:false,p:30},
+    {n:'Atelier 5 – Traitement du risque',done:false,p:0},
+  ];
+  renderExtPage('ebios','#f59e0b','⚠','EBIOS RM','Méthode ANSSI · Gestion des risques de sécurité numérique',`
+    <div class="grid g4 mb14">
+      ${[
+        {l:'Ateliers complétés',v:'2 / 5',d:'progression globale',c:'#f59e0b'},
+        {l:'Scénarios identifiés',v:'14',d:'stratégiques + opérationnels',c:'#a855f7'},
+        {l:'Biens essentiels',v:'8',d:'cartographiés atelier 1',c:'#4b8cf5'},
+        {l:'Mesures de sécurité',v:'23',d:'plan de traitement',c:'#10d07a'},
+      ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c};font-size:18px">${k.v}</div><div class="kpi-dlt">${k.d}</div></div>`).join('')}
+    </div>
+    <div class="grid g2">
+      <div class="panel">
+        <div class="ph"><div class="pt">Avancement des ateliers</div></div>
+        ${ateliers.map(a=>`<div class="prow">
+          <span class="plbl" style="min-width:220px">${a.n}</span>
+          <div class="pwrap"><div class="pfill" style="width:${a.p}%;background:${a.done?'#10d07a':'#f59e0b'}"></div></div>
+          <span class="pval">${a.p}%</span>
+        </div>`).join('')}
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="pt">Scénarios stratégiques — top risques</div></div>
+        ${[
+          {s:'Exfiltration données RH via HRMS',g:'Très élevée',v:'Critique'},
+          {s:'Ransomware sur ERP SAP',g:'Élevée',v:'Critique'},
+          {s:'Compromission accès prestataire',g:'Élevée',v:'Haute'},
+          {s:'Perte de disponibilité e-commerce',g:'Modérée',v:'Haute'},
+        ].map(sc=>`<div style="background:var(--bg-raised);border:1px solid var(--border-lo);border-radius:8px;padding:9px 12px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:500;margin-bottom:4px">${sc.s}</div>
+          <div style="display:flex;gap:6px"><span class="badge b-amb">Gravité: ${sc.g}</span><span class="badge b-red">Vraisemblance: ${sc.v}</span></div>
+        </div>`).join('')}
+      </div>
+    </div>`);
+}
+
+// ── ADMIN ──────────────────────────────────────────────────────────
+function renderAdmin() {
+  renderExtPage('admin','#64748b','🔑','Administration','Paramètres · Utilisateurs · Données',`
+    <div class="grid g2">
+      <div class="panel">
+        <div class="ph"><div class="pt">Rôles actifs</div></div>
+        ${Object.entries(ROLES).map(([k,r])=>`<div class="rwrap">
+          <div class="ring-i"><div class="ring-name">${r.e} ${r.l}</div>
+            <div class="ring-det">${Object.entries(r.edit).filter(([,v])=>v).map(([m])=>MODULE_META[m]?.label||m).join(', ')||'Lecture seule'}</div>
+          </div>
+          <div class="role-dot" style="background:${r.c};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+        </div>`).join('')}
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="pt">Gestion des données</div></div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+          <button class="btn" onclick="localStorage.removeItem('${SK}');loadD();toast('Données réinitialisées')">🔄 Réinitialiser les données par défaut</button>
+          <button class="btn" onclick="navigator.clipboard.writeText(JSON.stringify(D,null,2)).then(()=>toast('Données copiées dans le presse-papiers'))">📋 Copier les données JSON</button>
+          <button class="btn btn-d" onclick="if(confirm('Effacer toutes les données ?')){localStorage.clear();loadD();toast('Données effacées','err')}">🗑 Effacer toutes les données</button>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:11px;color:var(--text-ter)">
+          <div>Applications : <strong style="color:var(--text-sec)">${D.apps.length}</strong></div>
+          <div>Fournisseurs : <strong style="color:var(--text-sec)">${D.fournisseurs.length}</strong></div>
+          <div>Projets : <strong style="color:var(--text-sec)">${D.projets.length}</strong></div>
+          <div>Interfaces : <strong style="color:var(--text-sec)">${D.interfaces.length}</strong></div>
+          <div style="margin-top:6px">Stockage utilisé : <strong style="color:var(--text-sec)">${Math.round(JSON.stringify(D).length/1024)} Ko</strong></div>
+        </div>
+      </div>
+    </div>`);
+}
+
+// ── MESSAGERIE ─────────────────────────────────────────────────────
+function renderMessagerie() {
+  const msgs = [
+    {de:'RSSI',obj:'Alerte CVE-2025-4421 — SAP ERP',d:'Il y a 2h',lue:false,prio:'haute'},
+    {de:'DSI',obj:'Revue architecture Q2 2026 — ordre du jour',d:'Hier 14:32',lue:true,prio:'normale'},
+    {de:'ANSSI',obj:'[TLP:BLANC] Campagne ransomware active',d:'Hier 09:15',lue:false,prio:'critique'},
+    {de:'Chef de Projet',obj:'Migration SAP S/4HANA — point hebdo',d:'Lun. 16:00',lue:true,prio:'normale'},
+    {de:'DAF',obj:'Projection budgétaire IT 2027 à valider',d:'Ven. 11:30',lue:true,prio:'normale'},
+  ];
+  renderExtPage('messagerie','#0ea5e9','✉','Messagerie','Notifications · Alertes · Communications internes',`
+    <div class="grid g4 mb14">
+      ${[
+        {l:'Non lus',v:msgs.filter(m=>!m.lue).length,d:'messages en attente',c:'#0ea5e9'},
+        {l:'Alertes critiques',v:msgs.filter(m=>m.prio==='critique').length,d:'à traiter en priorité',c:'#ef4444'},
+        {l:'Total',v:msgs.length,d:'ce mois-ci',c:'#8b5cf6'},
+        {l:'Réponse moy.',v:'3,4 h',d:'délai de traitement',c:'#10d07a'},
+      ].map(k=>`<div class="kpi"><div class="kpi-lbl">${k.l}</div><div class="kpi-val" style="color:${k.c};font-size:18px">${k.v}</div><div class="kpi-dlt">${k.d}</div></div>`).join('')}
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Boîte de réception</div></div>
+      ${msgs.map(m=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-lo)">
+        <div style="width:8px;height:8px;border-radius:50%;background:${m.lue?'transparent':m.prio==='critique'?'#ef4444':'#0ea5e9'};border:1px solid var(--border-hi);flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:${m.lue?400:600};color:var(--text-pri);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.obj}</div>
+          <div style="font-size:11px;color:var(--text-ter);margin-top:2px">De : ${m.de}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          ${m.prio==='critique'?'<span class="badge b-red">Critique</span>':m.prio==='haute'?'<span class="badge b-amb">Haute</span>':''}
+          <span style="font-size:10px;color:var(--text-ter);white-space:nowrap">${m.d}</span>
+        </div>
+      </div>`).join('')}
+    </div>`);
 }
 
 // ══════════════════════════════════════════════════════════════════
