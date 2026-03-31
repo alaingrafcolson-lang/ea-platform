@@ -943,24 +943,54 @@ function doLogout(){
 // ══════════════════════════════════════════════════════════════════
 // NAVIGATION (top menubar)
 // ══════════════════════════════════════════════════════════════════
-function buildNav(){
-  const nav=document.getElementById('mb-nav');
-  nav.innerHTML=Object.entries(MODULE_META).map(([id,m])=>`
-    <div class="mb-item ${id==='synthese'?'active':''}" data-mod="${id}" onclick="nav('${id}',this)">
-      <div class="mb-dot" style="background:${m.color}"></div>
-      ${m.icon} ${m.label}
-      <div class="mb-badge" style="display:none" id="badge-${id}">0</div>
-    </div>`).join('');
-}
+// --- REMPLACEMENT À FAIRE TOUT EN BAS DU FICHIER ---
+const origBuildNav = buildNav;
+buildNav = function() {
+  origBuildNav();
+  const nav = document.getElementById('mb-nav');
 
-function nav(id,el){
-  document.querySelectorAll('.mb-item').forEach(i=>i.classList.remove('active'));
-  el.classList.add('active');
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  currentMod=id;
-  renderModule(id);
-}
+  // Séparateur visuel après Sourcing
+  const sep = document.createElement('div');
+  sep.style.cssText = 'width:1px;height:20px;background:var(--border-mid);flex-shrink:0;margin:0 10px;align-self:center';
+  nav.appendChild(sep);
+
+  // Nouveaux liens de pilotage après Sourcing
+  const extendedLinks = [
+    { id: 'dora', label: 'DORA', color: '#06b6d4', icon: '⚡' },
+    { id: 'nis2', label: 'NIS2', color: '#a855f7', icon: '🛡' },
+    { id: 'cyber', label: 'Cyber Intel', color: '#ef4444', icon: '🌍' },
+    { id: 'ebios', label: 'EBIOS RM', color: '#f59e0b', icon: '⚠' },
+    { id: 'admin', label: 'Admin', color: '#64748b', icon: '🔑' },
+    { id: 'messagerie', label: 'Messages', color: '#0ea5e9', icon: '✉' }
+  ];
+
+  extendedLinks.forEach(link => {
+    const el = document.createElement('div');
+    el.className = 'mb-item';
+    el.dataset.mod = link.id;
+    el.setAttribute('onclick', `nav('${link.id}', this)`);
+    el.innerHTML = `
+      <div class="mb-dot" style="background:${link.color}"></div>
+      ${link.icon} ${link.label}
+      <div class="mb-badge" style="display:none" id="badge-${link.id}">0</div>
+    `;
+    nav.appendChild(el);
+  });
+};
+
+const origRenderModule = renderModule;
+renderModule = function(id) {
+  const ext = {
+    dora: renderDora,
+    nis2: renderNis2,
+    cyber: renderCyber,
+    admin: renderAdmin,
+    ebios: renderEbios,
+    messagerie: renderMessagerie
+  };
+  if (ext[id]) ext[id]();
+  else origRenderModule(id);
+};
 
 function renderModule(id){
   const fns={synthese:renderSynthese,portfolio:renderPortfolio,tech:renderTech,secu:renderSecu,finance:renderFinance,data:renderData,project:renderProject,sourcing:renderSourcing};
