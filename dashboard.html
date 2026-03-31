@@ -943,18 +943,27 @@ function doLogout(){
 // ══════════════════════════════════════════════════════════════════
 // NAVIGATION (top menubar)
 // ══════════════════════════════════════════════════════════════════
-// --- REMPLACEMENT À FAIRE TOUT EN BAS DU FICHIER ---
+// --- DÉFINITION ORIGINALE (À REMETTRE ICI) ---
+function buildNav() {
+  const nav = document.getElementById('mb-nav');
+  nav.innerHTML = Object.entries(MODULE_META).map(([id, m]) => `
+    <div class="mb-item ${id === 'synthese' ? 'active' : ''}" data-mod="${id}" onclick="nav('${id}', this)">
+      <div class="mb-dot" style="background:${m.color}"></div>
+      ${m.icon} ${m.label}
+      <div class="mb-badge" style="display:none" id="badge-${id}">0</div>
+    </div>`).join('');
+}
+
+// --- VOTRE EXTENSION (QUI RESTE ICI) ---
 const origBuildNav = buildNav;
 buildNav = function() {
   origBuildNav();
   const nav = document.getElementById('mb-nav');
-
-  // Séparateur visuel après Sourcing
+  
   const sep = document.createElement('div');
   sep.style.cssText = 'width:1px;height:20px;background:var(--border-mid);flex-shrink:0;margin:0 10px;align-self:center';
   nav.appendChild(sep);
 
-  // Nouveaux liens de pilotage après Sourcing
   const extendedLinks = [
     { id: 'dora', label: 'DORA', color: '#06b6d4', icon: '⚡' },
     { id: 'nis2', label: 'NIS2', color: '#a855f7', icon: '🛡' },
