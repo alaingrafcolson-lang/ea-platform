@@ -682,6 +682,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   <div class="mfooter"><button class="btn btn-d btn-sm" id="i-del" onclick="delIf()" style="display:none;margin-right:auto">Supprimer</button><button class="btn btn-sm" onclick="closeModal('modal-if')">Annuler</button><button class="btn btn-p btn-sm" onclick="saveIf()">Enregistrer</button></div>
 </div></div>
 
+<!-- User Modal -->
+<div class="moverlay" id="modal-user"><div class="mbox">
+  <div class="mhdr"><div><div class="mtitle">Créer un profil AD</div><div class="msub">Provisioning · Habilitations · MFA activé par défaut</div></div><span class="mclose" onclick="closeModal('modal-user')">✕</span></div>
+  <div class="frow"><div class="fg"><label>Identifiant AD *</label><input id="u-id" type="text" placeholder="ex: ADM_SYS02" style="text-transform:uppercase"></div><div class="fg"><label>Nom complet *</label><input id="u-nom" type="text" placeholder="Prénom Nom"></div></div>
+  <div class="frow"><div class="fg"><label>Rôle</label><select id="u-role">
+    ${Object.entries(ROLES).map(([k,r])=>`<option value="${k}">${r.e} ${r.l}</option>`).join('')}
+  </select></div><div class="fg"><label>Département</label><input id="u-dept" type="text" placeholder="DSI, Réseau, Data..."></div></div>
+  <div class="frow"><div class="fg"><label>Email professionnel</label><input id="u-email" type="text" placeholder="prenom.nom@domaine.fr"></div></div>
+  <div class="frow"><div class="fg"><label>Niveau RGPD</label><select id="u-rgpd">
+    <option>Lecture seule</option>
+    <option>Accès limité</option>
+    <option>Accès données</option>
+    <option>Responsable traitement</option>
+  </select></div></div>
+  <div style="background:rgba(16,208,122,.06);border:1px solid rgba(16,208,122,.15);border-radius:8px;padding:10px;font-size:11px;color:var(--text-sec);margin-top:4px">
+    ✓ MFA activé par défaut · ✓ Compte actif dès création · Habilitation : Standard
+  </div>
+  <div class="mfooter"><button class="btn btn-sm" onclick="closeModal('modal-user')">Annuler</button><button class="btn btn-p btn-sm" onclick="saveUser()">Créer le profil</button></div>
+</div></div>
+
 <!-- Tool Modal -->
 <div class="moverlay" id="modal-tool"><div class="mbox">
   <div class="mhdr"><div><div class="mtitle" id="tool-title">Analyse</div><div class="msub" id="tool-sub"></div></div><span class="mclose" onclick="closeModal('modal-tool')">✕</span></div>
@@ -694,13 +714,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 // ══════════════════════════════════════════════════════════════════
 // ROLES & PERMISSIONS
 // ══════════════════════════════════════════════════════════════════
-const ROLES={
-  DSI: {l:'DSI',c:'#4b8cf5',e:'🏛️',edit:{synthese:false,portfolio:true,tech:true,secu:true,finance:true,data:true,project:true,sourcing:true}},
-  RSSI:{l:'RSSI',c:'#f43f8a',e:'🔐',edit:{synthese:false,portfolio:false,tech:true,secu:true,finance:false,data:false,project:false,sourcing:true}},
-  DAF: {l:'DAF',c:'#fb923c',e:'💰',edit:{synthese:false,portfolio:false,tech:false,secu:false,finance:true,data:false,project:true,sourcing:true}},
-  EA:  {l:'Architecte EA',c:'#8b5cf6',e:'🏗️',edit:{synthese:false,portfolio:true,tech:true,secu:false,finance:false,data:true,project:true,sourcing:false}},
-  PM:  {l:'Chef de Projet',c:'#10d07a',e:'📋',edit:{synthese:false,portfolio:false,tech:false,secu:false,finance:false,data:false,project:true,sourcing:false}},
-  DG:  {l:'DG / COMEX',c:'#fbbf24',e:'👔',edit:{synthese:false,portfolio:false,tech:false,secu:false,finance:false,data:false,project:false,sourcing:false}},
+const ROLES = {
+  SUPERADMIN: { l: 'Super Admin',        c: '#ef4444', e: '🔑', edit: { synthese: true,  portfolio: true,  tech: true,  secu: true,  finance: true,  data: true,  project: true,  sourcing: true,  dora: true,  nis2: true,  cyber: true,  admin: true,  ebios: true,  messagerie: true  } },
+  ADMIN_SYS:  { l: 'Admin Système',      c: '#4c1d95', e: '💻', edit: { synthese: false, portfolio: true,  tech: true,  secu: true,  finance: false, data: false, project: false, sourcing: false, dora: true,  nis2: true,  cyber: true,  admin: false, ebios: true,  messagerie: true  } },
+  ADMIN_NET:  { l: 'Admin Réseau',       c: '#0891b2', e: '🌐', edit: { synthese: false, portfolio: false, tech: true,  secu: true,  finance: false, data: true,  project: false, sourcing: false, dora: true,  nis2: true,  cyber: false, admin: false, ebios: false, messagerie: true  } },
+  ADMIN_DATA: { l: 'Admin Data',         c: '#0d9488', e: '📊', edit: { synthese: false, portfolio: false, tech: false, secu: false, finance: false, data: true,  project: false, sourcing: false, dora: false, nis2: false, cyber: false, admin: false, ebios: false, messagerie: true  } },
+  GUEST:      { l: 'Auditeur (Lecture)', c: '#64748b', e: '👁️', edit: { synthese: false, portfolio: false, tech: false, secu: false, finance: false, data: false, project: false, sourcing: false, dora: false, nis2: false, cyber: false, admin: false, ebios: false, messagerie: false } },
+  DSI:        { l: 'DSI',               c: '#4b8cf5', e: '🏛️', edit: { synthese: false, portfolio: true,  tech: true,  secu: true,  finance: true,  data: true,  project: true,  sourcing: true,  dora: true,  nis2: true,  cyber: true,  admin: false, ebios: true,  messagerie: true  } },
+  RSSI:       { l: 'RSSI',              c: '#f43f8a', e: '🔐', edit: { synthese: false, portfolio: false, tech: true,  secu: true,  finance: false, data: false, project: false, sourcing: true,  dora: true,  nis2: true,  cyber: true,  admin: false, ebios: true,  messagerie: true  } },
+  DAF:        { l: 'DAF',               c: '#fb923c', e: '💰', edit: { synthese: false, portfolio: false, tech: false, secu: false, finance: true,  data: false, project: true,  sourcing: true,  dora: false, nis2: false, cyber: false, admin: false, ebios: false, messagerie: true  } },
+  EA:         { l: 'Architecte EA',     c: '#8b5cf6', e: '🏗️', edit: { synthese: false, portfolio: true,  tech: true,  secu: false, finance: false, data: true,  project: true,  sourcing: false, dora: true,  nis2: false, cyber: false, admin: false, ebios: true,  messagerie: true  } },
+  PM:         { l: 'Chef de Projet',    c: '#10d07a', e: '📋', edit: { synthese: false, portfolio: false, tech: false, secu: false, finance: false, data: false, project: true,  sourcing: false, dora: false, nis2: false, cyber: false, admin: false, ebios: false, messagerie: true  } },
+  DG:         { l: 'DG / COMEX',       c: '#fbbf24', e: '👔', edit: { synthese: false, portfolio: false, tech: false, secu: false, finance: false, data: false, project: false, sourcing: false, dora: false, nis2: false, cyber: false, admin: false, ebios: false, messagerie: false } },
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -1949,35 +1974,160 @@ function ebiosClear() {
 }
 
 // ── ADMIN ──────────────────────────────────────────────────────────
+function adminData() {
+  if (!D.admin) D.admin = { profils: [
+    {id:'SUPERADMIN', nom:'Administrateur Principal', role:'SUPERADMIN', dept:'DSI',         email:'admin@si-gov.fr',      mfa:true,  actif:true, dernierAcces:'2026-03-31', rgpd:'Responsable traitement', habilitation:'Critique'},
+    {id:'ADM_SYS01',  nom:'Jean-Pierre Martin',       role:'ADMIN_SYS',  dept:'Infrastructure',email:'jp.martin@si-gov.fr',  mfa:true,  actif:true, dernierAcces:'2026-03-30', rgpd:'Accès limité',           habilitation:'Haute'},
+    {id:'ADM_NET01',  nom:'Sophie Leclerc',            role:'ADMIN_NET',  dept:'Réseau',        email:'s.leclerc@si-gov.fr',  mfa:true,  actif:true, dernierAcces:'2026-03-28', rgpd:'Accès limité',           habilitation:'Haute'},
+    {id:'ADM_DAT01',  nom:'Marc Dupont',               role:'ADMIN_DATA', dept:'Data & BI',     email:'m.dupont@si-gov.fr',   mfa:false, actif:true, dernierAcces:'2026-03-25', rgpd:'Accès données',          habilitation:'Standard'},
+    {id:'AUDIT01',    nom:'Claire Fontaine',            role:'GUEST',      dept:'Audit Interne', email:'c.fontaine@si-gov.fr', mfa:true,  actif:true, dernierAcces:'2026-03-20', rgpd:'Lecture seule',          habilitation:'Standard'},
+  ]};
+}
+
 function renderAdmin() {
-  renderExtPage('admin','#64748b','🔑','Administration','Paramètres · Utilisateurs · Données',`
-    <div class="grid g2">
-      <div class="panel">
-        <div class="ph"><div class="pt">Rôles actifs</div></div>
-        ${Object.entries(ROLES).map(([k,r])=>`<div class="rwrap">
-          <div class="ring-i"><div class="ring-name">${r.e} ${r.l}</div>
-            <div class="ring-det">${Object.entries(r.edit).filter(([,v])=>v).map(([m])=>MODULE_META[m]?.label||m).join(', ')||'Lecture seule'}</div>
-          </div>
-          <div class="role-dot" style="background:${r.c};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
-        </div>`).join('')}
+  adminData();
+  const profils = D.admin.profils;
+  const canManage = currentRole === 'SUPERADMIN';
+  const actifs = profils.filter(p=>p.actif).length;
+  const mfaOk  = profils.filter(p=>p.mfa).length;
+
+  renderExtPage('admin','#64748b','🔑','Administration',
+    'Gestion des identités & accès · Provisioning AD · Audit RGPD',
+  `<div class="grid g4 mb14">
+    <div class="kpi"><div class="kpi-lbl">Comptes actifs</div><div class="kpi-val" style="color:#10d07a">${actifs}</div><div class="kpi-dlt">sur ${profils.length} profils</div><div class="kpi-bar"><div class="kpi-fill" style="width:${actifs/Math.max(1,profils.length)*100}%;background:#10d07a"></div></div></div>
+    <div class="kpi"><div class="kpi-lbl">MFA activé</div><div class="kpi-val" style="color:#4b8cf5">${mfaOk} / ${profils.length}</div><div class="kpi-dlt">conformité accès</div><div class="kpi-bar"><div class="kpi-fill" style="width:${mfaOk/Math.max(1,profils.length)*100}%;background:#4b8cf5"></div></div></div>
+    <div class="kpi"><div class="kpi-lbl">Rôles définis</div><div class="kpi-val" style="color:#a855f7">${Object.keys(ROLES).length}</div><div class="kpi-dlt">RBAC configurés</div></div>
+    <div class="kpi"><div class="kpi-lbl">Stockage</div><div class="kpi-val" style="color:#fb923c">${Math.round(JSON.stringify(D).length/1024)} Ko</div><div class="kpi-dlt">localStorage utilisé</div></div>
+  </div>
+
+  <div class="grid g2 mb14">
+    <!-- GESTION PROFILS -->
+    <div class="panel" style="grid-column:1/-1">
+      <div class="ph">
+        <div><div class="pt">Profils utilisateurs — Annuaire AD</div><div class="ps">Provisioning · Habilitations · RGPD</div></div>
+        ${canManage ? `<button class="btn btn-sm btn-acc" id="btn-add-user" onclick="openUserModal()">+ Créer Profil AD</button>` : `<span class="perm-lbl">🔒 SUPERADMIN requis</span>`}
       </div>
-      <div class="panel">
-        <div class="ph"><div class="pt">Gestion des données</div></div>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
-          <button class="btn" onclick="localStorage.removeItem('${SK}');loadD();toast('Données réinitialisées')">🔄 Réinitialiser les données par défaut</button>
-          <button class="btn" onclick="navigator.clipboard.writeText(JSON.stringify(D,null,2)).then(()=>toast('Données copiées dans le presse-papiers'))">📋 Copier les données JSON</button>
-          <button class="btn btn-d" onclick="if(confirm('Effacer toutes les données ?')){localStorage.clear();loadD();toast('Données effacées','err')}">🗑 Effacer toutes les données</button>
+      <div class="twrap"><table><thead><tr>
+        <th>ID</th><th>Nom</th><th>Rôle</th><th>Département</th><th>Email</th><th>MFA</th><th>Statut</th><th>Dernier accès</th><th>RGPD</th><th>Habilitation</th><th></th>
+      </tr></thead><tbody>
+        ${profils.map((p,i)=>`<tr>
+          <td class="mono" style="font-size:10px;color:var(--text-ter)">${p.id}</td>
+          <td><strong>${p.nom}</strong></td>
+          <td><span class="badge" style="background:${ROLES[p.role]?.c||'#888'}22;color:${ROLES[p.role]?.c||'#888'}">${ROLES[p.role]?.e||''} ${ROLES[p.role]?.l||p.role}</span></td>
+          <td style="font-size:11px;color:var(--text-sec)">${p.dept}</td>
+          <td style="font-size:11px;color:var(--text-ter)">${p.email}</td>
+          <td style="text-align:center">${p.mfa?'<span style="color:#10d07a">✓</span>':'<span style="color:#ef4444">✗</span>'}</td>
+          <td><span class="badge ${p.actif?'b-grn':'b-red'}">${p.actif?'Actif':'Inactif'}</span></td>
+          <td class="mono" style="font-size:10px;color:var(--text-ter)">${p.dernierAcces}</td>
+          <td style="font-size:11px;color:var(--text-sec)">${p.rgpd}</td>
+          <td><span class="badge ${p.habilitation==='Critique'?'b-red':p.habilitation==='Haute'?'b-amb':'b-gry'}">${p.habilitation}</span></td>
+          <td style="display:flex;gap:4px">
+            ${canManage?`
+              <button class="btn btn-sm" onclick="adminToggleMfa(${i})" title="Basculer MFA" style="padding:3px 7px;font-size:11px">🔐</button>
+              <button class="btn btn-sm" onclick="adminToggleActif(${i})" title="${p.actif?'Désactiver':'Activer'}" style="padding:3px 7px;font-size:11px">${p.actif?'⛔':'✅'}</button>
+              <button class="btn btn-sm btn-d" onclick="adminDelUser(${i})" style="padding:3px 7px;font-size:11px">✕</button>
+            `:'<span style="opacity:.3;font-size:11px">🔒</span>'}
+          </td>
+        </tr>`).join('')}
+      </tbody></table></div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <!-- RÔLES RBAC -->
+    <div class="panel">
+      <div class="ph"><div class="pt">Matrice RBAC — Rôles & permissions</div></div>
+      ${Object.entries(ROLES).map(([k,r])=>`<div class="rwrap">
+        <div style="width:32px;height:32px;border-radius:8px;background:${r.c}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${r.e}</div>
+        <div class="ring-i" style="flex:1">
+          <div class="ring-name">${r.l}</div>
+          <div class="ring-det" style="font-size:10px">${Object.entries(r.edit).filter(([,v])=>v).map(([m])=>MODULE_META[m]?.label||m).join(', ')||'Lecture seule uniquement'}</div>
         </div>
-        <div class="divider"></div>
-        <div style="font-size:11px;color:var(--text-ter)">
-          <div>Applications : <strong style="color:var(--text-sec)">${D.apps.length}</strong></div>
-          <div>Fournisseurs : <strong style="color:var(--text-sec)">${D.fournisseurs.length}</strong></div>
-          <div>Projets : <strong style="color:var(--text-sec)">${D.projets.length}</strong></div>
-          <div>Interfaces : <strong style="color:var(--text-sec)">${D.interfaces.length}</strong></div>
-          <div style="margin-top:6px">Stockage utilisé : <strong style="color:var(--text-sec)">${Math.round(JSON.stringify(D).length/1024)} Ko</strong></div>
-        </div>
+        <span class="badge" style="background:${r.c}22;color:${r.c};flex-shrink:0">${profils.filter(p=>p.role===k).length} user(s)</span>
+      </div>`).join('')}
+    </div>
+    <!-- GESTION DONNÉES -->
+    <div class="panel">
+      <div class="ph"><div class="pt">Gestion des données</div></div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+        <button class="btn" onclick="localStorage.removeItem('${SK}');loadD();toast('Données réinitialisées')">🔄 Réinitialiser données par défaut</button>
+        <button class="btn" onclick="navigator.clipboard.writeText(JSON.stringify(D,null,2)).then(()=>toast('JSON copié'))">📋 Copier les données JSON</button>
+        <button class="btn" onclick="adminExportCSV()">📥 Exporter profils CSV</button>
+        <button class="btn btn-d" onclick="if(confirm('Effacer toutes les données ?')){localStorage.clear();loadD();toast('Données effacées','err')}">🗑 Effacer toutes les données</button>
       </div>
-    </div>`);
+      <div class="divider"></div>
+      <div style="font-size:11px;color:var(--text-ter);line-height:2">
+        <div>Applications : <strong style="color:var(--text-sec)">${D.apps.length}</strong></div>
+        <div>Fournisseurs : <strong style="color:var(--text-sec)">${D.fournisseurs.length}</strong></div>
+        <div>Projets : <strong style="color:var(--text-sec)">${D.projets.length}</strong></div>
+        <div>Interfaces : <strong style="color:var(--text-sec)">${D.interfaces.length}</strong></div>
+        <div>Profils AD : <strong style="color:var(--text-sec)">${profils.length}</strong></div>
+      </div>
+    </div>
+  </div>`);
+}
+
+function openUserModal() {
+  if (currentRole !== 'SUPERADMIN') { toast('Accès restreint au SuperAdmin', 'err'); return; }
+  // reset form
+  ['u-id','u-nom','u-dept','u-email'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('u-role').value = 'GUEST';
+  document.getElementById('u-rgpd').value = 'Lecture seule';
+  openModal('modal-user');
+}
+
+function saveUser() {
+  const newUser = {
+    id:           document.getElementById('u-id').value.toUpperCase().trim(),
+    nom:          document.getElementById('u-nom').value.trim(),
+    role:         document.getElementById('u-role').value,
+    dept:         document.getElementById('u-dept').value.trim(),
+    email:        document.getElementById('u-email').value.trim(),
+    mfa:          true,
+    actif:        true,
+    dernierAcces: new Date().toISOString().split('T')[0],
+    rgpd:         document.getElementById('u-rgpd').value,
+    habilitation: 'Standard',
+  };
+  if (!newUser.nom || !newUser.id) { toast('Champs obligatoires manquants', 'err'); return; }
+  if (D.admin.profils.find(p => p.id === newUser.id)) { toast('ID déjà existant', 'err'); return; }
+  D.admin.profils.push(newUser);
+  saveD();
+  closeModal('modal-user');
+  recordImpact('admin', 'Provisioning', newUser.nom);
+  renderAdmin();
+  toast(`Profil ${newUser.id} créé avec succès`);
+}
+
+function adminToggleMfa(i) {
+  adminData();
+  D.admin.profils[i].mfa = !D.admin.profils[i].mfa;
+  saveD(); recordImpact('admin', 'MFA ' + (D.admin.profils[i].mfa?'activé':'désactivé'), D.admin.profils[i].nom);
+  renderAdmin(); toast('MFA mis à jour');
+}
+function adminToggleActif(i) {
+  adminData();
+  D.admin.profils[i].actif = !D.admin.profils[i].actif;
+  saveD(); recordImpact('admin', D.admin.profils[i].actif?'Activation':'Désactivation', D.admin.profils[i].nom);
+  renderAdmin(); toast('Statut mis à jour');
+}
+function adminDelUser(i) {
+  adminData();
+  const nom = D.admin.profils[i].nom;
+  if (!confirm(`Supprimer le profil de ${nom} ?`)) return;
+  D.admin.profils.splice(i, 1);
+  saveD(); recordImpact('admin', 'Suppression profil', nom);
+  renderAdmin(); toast(`${nom} supprimé`);
+}
+function adminExportCSV() {
+  adminData();
+  const cols = ['id','nom','role','dept','email','mfa','actif','dernierAcces','rgpd','habilitation'];
+  const rows = [cols.join(';'), ...D.admin.profils.map(p => cols.map(c=>p[c]??'').join(';'))].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(rows);
+  a.download = 'profils_ad_' + Date.now() + '.csv';
+  a.click();
+  toast('Export CSV téléchargé');
 }
 
 // ── MESSAGERIE ─────────────────────────────────────────────────────
@@ -2019,7 +2169,7 @@ function renderMessagerie() {
 // ══════════════════════════════════════════════════════════════════
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
-['modal-app','modal-fourn','modal-proj','modal-if','modal-tool'].forEach(id=>document.getElementById(id)?.addEventListener('click',e=>{if(e.target===document.getElementById(id))closeModal(id);}));
+['modal-app','modal-fourn','modal-proj','modal-if','modal-tool','modal-user'].forEach(id=>document.getElementById(id)?.addEventListener('click',e=>{if(e.target===document.getElementById(id))closeModal(id);}));
 
 // APP
 function openAppModal(idx){
