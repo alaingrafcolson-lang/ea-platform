@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SI Governance — Incidents & Métriques</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════ DESIGN TOKENS */
+:root {
+  --bg-base:    #080b12;
+  --bg-surface: #0f1422;
+  --bg-panel:   #141929;
+  --bg-raised:  #1c2238;
+  --bg-hover:   #222943;
+  --border-lo:  rgba(255,255,255,0.05);
+  --border-mid: rgba(255,255,255,0.09);
+  --border-hi:  rgba(255,255,255,0.16);
+  --text-pri:   #e2e6f3;
+  --text-sec:   #7a84a0;
+  --text-ter:   #424d6a;
+  --portfolio:  #4b8cf5;
+  --tech:       #22d3bc;
+  --secu:       #f43f8a;
+  --finance:    #fb923c;
+  --project:    #10d07a;
+  --sourcing:   #fbbf24;
+  --risk:       #ef4444;
+  --ok:         #22c55e;
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.35);
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:22px;
+}
+[data-theme="light"] {
+  --bg-base:    #f0f2f8;
+  --bg-surface: #ffffff;
+  --bg-panel:   #f7f8fc;
+  --bg-raised:  #eef0f8;
+  --bg-hover:   #e5e8f4;
+  --border-lo:  rgba(0,0,0,0.06);
+  --border-mid: rgba(0,0,0,0.10);
+  --border-hi:  rgba(0,0,0,0.18);
+  --text-pri:   #111827;
+  --text-sec:   #4b5563;
+  --text-ter:   #9ca3af;
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* ═══════════════════════════════════ RESET */
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:13px;scroll-behavior:smooth}
+body{font-family:'Instrument Sans',sans-serif;background:var(--bg-base);color:var(--text-pri);min-height:100vh;transition:background .25s,color .25s}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:4px}
+
+/* ═══════════════════════════════════ MENUBAR */
+.menubar{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;background:var(--bg-surface);border-bottom:1px solid var(--border-mid);display:flex;align-items:center;padding:0 20px;box-shadow:var(--shadow-sm)}
+.mb-brand{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--text-pri);white-space:nowrap;margin-right:18px;padding-right:18px;border-right:1px solid var(--border-mid)}
+.mb-dot-icon{width:22px;height:22px;border-radius:6px;background:var(--secu);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.mb-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.theme-btn{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--bg-raised);border:1px solid var(--border-mid);color:var(--text-sec);font-size:11px;cursor:pointer;transition:all .15s}
+.theme-btn:hover{border-color:var(--border-hi);color:var(--text-pri)}
+.role-chip{display:flex;align-items:center;gap:7px;padding:4px 10px;border-radius:20px;background:var(--bg-raised);border:1px solid var(--border-mid);font-size:11px;font-weight:500}
+.role-dot{width:7px;height:7px;border-radius:50%}
+.back-btn{display:flex;align-items:center;gap:6px;padding:5px 14px;border-radius:var(--r-sm);background:var(--bg-raised);border:1px solid var(--border-mid);color:var(--text-sec);font-size:11px;cursor:pointer;text-decoration:none;transition:all .15s}
+.back-btn:hover{border-color:var(--border-hi);color:var(--text-pri)}
+
+/* ═══════════════════════════════════ GUARD */
+.guard{position:fixed;inset:0;background:var(--bg-base);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:20px}
+.guard.gone{display:none}
+.guard-icon{font-size:48px}
+.guard-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px}
+.guard-sub{font-size:12px;color:var(--text-ter);max-width:340px;line-height:1.7}
+
+/* ═══════════════════════════════════ LAYOUT */
+.shell{padding-top:52px;min-height:100vh}
+.content{padding:24px 28px;max-width:1500px;margin:0 auto}
+@media(max-width:860px){.content{padding:14px 16px}}
+
+/* ═══════════════════════════════════ SECTION */
+.sec-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.sec-title{font-family:'Syne',sans-serif;font-weight:700;font-size:20px;letter-spacing:-.025em}
+.sec-sub{font-size:11px;color:var(--text-ter);margin-top:3px}
+.sec-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ═══════════════════════════════════ GRID */
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+.gfull{grid-column:1/-1}
+@media(max-width:1200px){.g5{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:860px){.g2,.g3,.g4,.g5{grid-template-columns:1fr}}
+
+/* ═══════════════════════════════════ PANEL */
+.panel{background:var(--bg-panel);border:1px solid var(--border-lo);border-radius:var(--r-lg);padding:16px 18px;transition:background .25s,border-color .25s}
+.panel:hover{border-color:var(--border-mid)}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.pt{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:-.01em}
+.ps{font-size:11px;color:var(--text-ter);margin-top:2px}
+
+/* ═══════════════════════════════════ KPI METRIC CARD */
+.metric-card{
+  background:var(--bg-raised);border-radius:var(--r-lg);padding:18px 20px;
+  border:1px solid var(--border-lo);position:relative;overflow:hidden;
+  transition:border-color .2s,transform .15s;cursor:default;
+}
+.metric-card:hover{border-color:var(--border-mid);transform:translateY(-1px)}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-lg) var(--r-lg) 0 0}
+.mc-lbl{font-size:10px;color:var(--text-ter);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-weight:600}
+.mc-val{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:500;line-height:1;margin-bottom:6px}
+.mc-unit{font-size:12px;color:var(--text-ter);margin-left:4px}
+.mc-sub{font-size:11px;color:var(--text-sec);margin-bottom:8px;line-height:1.4}
+.mc-bar{height:4px;background:var(--bg-base);border-radius:2px;overflow:hidden}
+.mc-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.mc-formula{font-size:10px;color:var(--text-ter);font-family:'JetBrains Mono',monospace;margin-top:6px;padding-top:6px;border-top:1px solid var(--border-lo)}
+.mc-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-top:6px}
+
+/* ═══════════════════════════════════ BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.b-red{background:rgba(239,68,68,.1);color:#ef4444}
+.b-amb{background:rgba(251,146,60,.1);color:var(--finance)}
+.b-grn{background:rgba(16,208,122,.1);color:var(--project)}
+.b-blu{background:rgba(75,140,245,.1);color:var(--portfolio)}
+.b-tel{background:rgba(34,211,188,.1);color:var(--tech)}
+.b-gry{background:rgba(255,255,255,.06);color:var(--text-sec)}
+.b-vio{background:rgba(244,63,138,.1);color:var(--secu)}
+
+/* ═══════════════════════════════════ TABLE */
+.twrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:7px 10px;color:var(--text-ter);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-lo)}
+td{padding:8px 10px;border-bottom:1px solid var(--border-lo);color:var(--text-pri);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg-hover)}
+
+/* ═══════════════════════════════════ BUTTONS */
+.btn{padding:7px 14px;border-radius:var(--r-sm);border:1px solid var(--border-mid);background:var(--bg-raised);color:var(--text-pri);font-family:inherit;font-size:12px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{background:var(--bg-hover);border-color:var(--border-hi)}
+.btn-p{background:var(--portfolio);border-color:var(--portfolio);color:#fff}
+.btn-p:hover{background:#3a7ef5}
+.btn-d{border-color:rgba(239,68,68,.3);color:#ef4444}
+.btn-d:hover{background:rgba(239,68,68,.08)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-acc{border-color:var(--secu);color:var(--secu)}
+.btn-acc:hover{background:rgba(244,63,138,.08)}
+
+/* ═══════════════════════════════════ MODAL */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:none;align-items:center;justify-content:center;padding:16px}
+.moverlay.open{display:flex}
+.mbox{background:var(--bg-surface);border:1px solid var(--border-mid);border-radius:var(--r-xl);padding:24px;width:100%;max-width:640px;max-height:92vh;overflow-y:auto;animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.mhdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.mtitle{font-family:'Syne',sans-serif;font-weight:700;font-size:16px}
+.msub{font-size:12px;color:var(--text-ter);margin-top:3px}
+.mclose{cursor:pointer;color:var(--text-ter);font-size:18px;line-height:1}
+.mclose:hover{color:var(--text-pri)}
+.mfooter{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border-lo)}
+
+/* FORM */
+.frow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:11px}
+.fg{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
+.fg label{font-size:10px;color:var(--text-ter);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+input[type=text],input[type=number],input[type=datetime-local],input[type=date],select,textarea{
+  background:var(--bg-raised);border:1px solid var(--border-mid);border-radius:var(--r-sm);
+  color:var(--text-pri);font-family:inherit;font-size:12px;padding:7px 10px;
+  outline:none;transition:border-color .15s;width:100%;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--secu)}
+select{cursor:pointer}
+textarea{resize:vertical;min-height:60px}
+
+/* ═══════════════════════════════════ TABS */
+.tabs{display:flex;gap:2px;margin-bottom:18px;background:var(--bg-panel);border:1px solid var(--border-lo);border-radius:var(--r-md);padding:4px;width:fit-content;flex-wrap:wrap}
+.tab{padding:6px 16px;border-radius:var(--r-sm);font-size:12px;font-weight:500;color:var(--text-ter);cursor:pointer;transition:all .15s;border:1px solid transparent;white-space:nowrap}
+.tab.active{background:var(--bg-raised);color:var(--text-pri);border-color:var(--border-mid)}
+.tab:hover:not(.active){color:var(--text-sec)}
+
+/* ═══════════════════════════════════ SEVERITY INDICATOR */
+.sev-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block}
+.sev-critique{background:#ef4444}
+.sev-haute{background:#fbbf24}
+.sev-moyenne{background:#4b8cf5}
+.sev-basse{background:#22d3bc}
+
+/* ═══════════════════════════════════ TIMELINE */
+.timeline{position:relative;padding-left:20px}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:1px;background:var(--border-mid)}
+.tl-item{position:relative;padding:10px 0 10px 16px;margin-bottom:4px}
+.tl-item::before{content:'';position:absolute;left:-14px;top:14px;width:8px;height:8px;border-radius:50%;background:var(--secu);border:2px solid var(--bg-surface)}
+.tl-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-ter);margin-bottom:3px}
+.tl-msg{font-size:12px;color:var(--text-sec)}
+.tl-msg strong{color:var(--text-pri)}
+
+/* ═══════════════════════════════════ CHART WRAP */
+.chart-wrap{position:relative;width:100%}
+
+/* ═══════════════════════════════════ PROGRESS */
+.prow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.plbl{font-size:12px;color:var(--text-sec);min-width:100px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pwrap{flex:1;height:5px;background:var(--bg-base);border-radius:3px;overflow:hidden}
+.pfill{height:100%;border-radius:3px;transition:width .7s ease}
+.pval{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-ter);min-width:36px;text-align:right}
+
+/* ═══════════════════════════════════ MISC */
+.mono{font-family:'JetBrains Mono',monospace}
+.divider{height:1px;background:var(--border-lo);margin:14px 0}
+.empty{text-align:center;padding:26px 16px;color:var(--text-ter);font-size:12px}
+.mb14{margin-bottom:14px}
+.mt8{margin-top:8px}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--bg-panel);border:1px solid var(--border-mid);border-left:3px solid var(--secu);border-radius:var(--r-md);padding:10px 16px;font-size:12px;color:var(--text-pri);transform:translateY(60px);opacity:0;transition:all .25s;z-index:400;pointer-events:none;max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ═══════════════════════════════════ VULN EXPOSURE BAR */
+.exposure-bar{height:8px;border-radius:4px;background:var(--bg-base);overflow:hidden;margin-top:4px}
+.exposure-fill{height:100%;border-radius:4px;transition:width .6s ease}
+</style>
+</head>
+<body>
+
+<!-- ════════════ GUARD ════════════ -->
+<div class="guard" id="guard-screen">
+  <div class="guard-icon">🔒</div>
+  <div class="guard-title">Accès restreint</div>
+  <div class="guard-sub">Cette page est réservée au <strong>RSSI</strong>, <strong>DSI</strong>, <strong>Admin Système</strong> et <strong>Admin Réseau</strong>.<br>Connectez-vous depuis le dashboard avec les droits requis.</div>
+  <a href="dashboard.html" class="btn btn-p" style="margin-top:8px">← Retour au dashboard</a>
+</div>
+
+<!-- ════════════ MENUBAR ════════════ -->
+<nav class="menubar" id="menubar" style="display:none">
+  <div class="mb-brand">
+    <div class="mb-dot-icon">🚨</div>
+    SI Gov. — Incidents & Métriques
+  </div>
+  <div class="mb-right">
+    <span class="mono" id="mb-date" style="font-size:10px;color:var(--text-ter)"></span>
+    <div class="theme-btn" onclick="toggleTheme()">
+      <span id="theme-icon">🌙</span>
+      <span id="theme-lbl">Clair</span>
+    </div>
+    <div class="role-chip" id="role-chip">
+      <div class="role-dot" id="chip-dot"></div>
+      <span id="chip-name"></span>
+    </div>
+    <a href="dashboard.html" class="back-btn">← Dashboard</a>
+  </div>
+</nav>
+
+<!-- ════════════ SHELL ════════════ -->
+<div class="shell" id="main-shell" style="display:none">
+<div class="content">
+
+  <div class="sec-hdr">
+    <div>
+      <div class="sec-title">🚨 Incidents & Métriques de résilience</div>
+      <div class="sec-sub">MTTD · MTTR · MTBF · Exposition vulnérabilités · Plan de résolution — DORA art. 17-23 · NIS2 art. 21</div>
+    </div>
+    <div class="sec-acts">
+      <button class="btn btn-sm btn-acc" onclick="openIncidentModal(-1)">+ Déclarer incident</button>
+      <button class="btn btn-sm btn-acc" style="border-color:var(--finance);color:var(--finance)" onclick="openVulnModal(-1)">+ Vulnérabilité</button>
+    </div>
+  </div>
+
+  <!-- ══ KPI MÉTRIQUES ══ -->
+  <div class="grid g5 mb14" id="metrics-kpis"></div>
+
+  <!-- ══ TABS ══ -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('dashboard',this)">📊 Tableau de bord</div>
+    <div class="tab" onclick="showTab('incidents',this)">🚨 Incidents</div>
+    <div class="tab" onclick="showTab('vulns',this)">🔓 Vulnérabilités</div>
+    <div class="tab" onclick="showTab('resolution',this)">🛠 Plans de résolution</div>
+    <div class="tab" onclick="showTab('formules',this)">📐 Formules & seuils</div>
+  </div>
+
+  <!-- ════ TAB : DASHBOARD ════ -->
+  <div id="tab-dashboard">
+    <div class="grid g2 mb14">
+      <div class="panel">
+        <div class="ph"><div><div class="pt">Évolution MTTD / MTTR (30 jours)</div><div class="ps">Tendance détection & résolution</div></div></div>
+        <div class="chart-wrap" style="height:220px"><canvas id="chart-trend"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><div class="pt">Incidents par sévérité</div><div class="ps">Répartition du portefeuille</div></div></div>
+        <div class="chart-wrap" style="height:180px"><canvas id="chart-sev"></canvas></div>
+        <div class="mt8" id="sev-detail"></div>
+      </div>
+    </div>
+    <div class="grid g2 mb14">
+      <div class="panel">
+        <div class="ph"><div><div class="pt">MTBF par système</div><div class="ps">Temps moyen entre défaillances — cible &gt; 720h</div></div></div>
+        <div id="mtbf-bars"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><div class="pt">Exposition vulnérabilités actives</div><div class="ps">Durée depuis détection CVE · CVSS ≥ 7</div></div></div>
+        <div id="vuln-exposure"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div><div class="pt">Derniers incidents — Journal temps réel</div></div></div>
+      <div class="timeline" id="incident-timeline"><div class="empty">Aucun incident enregistré</div></div>
+    </div>
+  </div>
+
+  <!-- ════ TAB : INCIDENTS ════ -->
+  <div id="tab-incidents" style="display:none">
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Registre des incidents de sécurité</div><div class="ps">DORA art. 17 · NIS2 art. 23 · Traçabilité RGPD</div></div>
+        <div style="display:flex;gap:8px">
+          <select id="filter-sev" onchange="renderIncidents()" style="font-size:11px;padding:4px 8px;width:auto">
+            <option value="">Toutes sévérités</option>
+            <option value="critique">Critique</option>
+            <option value="haute">Haute</option>
+            <option value="moyenne">Moyenne</option>
+            <option value="basse">Basse</option>
+          </select>
+          <select id="filter-stat" onchange="renderIncidents()" style="font-size:11px;padding:4px 8px;width:auto">
+            <option value="">Tous statuts</option>
+            <option value="ouvert">Ouvert</option>
+            <option value="en_cours">En cours</option>
+            <option value="resolu">Résolu</option>
+            <option value="clos">Clos</option>
+          </select>
+          <button class="btn btn-sm" onclick="exportIncidentsCsv()">📥 CSV</button>
+        </div>
+      </div>
+      <div class="twrap">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>Date détection</th><th>Système</th><th>Type</th><th>Sévérité</th>
+            <th>MTTD</th><th>MTTR</th><th>Statut</th><th>Responsable</th><th></th>
+          </tr></thead>
+          <tbody id="incidents-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB : VULNÉRABILITÉS ════ -->
+  <div id="tab-vulns" style="display:none">
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Registre des vulnérabilités — Exposition & remédiation</div><div class="ps">CVE · CVSS · Délai de patch · Source NVD NIST / CERT-FR</div></div>
+        <div style="display:flex;gap:8px">
+          <select id="filter-vuln-stat" onchange="renderVulns()" style="font-size:11px;padding:4px 8px;width:auto">
+            <option value="">Tous statuts</option>
+            <option value="a_patcher">À patcher</option>
+            <option value="en_cours">En cours</option>
+            <option value="patchee">Patchée</option>
+            <option value="acceptee">Acceptée</option>
+          </select>
+          <button class="btn btn-sm" onclick="exportVulnsCsv()">📥 CSV</button>
+        </div>
+      </div>
+      <div class="twrap">
+        <table>
+          <thead><tr>
+            <th>CVE / ID</th><th>Détection</th><th>Système</th><th>CVSS</th><th>Exposition</th>
+            <th>SLA cible</th><th>Dépassement</th><th>Statut</th><th>Moyen résolution</th><th></th>
+          </tr></thead>
+          <tbody id="vulns-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB : PLANS DE RÉSOLUTION ════ -->
+  <div id="tab-resolution" style="display:none">
+    <div class="grid g2">
+      <div class="panel">
+        <div class="ph"><div><div class="pt">Moyens de résolution — Catalogue</div><div class="ps">Actions types par catégorie d'incident</div></div></div>
+        <div id="resolution-catalog"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><div class="pt">Statistiques de résolution</div><div class="ps">Efficacité des actions correctives</div></div></div>
+        <div class="chart-wrap" style="height:200px"><canvas id="chart-resolution"></canvas></div>
+        <div class="mt8" id="resolution-stats"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB : FORMULES & SEUILS ════ -->
+  <div id="tab-formules" style="display:none">
+    <div class="grid g2 mb14">
+
+      <div class="panel">
+        <div class="ph"><div><div class="pt">📐 MTTD — Mean Time To Detect</div><div class="ps">Temps moyen de détection d'un incident</div></div></div>
+        <div style="background:rgba(244,63,138,.06);border:1px solid rgba(244,63,138,.2);border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--secu);margin-bottom:6px">
+            MTTD = Σ (t_détection − t_début) / n_incidents
+          </div>
+          <div style="font-size:11px;color:var(--text-sec);line-height:1.6">Somme des durées entre le début réel d'un incident et sa détection, divisée par le nombre total d'incidents.</div>
+        </div>
+        <div style="font-size:11px;line-height:2;color:var(--text-sec)">
+          <div>🎯 Seuil DORA (art. 19) : <strong style="color:var(--secu)">&lt; 4h</strong> pour incidents majeurs</div>
+          <div>🎯 Seuil NIS2 (art. 23) : <strong style="color:var(--secu)">&lt; 24h</strong> notification initiale</div>
+          <div>🏆 Objectif excellence : <strong style="color:#10d07a">&lt; 1h</strong></div>
+          <div>⚠️ Seuil d'alerte : <strong style="color:#fbbf24">&gt; 8h</strong></div>
+          <div>🚨 Seuil critique : <strong style="color:#ef4444">&gt; 24h</strong></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><div><div class="pt">📐 MTTR — Mean Time To Repair</div><div class="ps">Temps moyen de résolution</div></div></div>
+        <div style="background:rgba(251,146,60,.06);border:1px solid rgba(251,146,60,.2);border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--finance);margin-bottom:6px">
+            MTTR = Σ (t_résolution − t_détection) / n_incidents
+          </div>
+          <div style="font-size:11px;color:var(--text-sec);line-height:1.6">Durée moyenne entre la détection d'un incident et sa résolution complète (service restauré).</div>
+        </div>
+        <div style="font-size:11px;line-height:2;color:var(--text-sec)">
+          <div>🎯 Seuil DORA critique : <strong style="color:var(--finance)">&lt; 4h</strong></div>
+          <div>🎯 Seuil DORA majeur : <strong style="color:var(--finance)">&lt; 24h</strong></div>
+          <div>🏆 Objectif excellence : <strong style="color:#10d07a">&lt; 2h</strong></div>
+          <div>⚠️ Seuil d'alerte : <strong style="color:#fbbf24">&gt; 12h</strong></div>
+          <div>🚨 Seuil critique : <strong style="color:#ef4444">&gt; 48h</strong></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><div><div class="pt">📐 MTBF — Mean Time Between Failures</div><div class="ps">Temps moyen entre deux défaillances</div></div></div>
+        <div style="background:rgba(75,140,245,.06);border:1px solid rgba(75,140,245,.2);border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--portfolio);margin-bottom:6px">
+            MTBF = (T_total − T_arrêt) / n_défaillances
+          </div>
+          <div style="font-size:11px;color:var(--text-sec);line-height:1.6">Temps total de fonctionnement moins les arrêts, divisé par le nombre de défaillances. Plus MTBF est élevé, plus le système est fiable.</div>
+        </div>
+        <div style="font-size:11px;line-height:2;color:var(--text-sec)">
+          <div>🏆 Objectif excellence : <strong style="color:#10d07a">&gt; 2 160h</strong> (3 mois)</div>
+          <div>🎯 Cible standard : <strong style="color:var(--portfolio)">&gt; 720h</strong> (mensuel)</div>
+          <div>⚠️ Seuil d'alerte : <strong style="color:#fbbf24">&lt; 360h</strong></div>
+          <div>🚨 Seuil critique : <strong style="color:#ef4444">&lt; 168h</strong> (hebdomadaire)</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><div><div class="pt">📐 Exposition vulnérabilité</div><div class="ps">Durée entre détection CVE et patch</div></div></div>
+        <div style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--sourcing);margin-bottom:6px">
+            Exposition = t_patch − t_détection_CVE
+          </div>
+          <div style="font-size:11px;color:var(--text-sec);line-height:1.6">Durée pendant laquelle le système reste exposé à une vulnérabilité connue. SLA variable selon le score CVSS.</div>
+        </div>
+        <div style="font-size:11px;line-height:2;color:var(--text-sec)">
+          <div>🚨 CVSS ≥ 9.0 (Critique) : <strong style="color:#ef4444">&lt; 24h</strong></div>
+          <div>⚠️ CVSS 7.0-8.9 (Haute) : <strong style="color:#fbbf24">&lt; 72h</strong></div>
+          <div>🎯 CVSS 4.0-6.9 (Moyenne) : <strong style="color:var(--portfolio)">&lt; 7 jours</strong></div>
+          <div>✅ CVSS &lt; 4.0 (Basse) : <strong style="color:#10d07a">&lt; 30 jours</strong></div>
+          <div style="margin-top:4px;color:var(--text-ter)">Source : NIST SP 800-40 Rev.4 · CERT-FR</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="panel">
+      <div class="ph"><div><div class="pt">Tableau de bord des seuils réglementaires</div><div class="ps">DORA (UE) 2022/2554 · NIS2 (UE) 2022/2555 · ISO 27035</div></div></div>
+      <div class="twrap">
+        <table>
+          <thead><tr><th>Métrique</th><th>Règlement</th><th>Article</th><th>Seuil légal</th><th>Seuil excellence</th><th>Conséquence dépassement</th></tr></thead>
+          <tbody>
+            <tr><td><strong>MTTD incident majeur</strong></td><td><span class="badge b-red">DORA</span></td><td class="mono" style="font-size:10px">Art. 19</td><td style="color:#fbbf24">&lt; 4h détection</td><td style="color:#10d07a">&lt; 1h</td><td style="font-size:11px;color:var(--text-sec)">Obligation de notification à l'autorité compétente</td></tr>
+            <tr><td><strong>Notification initiale</strong></td><td><span class="badge b-vio">NIS2</span></td><td class="mono" style="font-size:10px">Art. 23.4.a</td><td style="color:#fbbf24">&lt; 24h</td><td style="color:#10d07a">&lt; 4h</td><td style="font-size:11px;color:var(--text-sec)">Alerte précoce à l'ANSSI / CERT-FR</td></tr>
+            <tr><td><strong>Rapport complet incident</strong></td><td><span class="badge b-vio">NIS2</span></td><td class="mono" style="font-size:10px">Art. 23.4.c</td><td style="color:#fbbf24">&lt; 1 mois</td><td style="color:#10d07a">&lt; 72h</td><td style="font-size:11px;color:var(--text-sec)">Rapport détaillé causes, impact, mesures</td></tr>
+            <tr><td><strong>MTTR incident critique</strong></td><td><span class="badge b-red">DORA</span></td><td class="mono" style="font-size:10px">Art. 12</td><td style="color:#fbbf24">&lt; 4h</td><td style="color:#10d07a">&lt; 2h</td><td style="font-size:11px;color:var(--text-sec)">Plan de continuité activé (PCA/PRA)</td></tr>
+            <tr><td><strong>Patch CVSS ≥ 9.0</strong></td><td><span class="badge b-blu">NIST</span></td><td class="mono" style="font-size:10px">SP 800-40</td><td style="color:#ef4444">&lt; 24h</td><td style="color:#10d07a">&lt; 12h</td><td style="font-size:11px;color:var(--text-sec)">Exposition critique — risque exploitation active</td></tr>
+            <tr><td><strong>Test résilience (TLPT)</strong></td><td><span class="badge b-red">DORA</span></td><td class="mono" style="font-size:10px">Art. 26</td><td style="color:#fbbf24">1×/3 ans min.</td><td style="color:#10d07a">1×/an</td><td style="font-size:11px;color:var(--text-sec)">Non-conformité prudentielle</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /shell -->
+
+<!-- ════════════ MODAL INCIDENT ════════════ -->
+<div class="moverlay" id="modal-incident">
+  <div class="mbox">
+    <div class="mhdr">
+      <div><div class="mtitle" id="inc-modal-title">Déclarer un incident</div><div class="msub">Traçabilité DORA/NIS2 · Calcul automatique MTTD/MTTR</div></div>
+      <span class="mclose" onclick="closeModal('modal-incident')">✕</span>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Système / Application *</label>
+        <input id="inc-systeme" type="text" placeholder="SAP ERP, Microsoft 365…"></div>
+      <div class="fg"><label>Type d'incident *</label>
+        <select id="inc-type">
+          <option value="ransomware">Ransomware</option>
+          <option value="phishing">Phishing / Intrusion</option>
+          <option value="ddos">DDoS</option>
+          <option value="fuite_donnees">Fuite de données</option>
+          <option value="indisponibilite">Indisponibilité</option>
+          <option value="acces_non_autorise">Accès non autorisé</option>
+          <option value="malware">Malware</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Sévérité</label>
+        <select id="inc-sev">
+          <option value="critique">Critique — impact majeur SI</option>
+          <option value="haute" selected>Haute — service dégradé</option>
+          <option value="moyenne">Moyenne — impact limité</option>
+          <option value="basse">Basse — mineur</option>
+        </select>
+      </div>
+      <div class="fg"><label>Responsable</label>
+        <input id="inc-resp" type="text" placeholder="RSSI, Admin Sys…"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>⏱ Début estimé de l'incident *</label>
+        <input id="inc-debut" type="datetime-local"></div>
+      <div class="fg"><label>🔍 Date/heure de détection *</label>
+        <input id="inc-detection" type="datetime-local"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>✅ Date/heure de résolution (si connue)</label>
+        <input id="inc-resolution" type="datetime-local"></div>
+      <div class="fg"><label>Statut</label>
+        <select id="inc-statut">
+          <option value="ouvert">Ouvert</option>
+          <option value="en_cours">En cours</option>
+          <option value="resolu">Résolu</option>
+          <option value="clos">Clos</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Description</label>
+        <textarea id="inc-desc" placeholder="Contexte, vecteur d'attaque, périmètre impacté…"></textarea></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Moyen de résolution</label>
+        <select id="inc-moyen">
+          <option value="">— Sélectionner —</option>
+          <option value="isolation">Isolation du système</option>
+          <option value="patch">Application de patch</option>
+          <option value="restauration">Restauration sauvegarde</option>
+          <option value="reinitialisation">Réinitialisation credentials</option>
+          <option value="filtrage">Filtrage réseau / ACL</option>
+          <option value="pra">Activation PRA/PCA</option>
+          <option value="forensic">Investigation forensic</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="fg"><label>Notifié ANSSI / CERT-FR ?</label>
+        <select id="inc-notif">
+          <option value="non">Non</option>
+          <option value="oui">Oui</option>
+          <option value="na">N/A — seuil non atteint</option>
+        </select>
+      </div>
+    </div>
+    <input type="hidden" id="inc-edit-idx" value="-1">
+    <div id="inc-mttd-preview" style="background:rgba(244,63,138,.06);border:1px solid rgba(244,63,138,.15);border-radius:8px;padding:10px;font-size:11px;margin-top:4px;display:none">
+      <span id="inc-mttd-val"></span>
+    </div>
+    <div class="mfooter">
+      <button class="btn btn-d btn-sm" id="inc-del-btn" style="display:none;margin-right:auto" onclick="deleteIncident()">Supprimer</button>
+      <button class="btn btn-sm" onclick="closeModal('modal-incident')">Annuler</button>
+      <button class="btn btn-sm" style="background:var(--secu);border-color:var(--secu);color:#fff" onclick="saveIncident()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ MODAL VULNÉRABILITÉ ════════════ -->
+<div class="moverlay" id="modal-vuln">
+  <div class="mbox">
+    <div class="mhdr">
+      <div><div class="mtitle" id="vuln-modal-title">Déclarer une vulnérabilité</div><div class="msub">CVE · CVSS · SLA patch · Exposition calculée automatiquement</div></div>
+      <span class="mclose" onclick="closeModal('modal-vuln')">✕</span>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Identifiant CVE *</label>
+        <input id="vuln-id" type="text" placeholder="CVE-2025-XXXX"></div>
+      <div class="fg"><label>Score CVSS *</label>
+        <input id="vuln-cvss" type="number" min="0" max="10" step="0.1" placeholder="7.5"
+          oninput="updateVulnSla()"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Système / Application *</label>
+        <input id="vuln-sys" type="text" placeholder="SAP ERP, Oracle HRMS…"></div>
+      <div class="fg"><label>Source</label>
+        <select id="vuln-src">
+          <option>NVD NIST</option>
+          <option>CERT-FR</option>
+          <option>ANSSI</option>
+          <option>CISA KEV</option>
+          <option>Éditeur</option>
+          <option>Audit interne</option>
+          <option>Pentest</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>📅 Date de détection *</label>
+        <input id="vuln-detection" type="date"></div>
+      <div class="fg"><label>✅ Date de patch (si réalisé)</label>
+        <input id="vuln-patch" type="date"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Statut</label>
+        <select id="vuln-statut">
+          <option value="a_patcher">À patcher</option>
+          <option value="en_cours">En cours</option>
+          <option value="patchee">Patchée</option>
+          <option value="acceptee">Acceptée (risque résiduel)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Responsable patch</label>
+        <input id="vuln-resp" type="text" placeholder="Admin Sys, RSSI…"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Moyen de résolution</label>
+        <select id="vuln-moyen">
+          <option value="patch_editeur">Patch éditeur</option>
+          <option value="workaround">Contournement (workaround)</option>
+          <option value="isolation">Isolation du composant</option>
+          <option value="waf">Règle WAF / IPS</option>
+          <option value="desactivation">Désactivation fonctionnalité</option>
+          <option value="mise_a_jour">Mise à jour version</option>
+          <option value="acceptation">Acceptation du risque</option>
+        </select>
+      </div>
+      <div class="fg"><label>Exploitation active connue ?</label>
+        <select id="vuln-exploit">
+          <option value="non">Non</option>
+          <option value="oui">Oui — CISA KEV</option>
+          <option value="poc">PoC public disponible</option>
+        </select>
+      </div>
+    </div>
+    <div id="vuln-sla-preview" style="border-radius:8px;padding:10px;font-size:11px;margin-top:4px;border:1px solid var(--border-mid)"></div>
+    <div class="frow mt8">
+      <div class="fg"><label>Notes / contexte</label>
+        <textarea id="vuln-notes" placeholder="Composant affecté, version, conditions d'exploitation…"></textarea>
+      </div>
+    </div>
+    <input type="hidden" id="vuln-edit-idx" value="-1">
+    <div class="mfooter">
+      <button class="btn btn-d btn-sm" id="vuln-del-btn" style="display:none;margin-right:auto" onclick="deleteVuln()">Supprimer</button>
+      <button class="btn btn-sm" onclick="closeModal('modal-vuln')">Annuler</button>
+      <button class="btn btn-sm" style="background:var(--finance);border-color:var(--finance);color:#fff" onclick="saveVuln()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// RÔLES AUTORISÉS
+// ══════════════════════════════════════════════════════════════════
+const ALLOWED_ROLES = ['RSSI','DSI','ADMIN_SYS','ADMIN_NET','SUPERADMIN'];
+const ROLE_LABELS = {
+  RSSI:'🔐 RSSI', DSI:'🏛️ DSI', ADMIN_SYS:'💻 Admin Système',
+  ADMIN_NET:'🌐 Admin Réseau', SUPERADMIN:'🔑 Super Admin',
+  ADMIN_DATA:'📊 Admin Data', GUEST:'👁️ Auditeur', DAF:'💰 DAF',
+  EA:'🏗️ Architecte EA', PM:'📋 Chef de Projet', DG:'👔 DG/COMEX'
+};
+const ROLE_COLORS = {
+  RSSI:'#f43f8a', DSI:'#4b8cf5', ADMIN_SYS:'#4c1d95',
+  ADMIN_NET:'#0891b2', SUPERADMIN:'#ef4444'
+};
+
+// ══════════════════════════════════════════════════════════════════
+// STORE
+// ══════════════════════════════════════════════════════════════════
+const SK_INC  = 'ea_incidents_v1';
+const SK_VULN = 'ea_vulns_v1';
+const SK_ROLE = 'ea_current_role';
+
+let currentRole = null;
+let incidents = [];
+let vulns = [];
+
+function loadIncidents() { try { incidents = JSON.parse(localStorage.getItem(SK_INC)) || []; } catch(e) { incidents = []; } }
+function saveIncidents() { localStorage.setItem(SK_INC, JSON.stringify(incidents)); }
+function loadVulns()     { try { vulns = JSON.parse(localStorage.getItem(SK_VULN)) || []; } catch(e) { vulns = []; } }
+function saveVulns()     { localStorage.setItem(SK_VULN, JSON.stringify(vulns)); }
+
+// ══════════════════════════════════════════════════════════════════
+// CALCULS MÉTRIQUES
+// ══════════════════════════════════════════════════════════════════
+function calcMttd(inc) {
+  if (!inc.debut || !inc.detection) return null;
+  return (new Date(inc.detection) - new Date(inc.debut)) / 3600000; // heures
+}
+function calcMttr(inc) {
+  if (!inc.detection || !inc.resolution) return null;
+  return (new Date(inc.resolution) - new Date(inc.detection)) / 3600000;
+}
+function calcMtbf(sys) {
+  const sysIncs = incidents.filter(i => i.systeme === sys && i.resolution);
+  if (sysIncs.length < 2) return null;
+  const sorted = sysIncs.sort((a,b) => new Date(a.detection) - new Date(b.detection));
+  let totalUp = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = (new Date(sorted[i].detection) - new Date(sorted[i-1].resolution)) / 3600000;
+    if (gap > 0) totalUp += gap;
+  }
+  return totalUp / (sorted.length - 1);
+}
+function calcExposition(vuln) {
+  const det = new Date(vuln.detection);
+  const end = vuln.patch ? new Date(vuln.patch) : new Date();
+  return Math.round((end - det) / 86400000); // jours
+}
+function vulnSla(cvss) {
+  const c = parseFloat(cvss);
+  if (c >= 9.0) return {label:'Critique',sla:'< 24h',color:'#ef4444',slaDays:1};
+  if (c >= 7.0) return {label:'Haute',   sla:'< 72h',color:'#fbbf24',slaDays:3};
+  if (c >= 4.0) return {label:'Moyenne', sla:'< 7j', color:'#4b8cf5',slaDays:7};
+  return               {label:'Basse',   sla:'< 30j',color:'#10d07a',slaDays:30};
+}
+function avgMetric(arr) {
+  const valid = arr.filter(v => v !== null && v !== undefined && !isNaN(v));
+  return valid.length ? valid.reduce((s,v) => s+v, 0) / valid.length : null;
+}
+function fmtH(h) {
+  if (h === null || isNaN(h)) return '—';
+  if (h < 1)  return Math.round(h * 60) + ' min';
+  if (h < 24) return h.toFixed(1) + 'h';
+  return (h / 24).toFixed(1) + 'j';
+}
+function statusColor(val, thresholds) {
+  // thresholds: [green_max, yellow_max] — above yellow_max is red
+  if (val === null) return 'var(--text-ter)';
+  if (val <= thresholds[0]) return '#10d07a';
+  if (val <= thresholds[1]) return '#fbbf24';
+  return '#ef4444';
+}
+function mttrStatus(h) {
+  if (h === null) return {c:'var(--text-ter)',l:'—'};
+  if (h < 2)  return {c:'#10d07a',l:'Excellent'};
+  if (h < 4)  return {c:'#10d07a',l:'Conforme DORA'};
+  if (h < 12) return {c:'#fbbf24',l:'Acceptable'};
+  if (h < 24) return {c:'#fbbf24',l:'À surveiller'};
+  return {c:'#ef4444',l:'Hors SLA'};
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER MÉTRIQUES KPIs
+// ══════════════════════════════════════════════════════════════════
+function renderKpis() {
+  const mttds = incidents.map(i => calcMttd(i)).filter(v => v !== null);
+  const mttrs = incidents.map(i => calcMttr(i)).filter(v => v !== null);
+  const avgMttd = avgMetric(mttds);
+  const avgMttr = avgMetric(mttrs);
+  const openInc = incidents.filter(i => i.statut === 'ouvert' || i.statut === 'en_cours').length;
+  const vulnsOpen = vulns.filter(v => v.statut === 'a_patcher' || v.statut === 'en_cours').length;
+  const vulnsCrit = vulns.filter(v => parseFloat(v.cvss) >= 9 && v.statut !== 'patchee').length;
+
+  // Compute average MTBF across systems
+  const systems = [...new Set(incidents.map(i => i.systeme))];
+  const mtbfs = systems.map(s => calcMtbf(s)).filter(v => v !== null);
+  const avgMtbf = avgMetric(mtbfs);
+
+  document.getElementById('metrics-kpis').innerHTML = `
+    <div class="metric-card" style="border-top:3px solid var(--secu)">
+      <div class="mc-lbl">MTTD moyen</div>
+      <div class="mc-val" style="color:${statusColor(avgMttd,[1,8])}">${fmtH(avgMttd)}<span class="mc-unit">moy.</span></div>
+      <div class="mc-sub">Temps moyen de détection · cible DORA &lt; 4h</div>
+      <div class="mc-bar"><div class="mc-fill" style="width:${avgMttd?Math.min(100,avgMttd/24*100):0}%;background:${statusColor(avgMttd,[1,8])}"></div></div>
+      <div class="mc-formula">MTTD = Σ(t_det − t_début) / n</div>
+    </div>
+    <div class="metric-card" style="border-top:3px solid var(--finance)">
+      <div class="mc-lbl">MTTR moyen</div>
+      <div class="mc-val" style="color:${statusColor(avgMttr,[4,24])}">${fmtH(avgMttr)}<span class="mc-unit">moy.</span></div>
+      <div class="mc-sub">Temps moyen de résolution · cible &lt; 4h critique</div>
+      <div class="mc-bar"><div class="mc-fill" style="width:${avgMttr?Math.min(100,avgMttr/48*100):0}%;background:${statusColor(avgMttr,[4,24])}"></div></div>
+      <div class="mc-formula">MTTR = Σ(t_rés − t_det) / n</div>
+    </div>
+    <div class="metric-card" style="border-top:3px solid var(--portfolio)">
+      <div class="mc-lbl">MTBF moyen</div>
+      <div class="mc-val" style="color:${statusColor(avgMtbf?-avgMtbf:null,[-2160,-720])}">${fmtH(avgMtbf)}<span class="mc-unit">moy.</span></div>
+      <div class="mc-sub">Temps entre défaillances · cible &gt; 720h</div>
+      <div class="mc-bar"><div class="mc-fill" style="width:${avgMtbf?Math.min(100,avgMtbf/2160*100):0}%;background:${avgMtbf>720?'#10d07a':avgMtbf>360?'#fbbf24':'#ef4444'}"></div></div>
+      <div class="mc-formula">MTBF = (T_total − T_arrêt) / n</div>
+    </div>
+    <div class="metric-card" style="border-top:3px solid var(--risk)">
+      <div class="mc-lbl">Incidents ouverts</div>
+      <div class="mc-val" style="color:${openInc>3?'#ef4444':openInc>0?'#fbbf24':'#10d07a'}">${openInc}</div>
+      <div class="mc-sub">${incidents.length} total · ${incidents.filter(i=>i.statut==='resolu'||i.statut==='clos').length} résolus</div>
+      <div class="mc-bar"><div class="mc-fill" style="width:${incidents.length?openInc/incidents.length*100:0}%;background:#ef4444"></div></div>
+    </div>
+    <div class="metric-card" style="border-top:3px solid var(--sourcing)">
+      <div class="mc-lbl">Vulnérabilités actives</div>
+      <div class="mc-val" style="color:${vulnsCrit>0?'#ef4444':vulnsOpen>5?'#fbbf24':'#10d07a'}">${vulnsOpen}</div>
+      <div class="mc-sub">${vulnsCrit} critique(s) CVSS ≥ 9 · ${vulns.length} total</div>
+      <div class="mc-bar"><div class="mc-fill" style="width:${vulns.length?vulnsOpen/vulns.length*100:0}%;background:${vulnsCrit>0?'#ef4444':'#fbbf24'}"></div></div>
+      <div class="mc-formula">Exposition = t_patch − t_CVE</div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER DASHBOARD CHARTS
+// ══════════════════════════════════════════════════════════════════
+const CI = {};
+function dc(id) { if(CI[id]){CI[id].destroy();delete CI[id];} }
+function isDark() { return document.documentElement.getAttribute('data-theme') !== 'light'; }
+function chartTick() { return isDark() ? '#424d6a' : '#9ca3af'; }
+function chartGrid() { return isDark() ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)'; }
+
+function renderDashboard() {
+  // Trend chart MTTD/MTTR
+  const sorted = [...incidents].sort((a,b) => new Date(a.detection) - new Date(b.detection)).slice(-12);
+  dc('chart-trend');
+  CI['chart-trend'] = new Chart(document.getElementById('chart-trend'), {
+    type: 'line',
+    data: {
+      labels: sorted.map(i => new Date(i.detection).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})),
+      datasets: [
+        {label:'MTTD (h)', data: sorted.map(i => calcMttd(i)?.toFixed(1)), borderColor:'#f43f8a', backgroundColor:'rgba(244,63,138,.08)', fill:true, tension:.4, pointRadius:4},
+        {label:'MTTR (h)', data: sorted.map(i => calcMttr(i)?.toFixed(1)), borderColor:'#fb923c', backgroundColor:'rgba(251,146,60,.06)', fill:true, tension:.4, pointRadius:4},
+      ]
+    },
+    options: {responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:chartTick(),font:{size:10}}}},
+      scales:{x:{ticks:{color:chartTick(),font:{size:10}},grid:{color:chartGrid()}},y:{ticks:{color:chartTick()},grid:{color:chartGrid()}}}}
+  });
+
+  // Sévérité donut
+  const sevCounts = {critique:0,haute:0,moyenne:0,basse:0};
+  incidents.forEach(i => { if(sevCounts[i.sev]!==undefined) sevCounts[i.sev]++; });
+  dc('chart-sev');
+  CI['chart-sev'] = new Chart(document.getElementById('chart-sev'), {
+    type: 'doughnut',
+    data: {labels:['Critique','Haute','Moyenne','Basse'], datasets:[{data:Object.values(sevCounts), backgroundColor:['#ef4444','#fbbf24','#4b8cf5','#22d3bc'], borderWidth:0}]},
+    options: {responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{position:'right',labels:{color:chartTick(),font:{size:10},padding:6}}}}
+  });
+  document.getElementById('sev-detail').innerHTML = Object.entries(sevCounts).map(([k,v]) =>
+    `<div class="prow"><span class="plbl">${k}</span><div class="pwrap"><div class="pfill" style="width:${incidents.length?v/incidents.length*100:0}%;background:${{critique:'#ef4444',haute:'#fbbf24',moyenne:'#4b8cf5',basse:'#22d3bc'}[k]}"></div></div><span class="pval">${v}</span></div>`
+  ).join('');
+
+  // MTBF par système
+  const systems = [...new Set(incidents.map(i => i.systeme))];
+  const mtbfHtml = systems.map(s => {
+    const mtbf = calcMtbf(s);
+    const col = mtbf === null ? 'var(--text-ter)' : mtbf > 720 ? '#10d07a' : mtbf > 360 ? '#fbbf24' : '#ef4444';
+    const pct = mtbf ? Math.min(100, mtbf / 2160 * 100) : 0;
+    return `<div class="prow"><span class="plbl">${s}</span><div class="pwrap"><div class="pfill" style="width:${pct}%;background:${col}"></div></div><span class="pval" style="color:${col};min-width:50px">${fmtH(mtbf)}</span></div>`;
+  }).join('') || '<div class="empty">Données insuffisantes (min. 2 incidents résolus par système)</div>';
+  document.getElementById('mtbf-bars').innerHTML = mtbfHtml;
+
+  // Exposition vulnérabilités
+  const vulnsOpen = vulns.filter(v => v.statut !== 'patchee').sort((a,b) => calcExposition(b) - calcExposition(a)).slice(0,6);
+  document.getElementById('vuln-exposure').innerHTML = vulnsOpen.map(v => {
+    const exp = calcExposition(v);
+    const sla = vulnSla(v.cvss);
+    const over = exp > sla.slaDays;
+    const pct = Math.min(100, exp / (sla.slaDays * 3) * 100);
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:11px;font-weight:500">${v.cve_id} <span style="color:var(--text-ter);font-weight:400">${v.systeme}</span></span>
+        <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${over?'#ef4444':'#10d07a'}">${exp}j ${over?'⚠️ SLA dépassé':''}</span>
+      </div>
+      <div class="exposure-bar"><div class="exposure-fill" style="width:${pct}%;background:${over?'#ef4444':sla.color}"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:2px">
+        <span style="font-size:10px;color:var(--text-ter)">CVSS ${v.cvss} · SLA ${sla.sla}</span>
+        <span class="badge" style="font-size:10px;background:${sla.color}22;color:${sla.color}">${sla.label}</span>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty">Aucune vulnérabilité active</div>';
+
+  // Timeline
+  const recent = [...incidents].sort((a,b) => new Date(b.detection) - new Date(a.detection)).slice(0,8);
+  document.getElementById('incident-timeline').innerHTML = recent.map(i => {
+    const mttd = calcMttd(i); const mttr = calcMttr(i);
+    return `<div class="tl-item">
+      <div class="tl-time">${new Date(i.detection).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})} · <span class="sev-dot sev-${i.sev}"></span> ${i.sev}</div>
+      <div class="tl-msg"><strong>${i.systeme}</strong> — ${i.type.replace(/_/g,' ')} · ${i.desc?.slice(0,60)||''}${i.desc?.length>60?'…':''}</div>
+      <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+        ${mttd!==null?`<span class="badge b-vio">MTTD: ${fmtH(mttd)}</span>`:''}
+        ${mttr!==null?`<span class="badge b-amb">MTTR: ${fmtH(mttr)}</span>`:''}
+        <span class="badge ${i.statut==='resolu'||i.statut==='clos'?'b-grn':i.statut==='en_cours'?'b-blu':'b-red'}">${i.statut.replace('_',' ')}</span>
+        ${i.moyen?`<span class="badge b-gry">${i.moyen.replace(/_/g,' ')}</span>`:''}
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty">Aucun incident enregistré</div>';
+
+  // Resolution chart
+  const moyens = {};
+  incidents.forEach(i => { if(i.moyen) moyens[i.moyen] = (moyens[i.moyen]||0)+1; });
+  dc('chart-resolution');
+  if(Object.keys(moyens).length) {
+    CI['chart-resolution'] = new Chart(document.getElementById('chart-resolution'), {
+      type: 'bar', indexAxis: 'y',
+      data: {labels: Object.keys(moyens).map(k=>k.replace(/_/g,' ')), datasets:[{data:Object.values(moyens), backgroundColor:'rgba(244,63,138,.6)', borderRadius:4, barThickness:14}]},
+      options: {responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:chartTick(),stepSize:1},grid:{color:chartGrid()}},y:{ticks:{color:chartTick()},grid:{display:false}}}}
+    });
+  }
+
+  // Resolution catalog
+  const catalog = [
+    {cat:'Ransomware', actions:['Isolation réseau immédiate','Activation PRA/PCA','Restauration sauvegardes hors-ligne','Notification ANSSI sous 4h'], color:'#ef4444'},
+    {cat:'Fuite de données', actions:['Identification périmètre exfiltration','Révocation accès compromis','Notification RGPD (72h CNIL)','Forensic & préservation preuves'], color:'#fbbf24'},
+    {cat:'Indisponibilité', actions:['Basculement vers infrastructure DR','Vérification sauvegarde',  'Communication utilisateurs','Post-mortem 48h'], color:'#4b8cf5'},
+    {cat:'Accès non autorisé', actions:['Réinitialisation credentials','Audit logs accès','Renforcement MFA','Revue habilitations'], color:'#f43f8a'},
+  ];
+  document.getElementById('resolution-catalog').innerHTML = catalog.map(c => `
+    <div style="background:var(--bg-raised);border:1px solid var(--border-lo);border-left:3px solid ${c.color};border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:600;color:${c.color};margin-bottom:6px">${c.cat}</div>
+      <ol style="margin-left:14px;font-size:11px;color:var(--text-sec);line-height:1.8">
+        ${c.actions.map(a=>`<li>${a}</li>`).join('')}
+      </ol>
+    </div>`).join('');
+
+  const resolved = incidents.filter(i=>i.statut==='resolu'||i.statut==='clos');
+  document.getElementById('resolution-stats').innerHTML = `
+    <div style="font-size:11px;line-height:2.2;color:var(--text-sec)">
+      <div>Incidents résolus : <strong style="color:var(--text-pri)">${resolved.length}</strong></div>
+      <div>MTTR médian : <strong style="color:var(--finance)">${fmtH(avgMetric(resolved.map(i=>calcMttr(i)).filter(v=>v!==null)))}</strong></div>
+      <div>Taux résolution : <strong style="color:#10d07a">${incidents.length?Math.round(resolved.length/incidents.length*100):0}%</strong></div>
+      <div>Vulnérabilités patchées : <strong style="color:#10d07a">${vulns.filter(v=>v.statut==='patchee').length} / ${vulns.length}</strong></div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER TABLES
+// ══════════════════════════════════════════════════════════════════
+function renderIncidents() {
+  const fs = document.getElementById('filter-sev')?.value || '';
+  const fst = document.getElementById('filter-stat')?.value || '';
+  const list = incidents.filter(i => (!fs || i.sev === fs) && (!fst || i.statut === fst));
+  const canEdit = ALLOWED_ROLES.includes(currentRole);
+
+  document.getElementById('incidents-tbody').innerHTML = list.length ? list.map((inc, i) => {
+    const realIdx = incidents.indexOf(inc);
+    const mttd = calcMttd(inc); const mttr = calcMttr(inc);
+    const mttdC = statusColor(mttd,[1,8]); const mttrC = statusColor(mttr,[4,24]);
+    return `<tr>
+      <td class="mono" style="font-size:10px;color:var(--text-ter)">INC-${String(realIdx+1).padStart(4,'0')}</td>
+      <td class="mono" style="font-size:10px">${inc.detection ? new Date(inc.detection).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+      <td><strong>${inc.systeme}</strong></td>
+      <td style="font-size:11px">${(inc.type||'').replace(/_/g,' ')}</td>
+      <td><span class="sev-dot sev-${inc.sev}"></span> <span style="font-size:11px">${inc.sev}</span></td>
+      <td class="mono" style="font-size:11px;color:${mttdC}">${fmtH(mttd)}</td>
+      <td class="mono" style="font-size:11px;color:${mttrC}">${fmtH(mttr)}</td>
+      <td><span class="badge ${inc.statut==='resolu'||inc.statut==='clos'?'b-grn':inc.statut==='en_cours'?'b-blu':'b-red'}">${(inc.statut||'').replace('_',' ')}</span></td>
+      <td style="font-size:11px;color:var(--text-sec)">${inc.resp||'—'}</td>
+      <td>${canEdit?`<button class="btn btn-sm" onclick="openIncidentModal(${realIdx})" style="padding:3px 7px">✏️</button>`:'<span style="opacity:.3">🔒</span>'}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="10" class="empty">Aucun incident${fs||fst?' pour ce filtre':''}</td></tr>`;
+}
+
+function renderVulns() {
+  const fst = document.getElementById('filter-vuln-stat')?.value || '';
+  const list = vulns.filter(v => !fst || v.statut === fst);
+  const canEdit = ALLOWED_ROLES.includes(currentRole);
+
+  document.getElementById('vulns-tbody').innerHTML = list.length ? list.map((v, i) => {
+    const realIdx = vulns.indexOf(v);
+    const exp = calcExposition(v);
+    const sla = vulnSla(v.cvss);
+    const over = exp > sla.slaDays;
+    return `<tr>
+      <td><a href="https://nvd.nist.gov/vuln/detail/${v.cve_id}" target="_blank" style="color:#fbbf24;font-family:'JetBrains Mono',monospace;font-size:11px;text-decoration:none;border-bottom:1px dashed rgba(251,191,36,.4)">${v.cve_id}</a></td>
+      <td class="mono" style="font-size:10px">${v.detection}</td>
+      <td style="font-size:11px">${v.systeme}</td>
+      <td class="mono" style="font-size:12px;font-weight:500;color:${parseFloat(v.cvss)>=9?'#ef4444':parseFloat(v.cvss)>=7?'#fbbf24':'#4b8cf5'}">${v.cvss}</td>
+      <td class="mono" style="font-size:11px;color:${over?'#ef4444':'#10d07a'}">${exp}j</td>
+      <td style="font-size:11px;color:${sla.color}">${sla.sla}</td>
+      <td style="text-align:center">${over?`<span class="badge b-red">+${exp-sla.slaDays}j</span>`:`<span class="badge b-grn">OK</span>`}</td>
+      <td><span class="badge ${v.statut==='patchee'?'b-grn':v.statut==='en_cours'?'b-blu':v.statut==='acceptee'?'b-gry':'b-red'}">${(v.statut||'').replace('_',' ')}</span></td>
+      <td style="font-size:11px;color:var(--text-sec)">${(v.moyen||'—').replace(/_/g,' ')}</td>
+      <td>${canEdit?`<button class="btn btn-sm" onclick="openVulnModal(${realIdx})" style="padding:3px 7px">✏️</button>`:'<span style="opacity:.3">🔒</span>'}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="10" class="empty">Aucune vulnérabilité${fst?' pour ce filtre':''}</td></tr>`;
+}
+
+function renderAll() {
+  renderKpis();
+  renderDashboard();
+  renderIncidents();
+  renderVulns();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MODAL INCIDENTS
+// ══════════════════════════════════════════════════════════════════
+function openIncidentModal(idx) {
+  const isEdit = idx >= 0;
+  const inc = isEdit ? incidents[idx] : {};
+  document.getElementById('inc-modal-title').textContent = isEdit ? 'Modifier l\'incident' : 'Déclarer un incident';
+  document.getElementById('inc-systeme').value   = inc.systeme || '';
+  document.getElementById('inc-type').value      = inc.type || 'ransomware';
+  document.getElementById('inc-sev').value       = inc.sev || 'haute';
+  document.getElementById('inc-resp').value      = inc.resp || '';
+  document.getElementById('inc-debut').value     = inc.debut || '';
+  document.getElementById('inc-detection').value = inc.detection || '';
+  document.getElementById('inc-resolution').value= inc.resolution || '';
+  document.getElementById('inc-statut').value    = inc.statut || 'ouvert';
+  document.getElementById('inc-desc').value      = inc.desc || '';
+  document.getElementById('inc-moyen').value     = inc.moyen || '';
+  document.getElementById('inc-notif').value     = inc.notif || 'non';
+  document.getElementById('inc-edit-idx').value  = idx;
+  document.getElementById('inc-del-btn').style.display = isEdit ? 'inline-flex' : 'none';
+  document.getElementById('inc-mttd-preview').style.display = 'none';
+  openModal('modal-incident');
+}
+
+// Live MTTD preview
+['inc-debut','inc-detection','inc-resolution'].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', () => {
+    const d = document.getElementById('inc-debut').value;
+    const det = document.getElementById('inc-detection').value;
+    const res = document.getElementById('inc-resolution').value;
+    const prev = document.getElementById('inc-mttd-preview');
+    const val = document.getElementById('inc-mttd-val');
+    if (d && det) {
+      const mttd = (new Date(det) - new Date(d)) / 3600000;
+      const mttr = res ? (new Date(res) - new Date(det)) / 3600000 : null;
+      const mttdC = statusColor(mttd,[1,8]);
+      prev.style.display = 'block';
+      val.innerHTML = `⏱ MTTD calculé : <strong style="color:${mttdC}">${fmtH(mttd)}</strong>${mttr!==null?` &nbsp;·&nbsp; 🔧 MTTR : <strong style="color:${statusColor(mttr,[4,24])}">${fmtH(mttr)}</strong>`:''}`;
+    }
+  });
+});
+
+function saveIncident() {
+  const idx = parseInt(document.getElementById('inc-edit-idx').value);
+  const inc = {
+    systeme:    document.getElementById('inc-systeme').value.trim(),
+    type:       document.getElementById('inc-type').value,
+    sev:        document.getElementById('inc-sev').value,
+    resp:       document.getElementById('inc-resp').value.trim(),
+    debut:      document.getElementById('inc-debut').value,
+    detection:  document.getElementById('inc-detection').value,
+    resolution: document.getElementById('inc-resolution').value,
+    statut:     document.getElementById('inc-statut').value,
+    desc:       document.getElementById('inc-desc').value.trim(),
+    moyen:      document.getElementById('inc-moyen').value,
+    notif:      document.getElementById('inc-notif').value,
+    created:    idx >= 0 ? incidents[idx].created : new Date().toISOString(),
+  };
+  if (!inc.systeme || !inc.detection) { toast('Système et date de détection obligatoires', 'err'); return; }
+  if (idx >= 0) incidents[idx] = inc; else incidents.push(inc);
+  saveIncidents();
+  closeModal('modal-incident');
+  renderAll();
+  toast(idx >= 0 ? 'Incident mis à jour' : 'Incident déclaré — métriques recalculées');
+}
+
+function deleteIncident() {
+  const idx = parseInt(document.getElementById('inc-edit-idx').value);
+  if (!confirm('Supprimer cet incident ?')) return;
+  incidents.splice(idx, 1);
+  saveIncidents();
+  closeModal('modal-incident');
+  renderAll();
+  toast('Incident supprimé');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MODAL VULNÉRABILITÉS
+// ══════════════════════════════════════════════════════════════════
+function openVulnModal(idx) {
+  const isEdit = idx >= 0;
+  const v = isEdit ? vulns[idx] : {};
+  document.getElementById('vuln-modal-title').textContent = isEdit ? 'Modifier la vulnérabilité' : 'Déclarer une vulnérabilité';
+  document.getElementById('vuln-id').value        = v.cve_id || '';
+  document.getElementById('vuln-cvss').value      = v.cvss || '';
+  document.getElementById('vuln-sys').value       = v.systeme || '';
+  document.getElementById('vuln-src').value       = v.source || 'NVD NIST';
+  document.getElementById('vuln-detection').value = v.detection || '';
+  document.getElementById('vuln-patch').value     = v.patch || '';
+  document.getElementById('vuln-statut').value    = v.statut || 'a_patcher';
+  document.getElementById('vuln-resp').value      = v.resp || '';
+  document.getElementById('vuln-moyen').value     = v.moyen || 'patch_editeur';
+  document.getElementById('vuln-exploit').value   = v.exploit || 'non';
+  document.getElementById('vuln-notes').value     = v.notes || '';
+  document.getElementById('vuln-edit-idx').value  = idx;
+  document.getElementById('vuln-del-btn').style.display = isEdit ? 'inline-flex' : 'none';
+  updateVulnSla();
+  openModal('modal-vuln');
+}
+
+function updateVulnSla() {
+  const cvss = parseFloat(document.getElementById('vuln-cvss')?.value);
+  const el = document.getElementById('vuln-sla-preview');
+  if (!el || isNaN(cvss)) return;
+  const sla = vulnSla(cvss);
+  el.style.background = sla.color + '15';
+  el.style.borderColor = sla.color + '40';
+  el.innerHTML = `⚡ CVSS <strong style="color:${sla.color}">${cvss}</strong> → Sévérité <strong style="color:${sla.color}">${sla.label}</strong> · SLA patch : <strong style="color:${sla.color}">${sla.sla}</strong>`;
+}
+
+function saveVuln() {
+  const idx = parseInt(document.getElementById('vuln-edit-idx').value);
+  const v = {
+    cve_id:    document.getElementById('vuln-id').value.trim().toUpperCase(),
+    cvss:      document.getElementById('vuln-cvss').value,
+    systeme:   document.getElementById('vuln-sys').value.trim(),
+    source:    document.getElementById('vuln-src').value,
+    detection: document.getElementById('vuln-detection').value,
+    patch:     document.getElementById('vuln-patch').value,
+    statut:    document.getElementById('vuln-statut').value,
+    resp:      document.getElementById('vuln-resp').value.trim(),
+    moyen:     document.getElementById('vuln-moyen').value,
+    exploit:   document.getElementById('vuln-exploit').value,
+    notes:     document.getElementById('vuln-notes').value.trim(),
+  };
+  if (!v.cve_id || !v.detection || !v.cvss) { toast('CVE, CVSS et date détection obligatoires', 'err'); return; }
+  if (idx >= 0) vulns[idx] = v; else vulns.push(v);
+  saveVulns();
+  closeModal('modal-vuln');
+  renderAll();
+  toast(idx >= 0 ? 'Vulnérabilité mise à jour' : 'Vulnérabilité enregistrée');
+}
+
+function deleteVuln() {
+  const idx = parseInt(document.getElementById('vuln-edit-idx').value);
+  if (!confirm('Supprimer cette vulnérabilité ?')) return;
+  vulns.splice(idx, 1);
+  saveVulns();
+  closeModal('modal-vuln');
+  renderAll();
+  toast('Vulnérabilité supprimée');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// EXPORT CSV
+// ══════════════════════════════════════════════════════════════════
+function exportIncidentsCsv() {
+  const cols = ['systeme','type','sev','resp','debut','detection','resolution','statut','moyen','notif','desc'];
+  const rows = [cols.join(';'), ...incidents.map(i => cols.map(c => (i[c]||'').toString().replace(/;/g,',')).join(';'))].join('\n');
+  const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(rows);
+  a.download = 'incidents_' + Date.now() + '.csv'; a.click(); toast('Export incidents CSV');
+}
+function exportVulnsCsv() {
+  const cols = ['cve_id','cvss','systeme','source','detection','patch','statut','resp','moyen','exploit','notes'];
+  const rows = [cols.join(';'), ...vulns.map(v => cols.map(c => (v[c]||'').toString().replace(/;/g,',')).join(';'))].join('\n');
+  const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(rows);
+  a.download = 'vulns_' + Date.now() + '.csv'; a.click(); toast('Export vulnérabilités CSV');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TABS / MODAL / THEME / TOAST
+// ══════════════════════════════════════════════════════════════════
+function showTab(name, el) {
+  ['dashboard','incidents','vulns','resolution','formules'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (name === 'incidents') renderIncidents();
+  if (name === 'vulns') renderVulns();
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+['modal-incident','modal-vuln'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => { if(e.target===document.getElementById(id)) closeModal(id); });
+});
+
+let _isDark = true;
+function toggleTheme() {
+  _isDark = !_isDark;
+  document.documentElement.setAttribute('data-theme', _isDark ? 'dark' : 'light');
+  document.getElementById('theme-icon').textContent = _isDark ? '🌙' : '☀️';
+  document.getElementById('theme-lbl').textContent  = _isDark ? 'Clair' : 'Sombre';
+  localStorage.setItem('ea_theme', _isDark ? 'dark' : 'light');
+  setTimeout(renderDashboard, 50);
+}
+function initTheme() {
+  const s = localStorage.getItem('ea_theme');
+  if (s === 'light') { _isDark = false; document.documentElement.setAttribute('data-theme','light'); document.getElementById('theme-icon').textContent='☀️'; document.getElementById('theme-lbl').textContent='Sombre'; }
+}
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderLeftColor = type === 'err' ? '#ef4444' : 'var(--secu)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT — DONNÉES DE DÉMONSTRATION
+// ══════════════════════════════════════════════════════════════════
+function loadDemoData() {
+  if (incidents.length || vulns.length) return; // ne pas écraser si données existantes
+  incidents = [
+    {systeme:'SAP ERP',        type:'ransomware',         sev:'critique', resp:'RSSI', debut:'2026-03-10T08:00', detection:'2026-03-10T10:30', resolution:'2026-03-10T22:00', statut:'clos',    moyen:'restauration', notif:'oui', desc:'Chiffrement partiel fichiers serveur applicatif'},
+    {systeme:'Oracle HRMS',    type:'acces_non_autorise',  sev:'haute',    resp:'Admin Sys', debut:'2026-03-15T14:00', detection:'2026-03-15T16:45', resolution:'2026-03-16T09:00', statut:'resolu', moyen:'reinitialisation', notif:'non', desc:'Connexion suspecte compte service'},
+    {systeme:'Microsoft 365',  type:'phishing',            sev:'moyenne',  resp:'RSSI', debut:'2026-03-20T09:00', detection:'2026-03-20T11:15', resolution:'2026-03-20T13:00', statut:'resolu', moyen:'filtrage', notif:'na',  desc:'Campagne spear phishing DSI'},
+    {systeme:'ServiceNow',     type:'indisponibilite',     sev:'haute',    resp:'Admin Net', debut:'2026-03-25T02:00', detection:'2026-03-25T07:30', resolution:'2026-03-25T10:00', statut:'resolu', moyen:'pra', notif:'non',    desc:'Coupure réseau datacenter secondaire'},
+    {systeme:'Salesforce CRM', type:'fuite_donnees',       sev:'critique', resp:'RSSI', debut:'2026-03-28T18:00', detection:'2026-03-28T22:00', resolution:'', statut:'en_cours', moyen:'isolation', notif:'oui', desc:'Export non autorisé base contacts commerciaux'},
+  ];
+  vulns = [
+    {cve_id:'CVE-2025-1234', cvss:'9.8', systeme:'SAP ERP',       source:'NVD NIST', detection:'2026-03-01', patch:'',           statut:'a_patcher', resp:'Admin Sys', moyen:'patch_editeur', exploit:'oui',  notes:'RCE critique — exploitation active CISA KEV'},
+    {cve_id:'CVE-2025-5678', cvss:'7.5', systeme:'Oracle HRMS',   source:'CERT-FR',  detection:'2026-03-05', patch:'2026-03-20', statut:'patchee',   resp:'Admin Sys', moyen:'mise_a_jour',   exploit:'poc',  notes:'Élévation de privilèges'},
+    {cve_id:'CVE-2025-9999', cvss:'8.1', systeme:'Microsoft 365', source:'ANSSI',    detection:'2026-03-10', patch:'',           statut:'en_cours',  resp:'RSSI',      moyen:'workaround',    exploit:'non',  notes:'Bypass MFA sous certaines conditions'},
+    {cve_id:'CVE-2024-3333', cvss:'5.4', systeme:'ServiceNow',    source:'Éditeur',  detection:'2026-02-15', patch:'2026-03-01', statut:'patchee',   resp:'Admin Net', moyen:'patch_editeur', exploit:'non',  notes:'XSS stored widget personnalisé'},
+    {cve_id:'CVE-2025-7777', cvss:'9.2', systeme:'Sage Compta',   source:'NVD NIST', detection:'2026-03-28', patch:'',           statut:'a_patcher', resp:'Admin Sys', moyen:'isolation',     exploit:'oui',  notes:'Désérialisation non sécurisée — critique'},
+  ];
+  saveIncidents(); saveVulns();
+}
+
+function init() {
+  initTheme();
+  loadIncidents();
+  loadVulns();
+
+  currentRole = localStorage.getItem(SK_ROLE);
+  if (!currentRole || !ALLOWED_ROLES.includes(currentRole)) {
+    document.getElementById('guard-screen').classList.remove('gone');
+    return;
+  }
+
+  document.getElementById('guard-screen').classList.add('gone');
+  document.getElementById('menubar').style.display = 'flex';
+  document.getElementById('main-shell').style.display = 'block';
+
+  const col = ROLE_COLORS[currentRole] || '#888';
+  document.getElementById('chip-dot').style.background = col;
+  document.getElementById('chip-name').textContent = ROLE_LABELS[currentRole] || currentRole;
+  document.getElementById('mb-date').textContent = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+
+  loadDemoData();
+  renderAll();
+}
+
+init();
+</script>
+</body>
+</html>
