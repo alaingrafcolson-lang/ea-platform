@@ -315,29 +315,46 @@
         }
 
         async function addUser(email) {
-            // Créer un utilisateur dans auth.users (mot de passe temporaire)
-            const tempPassword = Math.random().toString(36).slice(-8) + 'A1!';
-            const { data: authData, error: authError } = await sb.auth.admin.createUser({
-                email,
-                password: tempPassword,
-                email_confirm: true
-            });
-            if (authError) {
-                showToast('Erreur création compte : ' + authError.message);
-                return;
+    const message = `Tentative de création pour : ${email}`;
+    showToast(message);
+    
+    // NOTE TECHNIQUE : sb.auth.admin nécessite une Service Role Key (Server-side).
+    // Pour un usage pro en front-end, on utilise signUp standard.
+    try {
+        const { data, error } = await sb.auth.signUp({
+            email: email,
+            password: 'TempPassword123!', // À changer par l'utilisateur
+            options: {
+                data: {
+                    temp_user: true
+                }
             }
-            // Associer à la première entreprise (pour simplifier)
-            const { data: companies } = await sb.from('companies').select('id').limit(1);
-            const companyId = companies?.[0]?.id;
-            const { error: insertError } = await sb.from('users').insert({
-                id: authData.user.id,
-                email,
-                company_id: companyId
-            });
-            if (insertError) {
-                showToast('Erreur insertion profil : ' + insertError.message);
-                return;
-            }
+        });
+
+        if (error) throw error;
+
+        // Associer à l'entreprise
+        const { data: companies } = await sb.from('companies').select('id').limit(1);
+        const companyId = companies?.[0]?.id;
+
+        await sb.from('users').insert({
+            id: data.user.id,
+            email,
+            company_id: companyId
+        });
+
+        await sb.from('user_roles').insert({ 
+            user_id: data.user.id, 
+            role_id: 'SERVICE_MANAGER' 
+        });
+
+        showToast(`Utilisateur ${email} créé. Un email de confirmation a été envoyé.`);
+        loadUsers();
+    } catch (err) {
+        console.error("Erreur Admin:", err);
+        showToast('Erreur : ' + err.message);
+    }
+}
             // Attribuer un rôle par défaut (SERVICE_MANAGER)
             await sb.from('user_roles').insert({ user_id: authData.user.id, role_id: 'SERVICE_MANAGER' });
             showToast(`Utilisateur ${email} créé avec mot de passe temporaire : ${tempPassword}`);
