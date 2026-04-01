@@ -2068,11 +2068,15 @@ function renderAdmin() {
 }
 
 function openUserModal() {
-  if (currentRole !== 'SUPERADMIN') { toast('Accès restreint au SuperAdmin', 'err'); return; }
-  // reset form
-  ['u-id','u-nom','u-dept','u-email'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('u-role').value = 'GUEST';
-  document.getElementById('u-rgpd').value = 'Lecture seule';
+  if (currentRole !== 'SUPERADMIN' && currentRole !== 'DSI') {
+    toast('Accès restreint aux administrateurs de domaine', 'err');
+    return;
+  }
+  const roleSelect = document.getElementById('u-role');
+  // Injection dynamique pour corriger l'erreur d'affichage
+  roleSelect.innerHTML = Object.entries(ROLES).map(([key, r]) => {
+    return `<option value="${key}">${r.e} ${r.l}</option>`;
+  }).join('');
   openModal('modal-user');
 }
 
