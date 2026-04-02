@@ -1,39 +1,467 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Connexion SI Governance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI Governance — Connexion</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Instrument Sans', sans-serif;
+            background: #0B1829;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* ── FOND DÉCORATIF ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 50%, rgba(26,108,245,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 50%, rgba(16,185,129,0.08) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .login-wrap {
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── LOGO / BRAND ── */
+        .brand {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .brand-icon {
+            width: 56px; height: 56px; border-radius: 16px;
+            background: linear-gradient(135deg, #1A6CF5, #0ea5e9);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; margin: 0 auto 14px;
+            box-shadow: 0 8px 24px rgba(26,108,245,0.35);
+        }
+        .brand-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 22px; font-weight: 800;
+            color: #fff; letter-spacing: -.02em;
+        }
+        .brand-sub {
+            font-size: 13px; color: #64748b; margin-top: 4px;
+        }
+
+        /* ── CARD ── */
+        .card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 32px 28px;
+            backdrop-filter: blur(12px);
+        }
+
+        .card-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px; font-weight: 700;
+            color: #fff; margin-bottom: 6px;
+        }
+        .card-sub {
+            font-size: 13px; color: #64748b; margin-bottom: 24px;
+        }
+
+        /* ── FORM ── */
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: #94a3b8; text-transform: uppercase;
+            letter-spacing: .05em; margin-bottom: 7px;
+        }
+        .input-wrap { position: relative; }
+        .input-wrap .icon {
+            position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+            font-size: 15px; pointer-events: none;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px 12px 40px;
+            background: rgba(255,255,255,0.06);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-family: inherit; font-size: 14px;
+            outline: none;
+            transition: border-color .2s, background .2s;
+        }
+        .form-group input::placeholder { color: #475569; }
+        .form-group input:focus {
+            border-color: #1A6CF5;
+            background: rgba(26,108,245,0.08);
+        }
+        .form-group input.error { border-color: #ef4444; }
+
+        /* Toggle password */
+        .pwd-toggle {
+            position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            color: #475569; font-size: 15px; padding: 4px;
+            transition: color .15s;
+        }
+        .pwd-toggle:hover { color: #94a3b8; }
+
+        /* ── BOUTON PRINCIPAL ── */
+        .btn-login {
+            width: 100%; padding: 13px;
+            background: linear-gradient(135deg, #1A6CF5, #2563eb);
+            border: none; border-radius: 12px;
+            color: #fff; font-family: inherit;
+            font-size: 14px; font-weight: 600;
+            cursor: pointer; margin-top: 8px;
+            transition: opacity .2s, transform .15s;
+            position: relative;
+        }
+        .btn-login:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+        .btn-login:active { transform: translateY(0); }
+        .btn-login:disabled { opacity: .6; cursor: not-allowed; }
+        .btn-login .spinner {
+            display: none; width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-top-color: #fff; border-radius: 50%;
+            animation: spin .7s linear infinite;
+            position: absolute; left: 50%; top: 50%;
+            margin: -8px 0 0 -8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-login.loading .btn-label { opacity: 0; }
+        .btn-login.loading .spinner { display: block; }
+
+        /* ── LIENS ── */
+        .forgot-link {
+            display: block; text-align: right;
+            font-size: 12px; color: #64748b;
+            text-decoration: none; margin-top: 10px;
+            transition: color .15s;
+        }
+        .forgot-link:hover { color: #1A6CF5; }
+
+        /* ── MESSAGES ── */
+        .msg {
+            border-radius: 10px; padding: 12px 14px;
+            font-size: 13px; margin-top: 16px;
+            display: none; line-height: 1.5;
+        }
+        .msg.error {
+            background: rgba(239,68,68,.1);
+            border: 1px solid rgba(239,68,68,.25);
+            color: #fca5a5;
+        }
+        .msg.success {
+            background: rgba(16,185,129,.1);
+            border: 1px solid rgba(16,185,129,.25);
+            color: #6ee7b7;
+        }
+        .msg.show { display: block; }
+
+        /* ── FORGOT PASSWORD PANEL ── */
+        #forgotPanel { display: none; }
+        #loginPanel  { display: block; }
+
+        .back-btn {
+            background: none; border: none; color: #64748b;
+            font-family: inherit; font-size: 13px; cursor: pointer;
+            padding: 0; margin-bottom: 20px; display: flex;
+            align-items: center; gap: 6px; transition: color .15s;
+        }
+        .back-btn:hover { color: #94a3b8; }
+
+        /* ── DIVIDER ── */
+        .divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 20px 0; color: #334155; font-size: 12px;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* ── FOOTER ── */
+        .login-footer {
+            text-align: center; margin-top: 20px;
+            font-size: 11px; color: #334155; line-height: 1.6;
+        }
+
+        /* ── ANIMATION ── */
+        .card { animation: fadeUp .25s ease; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
-    <h2>Connexion</h2>
-    <input type="email" id="email" placeholder="Email" value="test@example.com"><br>
-    <input type="password" id="password" placeholder="Mot de passe"><br>
-    <button onclick="login()">Se connecter</button>
-    <pre id="result"></pre>
+<div class="login-wrap">
 
-    <script>
-        // NE PAS redéclarer 'supabase' – la variable globale existe déjà
-        const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-        
-        // Créer le client avec un nom différent pour éviter le conflit
-        const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <!-- BRAND -->
+    <div class="brand">
+        <div class="brand-icon">🏛</div>
+        <div class="brand-title">SI Governance Enterprise</div>
+        <div class="brand-sub">Plateforme de gouvernance & architecture IT</div>
+    </div>
 
-        async function login() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const result = document.getElementById('result');
-            result.innerText = 'Connexion en cours...';
-            
-            const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
-            if (error) {
-                result.innerText = 'ERREUR : ' + error.message;
-            } else {
-                result.innerText = 'SUCCÈS ! Redirection...';
-                setTimeout(() => { window.location.href = '/dashboard.html'; }, 1000);
+    <!-- CARD -->
+    <div class="card">
+
+        <!-- ════ PANEL : CONNEXION ════ -->
+        <div id="loginPanel">
+            <div class="card-title">Connexion</div>
+            <div class="card-sub">Accédez à votre espace de gestion</div>
+
+            <div class="form-group">
+                <label>Adresse email</label>
+                <div class="input-wrap">
+                    <span class="icon">✉️</span>
+                    <input type="email" id="email" placeholder="votre@email.fr"
+                        onkeydown="if(event.key==='Enter')document.getElementById('password').focus()">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <div class="input-wrap">
+                    <span class="icon">🔐</span>
+                    <input type="password" id="password" placeholder="••••••••"
+                        onkeydown="if(event.key==='Enter')login()">
+                    <button class="pwd-toggle" type="button" onclick="togglePwd()" id="pwdToggle" title="Afficher/masquer">👁</button>
+                </div>
+            </div>
+
+            <button class="btn-login" onclick="login()" id="btnLogin">
+                <span class="btn-label">Se connecter</span>
+                <div class="spinner"></div>
+            </button>
+
+            <a class="forgot-link" href="#" onclick="showForgot(event)">
+                Mot de passe oublié ?
+            </a>
+
+            <div class="msg error" id="loginError"></div>
+            <div class="msg success" id="loginSuccess"></div>
+        </div>
+
+        <!-- ════ PANEL : MOT DE PASSE OUBLIÉ ════ -->
+        <div id="forgotPanel">
+            <button class="back-btn" onclick="showLogin()">← Retour à la connexion</button>
+            <div class="card-title">Réinitialiser le mot de passe</div>
+            <div class="card-sub">Un lien de réinitialisation vous sera envoyé par email</div>
+
+            <div class="form-group">
+                <label>Adresse email</label>
+                <div class="input-wrap">
+                    <span class="icon">✉️</span>
+                    <input type="email" id="resetEmail" placeholder="votre@email.fr"
+                        onkeydown="if(event.key==='Enter')sendReset()">
+                </div>
+            </div>
+
+            <button class="btn-login" onclick="sendReset()" id="btnReset">
+                <span class="btn-label">Envoyer le lien</span>
+                <div class="spinner"></div>
+            </button>
+
+            <div class="msg error"   id="resetError"></div>
+            <div class="msg success" id="resetSuccess"></div>
+        </div>
+
+    </div><!-- /card -->
+
+    <div class="login-footer">
+        SI Governance Enterprise · Données chiffrées Supabase<br>
+        © 2026 — Plateforme réservée aux utilisateurs autorisés
+    </div>
+
+</div><!-- /login-wrap -->
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// VÉRIFIER SI DÉJÀ CONNECTÉ
+// ══════════════════════════════════════════════════════════════════
+(async () => {
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (session?.user) {
+        // Déjà connecté — rediriger sans passer par login
+        window.location.href = '/dashboard.html';
+    }
+})();
+
+// ══════════════════════════════════════════════════════════════════
+// CONNEXION
+// ══════════════════════════════════════════════════════════════════
+async function login() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn      = document.getElementById('btnLogin');
+    const errEl    = document.getElementById('loginError');
+    const okEl     = document.getElementById('loginSuccess');
+
+    // Validation basique
+    if (!email || !password) {
+        showMsg(errEl, '⚠️ Email et mot de passe requis.');
+        return;
+    }
+    if (!email.includes('@')) {
+        showMsg(errEl, '⚠️ Format email invalide.');
+        return;
+    }
+
+    hideMsg(errEl); hideMsg(okEl);
+    setLoading(btn, true);
+
+    const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+
+    setLoading(btn, false);
+
+    if (error) {
+        // Messages d'erreur traduits
+        const msgs = {
+            'Invalid login credentials':  '❌ Email ou mot de passe incorrect.',
+            'Email not confirmed':         '📧 Votre email n\'est pas confirmé. Vérifiez votre boîte de réception.',
+            'Too many requests':           '⏱ Trop de tentatives. Attendez quelques minutes.',
+            'User not found':              '❌ Aucun compte trouvé avec cet email.',
+        };
+        const friendlyMsg = msgs[error.message] || ('❌ Erreur : ' + error.message);
+        showMsg(errEl, friendlyMsg);
+        document.getElementById('password').classList.add('error');
+        setTimeout(() => document.getElementById('password').classList.remove('error'), 3000);
+        return;
+    }
+
+    // Succès — sauvegarder le rôle pour les pages locales (admin.html, incidents.html)
+    try {
+        const { data: roleRow } = await sbClient
+            .from('user_roles')
+            .select('role_id')
+            .eq('user_id', data.user.id)
+            .maybeSingle();
+
+        if (roleRow?.role_id) {
+            localStorage.setItem('ea_current_role', roleRow.role_id);
+        } else {
+            // Fallback : vérifier colonne role dans users
+            const { data: userRow } = await sbClient
+                .from('users')
+                .select('role')
+                .eq('id', data.user.id)
+                .maybeSingle();
+            if (userRow?.role) localStorage.setItem('ea_current_role', userRow.role);
+            // Fallback superadmin email
+            if (data.user.email === 'alain.grafcolson@gmail.com') {
+                localStorage.setItem('ea_current_role', 'SUPER_ADMIN');
             }
         }
-    </script>
+    } catch(e) {
+        // Ne pas bloquer la connexion si la récupération du rôle échoue
+    }
+
+    showMsg(okEl, '✓ Connexion réussie — redirection…');
+    setTimeout(() => { window.location.href = '/dashboard.html'; }, 800);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RÉINITIALISATION MOT DE PASSE
+// ══════════════════════════════════════════════════════════════════
+async function sendReset() {
+    const email  = document.getElementById('resetEmail').value.trim();
+    const btn    = document.getElementById('btnReset');
+    const errEl  = document.getElementById('resetError');
+    const okEl   = document.getElementById('resetSuccess');
+
+    if (!email || !email.includes('@')) {
+        showMsg(errEl, '⚠️ Entrez une adresse email valide.');
+        return;
+    }
+
+    hideMsg(errEl); hideMsg(okEl);
+    setLoading(btn, true);
+
+    const { error } = await sbClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/index.html'
+    });
+
+    setLoading(btn, false);
+
+    if (error) {
+        showMsg(errEl, '❌ Erreur : ' + error.message);
+    } else {
+        showMsg(okEl,
+            `✓ Email envoyé à <strong>${email}</strong>.<br>
+             Vérifiez votre boîte de réception (et les spams).<br>
+             <small style="color:#6ee7b7;opacity:.7">Le lien expire dans 24h.</small>`
+        );
+        document.getElementById('btnReset').disabled = true;
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════════════════
+function showForgot(e) {
+    e.preventDefault();
+    // Pré-remplir avec l'email saisi si disponible
+    const email = document.getElementById('email').value.trim();
+    if (email) document.getElementById('resetEmail').value = email;
+    document.getElementById('loginPanel').style.display  = 'none';
+    document.getElementById('forgotPanel').style.display = 'block';
+}
+
+function showLogin() {
+    document.getElementById('forgotPanel').style.display = 'none';
+    document.getElementById('loginPanel').style.display  = 'block';
+    // Reset forgot form
+    document.getElementById('resetEmail').value = '';
+    document.getElementById('btnReset').disabled = false;
+    hideMsg(document.getElementById('resetError'));
+    hideMsg(document.getElementById('resetSuccess'));
+}
+
+function togglePwd() {
+    const input = document.getElementById('password');
+    const btn   = document.getElementById('pwdToggle');
+    if (input.type === 'password') {
+        input.type = 'text'; btn.textContent = '🙈';
+    } else {
+        input.type = 'password'; btn.textContent = '👁';
+    }
+}
+
+function setLoading(btn, loading) {
+    btn.disabled = loading;
+    if (loading) btn.classList.add('loading');
+    else         btn.classList.remove('loading');
+}
+
+function showMsg(el, html) {
+    el.innerHTML = html;
+    el.classList.add('show');
+}
+function hideMsg(el) {
+    el.classList.remove('show');
+    el.innerHTML = '';
+}
+</script>
 </body>
 </html>
