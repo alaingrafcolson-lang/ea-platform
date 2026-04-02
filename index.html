@@ -13,9 +13,12 @@
     <pre id="result"></pre>
 
     <script>
+        // NE PAS redéclarer 'supabase' – la variable globale existe déjà
         const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Créer le client avec un nom différent pour éviter le conflit
+        const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function login() {
             const email = document.getElementById('email').value;
@@ -23,7 +26,7 @@
             const result = document.getElementById('result');
             result.innerText = 'Connexion en cours...';
             
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
             if (error) {
                 result.innerText = 'ERREUR : ' + error.message;
             } else {
