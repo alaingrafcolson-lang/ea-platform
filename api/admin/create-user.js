@@ -6,33 +6,37 @@ const supabaseAdmin = createClient(
 )
 
 export default async function handler(req, res) {
+
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return res.status(405).json({ error: 'Méthode interdite' })
   }
 
   const token = req.headers.authorization?.replace('Bearer ', '')
+
+  if (!token) {
+    return res.status(401).json({ error: 'Non autorisé' })
+  }
 
   const { data: { user }, error } =
     await supabaseAdmin.auth.getUser(token)
 
   if (error || !user) {
-    return res.status(401).json({ error: 'Unauthorized' })
+    return res.status(401).json({ error: 'Utilisateur invalide' })
   }
 
-  // Vérification rôle
+  // Vérifier rôle
   const { data: role } = await supabaseAdmin
     .from('user_roles')
     .select('role_id')
     .eq('user_id', user.id)
     .single()
 
-  if (!role || !['SUPER_ADMIN','DSI'].includes(role.role_id)) {
-    return res.status(403).json({ error: 'Forbidden' })
+  if (!role || role.role_id !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Accès refusé' })
   }
 
   const { email, prenom, nom, role_id, company_id } = req.body
 
-  // Création user
   const { data: newUser, error: createError } =
     await supabaseAdmin.auth.admin.createUser({
       email,
@@ -50,8 +54,7 @@ export default async function handler(req, res) {
     email,
     prenom,
     nom,
-    company_id,
-    active: true
+    company_id
   })
 
   await supabaseAdmin.from('user_roles').insert({
