@@ -649,8 +649,41 @@ async function createUser() {
     const nom     = document.getElementById('newNom').value.trim();
     const role    = document.getElementById('newRole').value;
     const company = document.getElementById('newCompany').value;
-    const mustChg = document.getElementById('newMustChange').checked;
-    const sendMail= document.getElementById('newSendEmail').checked;
+
+    if (!email || !prenom || !nom) {
+        showToast('Champs obligatoires', 'error');
+        return;
+    }
+
+    const session = await sb.auth.getSession();
+    const token = session.data.session.access_token;
+
+    const res = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            email,
+            prenom,
+            nom,
+            role_id: role,
+            company_id: company || null
+        })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+        showToast(result.error, 'error');
+        return;
+    }
+
+    showToast('Utilisateur créé avec succès', 'success');
+    closeModal('modalCreate');
+    loadUsers();
+}
 
     if (!email || !prenom || !nom) {
         showToast('Prénom, nom et email sont obligatoires', 'error');
