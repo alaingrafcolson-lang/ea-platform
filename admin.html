@@ -527,10 +527,29 @@ function afficherBanniereRole() {
 // CHARGEMENT DES UTILISATEURS
 // ══════════════════════════════════════════════════════════════════
 async function loadUsers() {
-    const { data, error } = await sb
-        .from('users')
-        .select('*, companies(name)')
-        .order('email');
+    const { data: usersData, error: usersError } = await sb
+    .from('users')
+    .select('*')
+    .order('email');
+
+if (usersError) throw usersError;
+
+// Récupérer les entreprises séparément
+const companyIds = [...new Set(usersData.map(u => u.company_id).filter(Boolean))];
+let companiesMap = {};
+if (companyIds.length) {
+    const { data: companiesData } = await sb
+        .from('companies')
+        .select('id, name')
+        .in('id', companyIds);
+    companiesMap = Object.fromEntries(companiesData.map(c => [c.id, c.name]));
+}
+
+// Enrichir les données
+const data = usersData.map(u => ({
+    ...u,
+    companies: { name: companiesMap[u.company_id] || null }
+}));
 
     const container = document.getElementById('usersList');
 
