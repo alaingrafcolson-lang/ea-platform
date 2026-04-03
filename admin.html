@@ -619,13 +619,14 @@ function generateTempPassword() {
 }
 
 async function createUser() {
-    const email   = document.getElementById('newEmail').value.trim();
-    const prenom  = document.getElementById('newPrenom').value.trim();
-    const nom     = document.getElementById('newNom').value.trim();
-    const role    = document.getElementById('newRole').value;
-    const company = document.getElementById('newCompany').value;
-    const mustChg = document.getElementById('newMustChange').checked;
-    const sendMail= document.getElementById('newSendEmail').checked;
+    const email    = document.getElementById('newEmail').value.trim();
+    const prenom   = document.getElementById('newPrenom').value.trim();
+    const nom      = document.getElementById('newNom').value.trim();
+    const role     = document.getElementById('newRole').value;
+    const company  = document.getElementById('newCompany').value;
+    const mustChg  = document.getElementById('newMustChange').checked;
+    const sendMail = document.getElementById('newSendEmail').checked;
+    const resultEl = document.getElementById('createResult');
 
     if (!email || !prenom || !nom) {
         showToast('Prénom, nom et email sont obligatoires', 'error');
@@ -634,81 +635,74 @@ async function createUser() {
 
     const btn = document.getElementById('btnDoCreate');
     btn.textContent = 'Création…'; btn.disabled = true;
+    resultEl.style.display = 'none';
 
     const tempPwd = generateTempPassword();
 
-    // FIX : utilise signUp (fonctionne avec la publishable key)
-    const { data: signUpData, error: signUpError } = await sb.auth.signUp({
-        email,
-        password: tempPwd,
-        options: {
-            data: { prenom, nom, role, must_change_password: mustChg }
-        }
-    });
-
-    btn.textContent = 'Créer le profil'; btn.disabled = false;
-
-    if (signUpError) {
-        // Cas : utilisateur déjà existant dans auth
-        if (signUpError.message.includes('already registered')) {
-            showToast('Cet email est déjà enregistré dans Supabase Auth', 'error');
-        } else {
-            showToast('Erreur création : ' + signUpError.message, 'error');
-        }
+    // ── Récupérer la session active pour envoyer le JWT à l'API ──
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+        showToast('Session expirée — reconnectez-vous', 'error');
+        btn.textContent = 'Créer le profil'; btn.disabled = false;
         return;
     }
 
-    const userId = signUpData.user?.id;
-
-    // Insérer dans la table users
-    const { error: insertError } = await sb.from('users').upsert({
-        id: userId,
-        email,
-        prenom,
-        nom,
-        company_id: company || null,
-        must_change_password: mustChg,
-        active: true
-    }, { onConflict: 'id' });
-
-    if (insertError) {
-        showToast('Profil auth créé mais erreur table users : ' + insertError.message, 'error');
-    }
-
-    // Attribuer le rôle
-    await sb.from('user_roles').upsert(
-        { user_id: userId, role_id: role },
-        { onConflict: 'user_id' }
-    );
-
-    // Envoyer email de réinitialisation si demandé
-    if (sendMail) {
-        await sb.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + '/index.html'
+    try {
+        // ── Appel à la fonction serverless Vercel /api/create-user ──
+        const response = await fetch('/api/create-user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + session.access_token
+            },
+            body: JSON.stringify({
+                email,
+                password:             tempPwd,
+                prenom,
+                nom,
+                role,
+                company_id:           company || null,
+                must_change_password: mustChg,
+                send_email:           sendMail
+            })
         });
+
+        const result = await response.json();
+        btn.textContent = 'Créer le profil'; btn.disabled = false;
+
+        if (!response.ok) {
+            showToast('Erreur : ' + (result.error || 'Création échouée'), 'error');
+            return;
+        }
+
+        // ── Afficher le mot de passe temporaire ──
+        resultEl.style.display = 'block';
+        resultEl.innerHTML =
+            '<div class="temp-pwd-box">'
+            + '<div class="label">✓ Profil créé avec succès</div>'
+            + '<div style="font-size:13px;color:#065f46;margin-bottom:8px">'
+            + escapeHtml(email) + ' · Rôle : ' + role.replace(/_/g,' ')
+            + '</div>'
+            + '<div class="temp-pwd-display">'
+            + '<span class="temp-pwd-value" id="tempPwdVal">' + tempPwd + '</span>'
+            + '<button class="copy-btn" onclick="copyTempPwd(\'' + tempPwd + '\')">📋 Copier</button>'
+            + '</div>'
+            + '<div style="font-size:11px;color:#065f46;margin-top:8px">'
+            + (mustChg ? '⚠️ Changement de mot de passe obligatoire à la 1ère connexion.' : '')
+            + (sendMail ? ' · Email de réinitialisation envoyé.' : '')
+            + '</div>'
+            + '</div>';
+
+        showToast('✓ ' + email + ' créé avec succès', 'success');
+        loadUsers();
+        ['newPrenom','newNom','newEmail'].forEach(function(id) {
+            document.getElementById(id).value = '';
+        });
+
+    } catch (err) {
+        btn.textContent = 'Créer le profil'; btn.disabled = false;
+        showToast('Erreur réseau : ' + err.message, 'error');
     }
-
-    // Afficher le mot de passe temporaire
-    document.getElementById('createResult').style.display = 'block';
-    document.getElementById('createResult').innerHTML = `
-        <div class="temp-pwd-box">
-            <div class="label">✓ Profil créé — Mot de passe temporaire</div>
-            <div class="temp-pwd-display">
-                <span class="temp-pwd-value" id="tempPwdVal">${tempPwd}</span>
-                <button class="copy-btn" onclick="copyTempPwd('${tempPwd}')">📋 Copier</button>
-            </div>
-            <div style="font-size:11px;color:#065f46;margin-top:8px">
-                ${mustChg ? '⚠️ L\'utilisateur devra changer ce mot de passe à la première connexion.' : ''}
-                ${sendMail ? ' · Email de réinitialisation envoyé.' : ''}
-            </div>
-        </div>
-    `;
-
-    showToast(`✓ ${email} créé avec succès`, 'success');
-    loadUsers();
-
-    // Reset form fields
-    ['newPrenom','newNom','newEmail'].forEach(id => document.getElementById(id).value = '');
 }
 
 function copyTempPwd(pwd) {
