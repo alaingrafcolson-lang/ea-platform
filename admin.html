@@ -671,7 +671,10 @@ async function createUser() {
         btn.textContent = 'Créer le profil'; btn.disabled = false;
 
         if (!response.ok) {
-            showToast('Erreur : ' + (result.error || 'Création échouée'), 'error');
+            var errMsg = result.error || 'Création échouée';
+            if (result.detail) errMsg += ' — ' + result.detail;
+            if (result.required) errMsg += ' (requis: ' + result.required + ')';
+            showToast('Erreur ' + response.status + ' : ' + errMsg, 'error');
             return;
         }
 
