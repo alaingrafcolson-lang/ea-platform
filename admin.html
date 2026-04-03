@@ -637,18 +637,18 @@ async function createUser() {
     btn.textContent = 'Création…'; btn.disabled = true;
     resultEl.style.display = 'none';
 
+    // Générer un mot de passe temporaire
     const tempPwd = generateTempPassword();
 
-    // ── Récupérer la session active pour envoyer le JWT à l'API ──
+    // Récupérer la session active
     const { data: { session } } = await sb.auth.getSession();
     if (!session) {
-        showToast('Session expirée — reconnectez-vous', 'error');
+        showToast('Session expirée, reconnectez-vous', 'error');
         btn.textContent = 'Créer le profil'; btn.disabled = false;
         return;
     }
 
     try {
-        // ── Appel à la fonction serverless Vercel /api/create-user ──
         const response = await fetch('/api/create-user', {
             method: 'POST',
             headers: {
@@ -657,54 +657,44 @@ async function createUser() {
             },
             body: JSON.stringify({
                 email,
-                password:             tempPwd,
+                password: tempPwd,
                 prenom,
                 nom,
                 role,
-                company_id:           company || null,
+                company_id: company || null,
                 must_change_password: mustChg,
-                send_email:           sendMail
+                send_email: sendMail
             })
         });
 
         const result = await response.json();
-        btn.textContent = 'Créer le profil'; btn.disabled = false;
-
         if (!response.ok) {
-            var errMsg = result.error || 'Création échouée';
-            if (result.detail) errMsg += ' — ' + result.detail;
-            if (result.required) errMsg += ' (requis: ' + result.required + ')';
-            showToast('Erreur ' + response.status + ' : ' + errMsg, 'error');
+            showToast('Erreur : ' + (result.error || 'Création échouée'), 'error');
+            btn.textContent = 'Créer le profil'; btn.disabled = false;
             return;
         }
 
-        // ── Afficher le mot de passe temporaire ──
+        // Afficher le mot de passe temporaire
         resultEl.style.display = 'block';
-        resultEl.innerHTML =
-            '<div class="temp-pwd-box">'
-            + '<div class="label">✓ Profil créé avec succès</div>'
-            + '<div style="font-size:13px;color:#065f46;margin-bottom:8px">'
-            + escapeHtml(email) + ' · Rôle : ' + role.replace(/_/g,' ')
-            + '</div>'
-            + '<div class="temp-pwd-display">'
-            + '<span class="temp-pwd-value" id="tempPwdVal">' + tempPwd + '</span>'
-            + '<button class="copy-btn" onclick="copyTempPwd(\'' + tempPwd + '\')">📋 Copier</button>'
-            + '</div>'
-            + '<div style="font-size:11px;color:#065f46;margin-top:8px">'
-            + (mustChg ? '⚠️ Changement de mot de passe obligatoire à la 1ère connexion.' : '')
-            + (sendMail ? ' · Email de réinitialisation envoyé.' : '')
-            + '</div>'
-            + '</div>';
-
-        showToast('✓ ' + email + ' créé avec succès', 'success');
-        loadUsers();
-        ['newPrenom','newNom','newEmail'].forEach(function(id) {
-            document.getElementById(id).value = '';
-        });
-
+        resultEl.innerHTML = `
+            <div class="temp-pwd-box">
+                <div class="label">✓ Profil créé avec succès</div>
+                <div class="temp-pwd-display">
+                    <span class="temp-pwd-value">${tempPwd}</span>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${tempPwd}')">📋 Copier</button>
+                </div>
+                <div style="font-size:11px;margin-top:8px">${mustChg ? '⚠️ Changement obligatoire au premier login' : ''}</div>
+            </div>
+        `;
+        showToast(`✓ ${email} créé avec succès`, 'success');
+        loadUsers(); // recharge la liste
+        document.getElementById('newPrenom').value = '';
+        document.getElementById('newNom').value = '';
+        document.getElementById('newEmail').value = '';
     } catch (err) {
-        btn.textContent = 'Créer le profil'; btn.disabled = false;
         showToast('Erreur réseau : ' + err.message, 'error');
+    } finally {
+        btn.textContent = 'Créer le profil'; btn.disabled = false;
     }
 }
 
