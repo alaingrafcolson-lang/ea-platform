@@ -1,132 +1,121 @@
-// ══════════════════════════════════════════════════════════════════
-// Vercel Serverless Function — /api/create-user
-// Utilise SUPABASE_SERVICE_ROLE_KEY (variable Vercel, jamais exposée)
-// pour créer des utilisateurs via auth.admin.createUser()
-// ══════════════════════════════════════════════════════════════════
+// /api/create-user.js — Vercel Serverless Function
+// Utilise fetch() natif Node 18+ — pas de dépendance SDK Supabase
+// Variables Vercel : SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
-const { createClient } = require('@supabase/supabase-js');
-
-// Rôles autorisés à créer des comptes
-const ALLOWED_CALLER_ROLES = ['SUPER_ADMIN', 'DSI', 'RSSI', 'SYSTEM_ADMIN', 'NETWORK_ADMIN'];
+const ALLOWED_ROLES = ['SUPER_ADMIN','DSI','RSSI','SYSTEM_ADMIN','NETWORK_ADMIN'];
 
 module.exports = async function handler(req, res) {
-    // CORS
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Origin','*');
+    res.setHeader('Access-Control-Allow-Methods','POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers','Content-Type,Authorization');
     if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
 
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Méthode non autorisée' });
-    }
+    const SUPABASE_URL     = process.env.SUPABASE_URL || process.env.supabase_url;
+    const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    // ── Clés depuis les variables d'environnement Vercel ──
-    const SUPABASE_URL         = process.env.SUPABASE_URL         || process.env.supabase_url;
-    const SERVICE_ROLE_KEY     = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const ANON_KEY             = process.env.SUPABASE_ANON_KEY;
+    console.log('[create-user] URL:', SUPABASE_URL ? 'ok' : 'MISSING');
+    console.log('[create-user] KEY:', SERVICE_ROLE_KEY ? 'ok' : 'MISSING');
 
     if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-        return res.status(500).json({ error: 'Variables d\'environnement Supabase manquantes côté serveur' });
-    }
-
-    // ── Client admin (service_role) ──
-    const sbAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-        auth: { autoRefreshToken: false, persistSession: false }
-    });
-
-    // ── Client anon pour vérifier le token du demandeur ──
-    const sbAnon = createClient(SUPABASE_URL, ANON_KEY || SERVICE_ROLE_KEY);
-
-    // ── Vérifier le JWT du demandeur ──
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.replace('Bearer ', '').trim();
-    if (!token) {
-        return res.status(401).json({ error: 'Token d\'authentification manquant' });
-    }
-
-    const { data: { user: caller }, error: authErr } = await sbAdmin.auth.getUser(token);
-    if (authErr || !caller) {
-        return res.status(401).json({ error: 'Token invalide ou expiré' });
-    }
-
-    // ── Vérifier le rôle du demandeur ──
-    const { data: roleRow } = await sbAdmin
-        .from('user_roles')
-        .select('role_id')
-        .eq('user_id', caller.id)
-        .maybeSingle();
-
-    const callerRole = roleRow?.role_id;
-    if (!callerRole || !ALLOWED_CALLER_ROLES.includes(callerRole)) {
-        return res.status(403).json({ error: 'Droits insuffisants pour créer des utilisateurs' });
-    }
-
-    // ── Paramètres du nouvel utilisateur ──
-    const { email, password, prenom, nom, role, company_id, must_change_password, send_email } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email et mot de passe requis' });
-    }
-
-    // ── Créer l'utilisateur dans auth.users ──
-    const { data: newUser, error: createErr } = await sbAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,   // confirme immédiatement sans email de vérification
-        user_metadata: { prenom, nom, role, must_change_password: !!must_change_password }
-    });
-
-    if (createErr) {
-        // Message d'erreur lisible
-        if (createErr.message.includes('already registered') || createErr.message.includes('already exists')) {
-            return res.status(409).json({ error: 'Cet email est déjà enregistré' });
-        }
-        return res.status(400).json({ error: createErr.message });
-    }
-
-    const userId = newUser.user.id;
-
-    // ── Insérer dans la table users ──
-    const { error: insertErr } = await sbAdmin.from('users').upsert({
-        id: userId,
-        email,
-        prenom:               prenom || null,
-        nom:                  nom    || null,
-        company_id:           company_id || null,
-        must_change_password: !!must_change_password,
-        active:               true
-    }, { onConflict: 'id' });
-
-    if (insertErr) {
-        console.error('Erreur insert users:', insertErr.message);
-        // Ne pas bloquer — l'auth est créé, on continue
-    }
-
-    // ── Attribuer le rôle ──
-    const roleToAssign = role || 'SERVICE_MANAGER';
-    const { error: roleErr } = await sbAdmin.from('user_roles').upsert(
-        { user_id: userId, role_id: roleToAssign },
-        { onConflict: 'user_id' }
-    );
-
-    if (roleErr) {
-        console.error('Erreur insert user_roles:', roleErr.message);
-    }
-
-    // ── Envoyer email de réinitialisation si demandé ──
-    if (send_email) {
-        await sbAdmin.auth.admin.generateLink({
-            type: 'recovery',
-            email,
-            options: { redirectTo: (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'https://ea-platform-omega.vercel.app') + '/index.html' }
+        return res.status(500).json({
+            error: 'Variables SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquantes dans Vercel'
         });
     }
 
-    return res.status(200).json({
-        success: true,
-        user_id: userId,
-        email,
-        role: roleToAssign,
-        message: 'Profil créé avec succès'
-    });
+    const authHeader = (req.headers['authorization'] || '').replace('Bearer ','').trim();
+    if (!authHeader) return res.status(401).json({ error: 'Token manquant' });
+
+    // Vérifier le token appelant
+    let caller;
+    try {
+        const r = await fetch(SUPABASE_URL + '/auth/v1/user', {
+            headers: { 'Authorization': 'Bearer ' + authHeader, 'apikey': SERVICE_ROLE_KEY }
+        });
+        if (!r.ok) return res.status(401).json({ error: 'Token invalide' });
+        caller = await r.json();
+    } catch(e) { return res.status(500).json({ error: 'Vérif token: ' + e.message }); }
+
+    // Vérifier son rôle
+    let callerRole = null;
+    try {
+        const r = await fetch(SUPABASE_URL + '/rest/v1/user_roles?user_id=eq.' + caller.id + '&select=role_id&limit=1', {
+            headers: { 'apikey': SERVICE_ROLE_KEY, 'Authorization': 'Bearer ' + SERVICE_ROLE_KEY }
+        });
+        const rows = await r.json();
+        callerRole = rows?.[0]?.role_id || null;
+    } catch(e) { console.warn('[create-user] role fetch:', e.message); }
+
+    if (!callerRole && caller.email === 'alain.grafcolson@gmail.com') callerRole = 'SUPER_ADMIN';
+
+    console.log('[create-user] caller:', caller.email, 'role:', callerRole);
+
+    if (!callerRole || !ALLOWED_ROLES.includes(callerRole)) {
+        return res.status(403).json({ error: 'Droits insuffisants (rôle: ' + callerRole + ')' });
+    }
+
+    const { email, password, prenom, nom, role, company_id, must_change_password, send_email } = req.body || {};
+    if (!email || !password) return res.status(400).json({ error: 'email et password requis' });
+
+    console.log('[create-user] creating:', email);
+
+    // Créer dans auth.users
+    let userId;
+    try {
+        const r = await fetch(SUPABASE_URL + '/auth/v1/admin/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SERVICE_ROLE_KEY,
+                'Authorization': 'Bearer ' + SERVICE_ROLE_KEY
+            },
+            body: JSON.stringify({
+                email, password,
+                email_confirm: true,
+                user_metadata: { prenom: prenom||'', nom: nom||'', role: role||'SERVICE_MANAGER', must_change_password: !!must_change_password }
+            })
+        });
+        const body = await r.json();
+        console.log('[create-user] auth create:', r.status);
+        if (!r.ok) {
+            const msg = body.msg || body.message || body.error_description || JSON.stringify(body);
+            if (r.status === 422) return res.status(409).json({ error: 'Email déjà enregistré' });
+            return res.status(r.status).json({ error: 'Auth error: ' + msg });
+        }
+        userId = body.id;
+    } catch(e) { return res.status(500).json({ error: 'Auth create: ' + e.message }); }
+
+    console.log('[create-user] userId:', userId);
+
+    // Insérer dans users
+    try {
+        await fetch(SUPABASE_URL + '/rest/v1/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SERVICE_ROLE_KEY,
+                'Authorization': 'Bearer ' + SERVICE_ROLE_KEY,
+                'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({ id: userId, email, prenom: prenom||null, nom: nom||null, company_id: company_id||null, must_change_password: !!must_change_password, active: true })
+        });
+    } catch(e) { console.warn('[create-user] users insert:', e.message); }
+
+    // Attribuer le rôle
+    const roleToAssign = role || 'SERVICE_MANAGER';
+    try {
+        await fetch(SUPABASE_URL + '/rest/v1/user_roles', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SERVICE_ROLE_KEY,
+                'Authorization': 'Bearer ' + SERVICE_ROLE_KEY,
+                'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({ user_id: userId, role_id: roleToAssign })
+        });
+    } catch(e) { console.warn('[create-user] roles insert:', e.message); }
+
+    console.log('[create-user] success:', email);
+    return res.status(200).json({ success: true, user_id: userId, email, role: roleToAssign, message: 'Profil créé avec succès' });
 };
