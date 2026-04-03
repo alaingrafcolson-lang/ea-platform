@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI Governance | Administration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Instrument Sans', sans-serif; background:#F4F7FB; color:#0B1829; }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            background:#fff; padding:0 32px; height:70px;
+            display:flex; align-items:center; justify-content:space-between;
+            width:100%; border-bottom:1px solid rgba(0,0,0,0.1);
+            position:fixed; top:0; z-index:100;
+        }
+        .topbar-left { display:flex; align-items:center; gap:15px; }
+        #uAvatar {
+            width:35px; height:35px; border-radius:10px;
+            background:#1A6CF5; color:#fff;
+            display:flex; align-items:center; justify-content:center; font-weight:800;
+        }
+        .topbar-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .btn {
+            padding:10px 20px; border-radius:10px; border:none; cursor:pointer;
+            font-weight:600; background:#1A6CF5; color:#fff;
+            font-family:inherit; font-size:14px; transition:opacity 0.2s;
+        }
+        .btn:hover { opacity:0.85; }
+        .btn-ghost { background:none; color:#0B1829; }
+        .btn-ghost:hover { background:rgba(0,0,0,0.05); }
+        .btn-danger { background:#E84568; }
+        .btn-success { background:#10b981; }
+        .btn-warning { background:#f59e0b; }
+        .btn-sm { padding:6px 12px; font-size:12px; }
+        .btn-outline { background:none; border:1px solid #1A6CF5; color:#1A6CF5; }
+        .btn-outline:hover { background:#eef2ff; }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width:260px; background:#0B1829;
+            position:fixed; left:0; top:70px; bottom:0;
+            padding:20px; color:white; overflow-y:auto;
+        }
+        .sidebar a {
+            display:block; padding:12px 16px; color:#9ca3af;
+            text-decoration:none; border-radius:8px; margin-bottom:4px; transition:0.2s;
+        }
+        .sidebar a:hover, .sidebar a.active { background:#1A6CF5; color:white; }
+
+        /* ── MAIN CONTENT ── */
+        .main-content { margin-left:260px; padding:90px 32px 40px; }
+
+        .card {
+            background:white; border-radius:16px; padding:24px;
+            margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:20px; flex-wrap:wrap; gap:10px;
+        }
+        .card-header h2 { font-family:'Syne'; }
+
+        /* ── TABLE ── */
+        .data-table { width:100%; border-collapse:collapse; }
+        .data-table th, .data-table td { padding:12px; text-align:left; border-bottom:1px solid #eee; }
+        .data-table th { background:#f8f9fa; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:#6b7280; }
+        .data-table tr:hover td { background:#f9fafb; }
+        .btn-icon { background:none; border:none; cursor:pointer; font-size:16px; margin:0 2px; padding:4px; border-radius:6px; transition:.15s; }
+        .btn-icon:hover { background:#f3f4f6; }
+
+        /* ── BADGE ── */
+        .badge {
+            display:inline-block; padding:3px 10px; border-radius:20px;
+            font-size:11px; font-weight:600; white-space:nowrap;
+        }
+        .badge-blue   { background:#eff6ff; color:#1A6CF5; }
+        .badge-green  { background:#f0fdf4; color:#16a34a; }
+        .badge-red    { background:#fef2f2; color:#dc2626; }
+        .badge-orange { background:#fff7ed; color:#ea580c; }
+        .badge-gray   { background:#f3f4f6; color:#6b7280; }
+        .badge-purple { background:#f5f3ff; color:#7c3aed; }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            position:fixed; inset:0; background:rgba(0,0,0,0.5);
+            z-index:500; display:none; align-items:center; justify-content:center; padding:16px;
+        }
+        .modal-overlay.open { display:flex; }
+        .modal {
+            background:white; border-radius:20px; padding:28px;
+            width:100%; max-width:560px; max-height:90vh; overflow-y:auto;
+            animation:slideUp .2s ease;
+        }
+        @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .modal-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+        .modal-title { font-family:'Syne'; font-size:18px; }
+        .modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:#9ca3af; padding:4px; }
+        .modal-close:hover { color:#0B1829; }
+        .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; padding-top:16px; border-top:1px solid #f3f4f6; }
+
+        /* ── FORM ── */
+        .form-group { margin-bottom:16px; }
+        .form-group label { display:block; font-weight:600; margin-bottom:6px; font-size:13px; color:#374151; }
+        .form-group input, .form-group select, .form-group textarea {
+            width:100%; padding:10px 14px; border-radius:10px;
+            border:1.5px solid #e5e7eb; font-family:inherit; font-size:13px;
+            transition:border-color .15s; outline:none;
+        }
+        .form-group input:focus, .form-group select:focus { border-color:#1A6CF5; }
+        .form-row { display:flex; gap:12px; flex-wrap:wrap; }
+        .form-row .form-group { flex:1; min-width:180px; }
+
+        /* ── TEMP PASSWORD BOX ── */
+        .temp-pwd-box {
+            background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:12px;
+            padding:16px; margin-top:16px;
+        }
+        .temp-pwd-box .label { font-size:12px; color:#16a34a; font-weight:600; margin-bottom:8px; }
+        .temp-pwd-display {
+            display:flex; align-items:center; gap:8px;
+            background:white; border:1px solid #d1fae5; border-radius:8px; padding:10px 14px;
+        }
+        .temp-pwd-value {
+            font-family:monospace; font-size:16px; font-weight:700;
+            letter-spacing:2px; flex:1; color:#065f46;
+        }
+        .copy-btn {
+            background:#10b981; color:white; border:none; border-radius:6px;
+            padding:5px 10px; font-size:12px; cursor:pointer; font-family:inherit;
+        }
+        .copy-btn:hover { background:#059669; }
+
+        /* ── INVITE BOX ── */
+        .invite-box {
+            background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:12px;
+            padding:14px 16px; margin-top:12px; font-size:13px; color:#1e40af;
+        }
+
+        /* ── TOAST ── */
+        .toast {
+            position:fixed; bottom:30px; right:30px; background:#0B1829; color:white;
+            padding:14px 22px; border-radius:12px; opacity:0;
+            transition:opacity 0.3s; pointer-events:none; z-index:1000;
+            max-width:400px; line-height:1.5; font-size:13px;
+        }
+        .toast.show { opacity:1; }
+        .toast.success { background:#065f46; }
+        .toast.error   { background:#991b1b; }
+
+        /* ── GUARD ── */
+        #guard {
+            position:fixed; inset:0; background:#F4F7FB; z-index:999;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            gap:12px; text-align:center; padding:20px;
+        }
+        #guard.hidden { display:none; }
+
+        /* ── MISC ── */
+        .chip {
+            display:inline-block; padding:4px 10px; border-radius:20px;
+            font-size:11px; background:#eef2ff; color:#4338ca; margin:2px;
+        }
+        .info-row { display:flex; gap:6px; align-items:center; font-size:12px; color:#6b7280; margin-top:4px; }
+        .divider { height:1px; background:#f3f4f6; margin:16px 0; }
+        table { font-size:13px; }
+    </style>
+</head>
+<body>
+
+<!-- ════════════ GUARD ÉCRAN ════════════ -->
+<div id="guard">
+    <div style="font-size:48px">🔒</div>
+    <div style="font-family:'Syne';font-size:22px;font-weight:800;">Vérification en cours…</div>
+    <div style="color:#6b7280;max-width:340px">Connexion à Supabase et vérification des droits d'accès.</div>
+</div>
+
+<!-- ════════════ TOPBAR ════════════ -->
+<div class="topbar">
+    <div class="topbar-left">
+        <div id="uAvatar">?</div>
+        <span style="font-family:'Syne';font-weight:800;">SI MANAGER</span>
+    </div>
+    <div class="topbar-right">
+        <button class="btn btn-ghost" onclick="location.href='/dashboard.html'">📊 Diagnostic</button>
+        <button class="btn btn-ghost" onclick="location.href='/kpi.html'">📈 KPI</button>
+        <button class="btn btn-ghost" onclick="location.href='/conformite.html'">⚖️ Conformité</button>
+        <button class="btn btn-ghost" onclick="location.href='/cyber.html'">🌍 Cyber Threat</button>
+        <button class="btn btn-ghost" onclick="location.href='/messagerie.html'">📬 Messagerie</button>
+        <button class="btn btn-ghost active" onclick="location.href='/admin.html'">🔧 Admin</button>
+        <button class="btn btn-danger btn-sm" onclick="logout()">Déconnexion</button>
+    </div>
+</div>
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<div class="sidebar">
+    <a href="/dashboard.html">🏠 Tableau de bord</a>
+    <a href="/services.html">📋 Services</a>
+    <a href="/risques.html">⚠️ Risques</a>
+    <a href="/cartographie.html">🗺️ Cartographie</a>
+    <a href="/conformite.html">⚖️ Conformité</a>
+    <a href="/fournisseurs.html">🤝 Fournisseurs</a>
+    <a href="/donnees.html">🗄️ Données</a>
+    <a href="/cyber.html">🎯 Cyber</a>
+    <a href="/kpi.html">📊 KPI</a>
+    <a href="/operations.html">🔄 Opérations</a>
+    <a href="/admin.html" class="active">🔧 Admin</a>
+</div>
+
+<!-- ════════════ MAIN CONTENT ════════════ -->
+<div class="main-content" id="mainContent" style="display:none">
+
+    <!-- BANNIÈRE RÔLE ACTIF -->
+    <div id="roleBanner" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px">
+        <span id="roleBannerText"></span>
+    </div>
+
+    <!-- SECTION UTILISATEURS -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2>👥 Gestion des profils AD</h2>
+                <div class="info-row">Provisioning · Mot de passe temporaire · Invitation email · Changement forcé au 1er login</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-sm btn-outline" id="btnInvite" onclick="openModal('modalInvite')">✉️ Inviter par email</button>
+                <button class="btn btn-sm" id="btnCreate" onclick="openModal('modalCreate')">➕ Créer un profil AD</button>
+            </div>
+        </div>
+        <div id="usersList"><p style="color:#9ca3af">Chargement…</p></div>
+    </div>
+
+    <!-- SECTION ENTREPRISES -->
+    <div class="card">
+        <div class="card-header">
+            <h2>🏢 Entreprises</h2>
+            <button class="btn btn-sm btn-outline" onclick="openModal('modalCompany')">➕ Ajouter</button>
+        </div>
+        <div id="companiesList"><p style="color:#9ca3af">Chargement…</p></div>
+    </div>
+
+    <!-- SECTION RÔLES -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2>🔑 Rôles & permissions</h2>
+                <div class="info-row">Matrice RBAC — accès définis par rôle</div>
+            </div>
+        </div>
+        <div id="rolesList"></div>
+    </div>
+
+</div><!-- /main-content -->
+
+<!-- ════════════ MODAL : CRÉER PROFIL AD ════════════ -->
+<div class="modal-overlay" id="modalCreate">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">➕ Créer un profil AD</div>
+                <div style="font-size:12px;color:#9ca3af;margin-top:3px">Provisioning · Mot de passe temporaire auto-généré</div>
+            </div>
+            <button class="modal-close" onclick="closeModal('modalCreate')">✕</button>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Prénom *</label>
+                <input type="text" id="newPrenom" placeholder="Jean-Pierre">
+            </div>
+            <div class="form-group">
+                <label>Nom *</label>
+                <input type="text" id="newNom" placeholder="Martin">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Email professionnel *</label>
+            <input type="email" id="newEmail" placeholder="jp.martin@domaine.fr">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Rôle</label>
+                <select id="newRole">
+                    <option value="SERVICE_MANAGER">Service Manager</option>
+                    <option value="RSSI">RSSI</option>
+                    <option value="DSI">DSI</option>
+                    <option value="SYSTEM_ADMIN">Admin Système</option>
+                    <option value="NETWORK_ADMIN">Admin Réseau</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                    <option value="CEO">CEO / COMEX</option>
+                    <option value="DRH">DRH</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Entreprise</label>
+                <select id="newCompany">
+                    <option value="">— Choisir —</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="newMustChange" checked style="width:auto">
+                Forcer le changement de mot de passe à la 1ère connexion
+            </label>
+        </div>
+        <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="newSendEmail" checked style="width:auto">
+                Envoyer l'email d'invitation avec le mot de passe temporaire
+            </label>
+        </div>
+
+        <!-- Résultat après création -->
+        <div id="createResult" style="display:none"></div>
+
+        <div class="modal-footer">
+            <button class="btn btn-ghost btn-sm" onclick="closeModal('modalCreate')">Annuler</button>
+            <button class="btn btn-sm" onclick="createUser()" id="btnDoCreate">Créer le profil</button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════ MODAL : INVITER PAR EMAIL ════════════ -->
+<div class="modal-overlay" id="modalInvite">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">✉️ Inviter un utilisateur</div>
+                <div style="font-size:12px;color:#9ca3af;margin-top:3px">Envoie un lien de définition de mot de passe par email</div>
+            </div>
+            <button class="modal-close" onclick="closeModal('modalInvite')">✕</button>
+        </div>
+        <div class="form-group">
+            <label>Email *</label>
+            <input type="email" id="inviteEmail" placeholder="utilisateur@domaine.fr">
+        </div>
+        <div class="form-group">
+            <label>Rôle à attribuer</label>
+            <select id="inviteRole">
+                <option value="SERVICE_MANAGER">Service Manager</option>
+                <option value="RSSI">RSSI</option>
+                <option value="DSI">DSI</option>
+                <option value="SYSTEM_ADMIN">Admin Système</option>
+                <option value="NETWORK_ADMIN">Admin Réseau</option>
+                <option value="SUPER_ADMIN">Super Admin</option>
+                <option value="CEO">CEO / COMEX</option>
+                <option value="DRH">DRH</option>
+            </select>
+        </div>
+        <div class="invite-box">
+            📧 Un email contenant un lien de connexion sécurisé sera envoyé. L'utilisateur définira lui-même son mot de passe.
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost btn-sm" onclick="closeModal('modalInvite')">Annuler</button>
+            <button class="btn btn-sm btn-success" onclick="inviteUser()">Envoyer l'invitation</button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════ MODAL : RESET MOT DE PASSE ════════════ -->
+<div class="modal-overlay" id="modalReset">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">🔐 Réinitialiser le mot de passe</div>
+                <div style="font-size:12px;color:#9ca3af;margin-top:3px">Génère un nouveau mot de passe temporaire</div>
+            </div>
+            <button class="modal-close" onclick="closeModal('modalReset')">✕</button>
+        </div>
+        <div id="resetTarget" style="background:#f9fafb;border-radius:10px;padding:12px;font-size:13px;margin-bottom:16px"></div>
+        <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="resetSendEmail" checked style="width:auto">
+                Envoyer le lien de réinitialisation par email
+            </label>
+        </div>
+        <div id="resetResult" style="display:none"></div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost btn-sm" onclick="closeModal('modalReset')">Annuler</button>
+            <button class="btn btn-sm btn-warning" onclick="doResetPassword()">Réinitialiser</button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════ MODAL : ENTREPRISE ════════════ -->
+<div class="modal-overlay" id="modalCompany">
+    <div class="modal" style="max-width:400px">
+        <div class="modal-header">
+            <div class="modal-title" id="companyModalTitle">🏢 Ajouter une entreprise</div>
+            <button class="modal-close" onclick="closeModal('modalCompany')">✕</button>
+        </div>
+        <div class="form-group">
+            <label>Nom de l'entreprise *</label>
+            <input type="text" id="companyName" placeholder="Nom">
+        </div>
+        <input type="hidden" id="companyId">
+        <div class="modal-footer">
+            <button class="btn btn-ghost btn-sm" onclick="closeModal('modalCompany')">Annuler</button>
+            <button class="btn btn-sm" onclick="saveCompany()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// CONFIG SUPABASE
+// ══════════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true }
+});
+
+// Rôles autorisés à accéder à cette page
+const ADMIN_ROLES = ['SUPER_ADMIN','DSI','RSSI','SYSTEM_ADMIN','NETWORK_ADMIN'];
+const EDIT_ROLES  = ['SUPER_ADMIN','DSI','RSSI','SYSTEM_ADMIN','NETWORK_ADMIN'];
+
+let currentUser  = null;
+let currentRole  = null;
+let resetTargetEmail = null;
+
+// ══════════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════════
+async function checkAuth() {
+    const { data: { user: authUser }, error: authErr } = await sb.auth.getUser();
+    if (authErr || !authUser) {
+        window.location.href = '/index.html';
+        return false;
+    }
+
+    const { data: profile } = await sb
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+    currentUser = profile || { id: authUser.id, email: authUser.email };
+    document.getElementById('uAvatar').textContent = (currentUser.email?.charAt(0).toUpperCase() || 'U');
+
+    const { data: roleRow, error: roleErr } = await sb
+        .from('user_roles')
+        .select('role_id')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+
+    if (roleErr || !roleRow) {
+        const { data: userWithRole } = await sb
+            .from('users')
+            .select('role')
+            .eq('id', authUser.id)
+            .maybeSingle();
+        currentRole = userWithRole?.role || null;
+        if (!currentRole && authUser.email === 'alain.grafcolson@gmail.com') {
+            currentRole = 'SUPER_ADMIN';
+        }
+    } else {
+        currentRole = roleRow?.role_id || null;
+    }
+
+    if (!currentRole || !ADMIN_ROLES.includes(currentRole)) {
+        showGuard('accès_refusé');
+        return false;
+    }
+
+    showGuard('ok');
+    afficherBanniereRole();
+    return true;
+}
+
+function showGuard(state) {
+    const g = document.getElementById('guard');
+    const m = document.getElementById('mainContent');
+    if (state === 'ok') {
+        g.classList.add('hidden');
+        m.style.display = 'block';
+    } else {
+        g.innerHTML = `
+            <div style="font-size:48px">🔒</div>
+            <div style="font-family:'Syne';font-size:22px;font-weight:800;">Accès non autorisé</div>
+            <div style="color:#6b7280;max-width:340px">
+                Cette page est réservée au <strong>Super Admin</strong>, <strong>DSI</strong>,
+                <strong>RSSI</strong>, <strong>Admin Système</strong> et <strong>Admin Réseau</strong>.
+            </div>
+            <button class="btn btn-sm" onclick="location.href='/dashboard.html'">← Retour au tableau de bord</button>
+        `;
+    }
+}
+
+function afficherBanniereRole() {
+    const labels = {
+        SUPER_ADMIN:'🔑 Super Admin', DSI:'🏛️ DSI', RSSI:'🔐 RSSI',
+        SYSTEM_ADMIN:'💻 Admin Système', NETWORK_ADMIN:'🌐 Admin Réseau'
+    };
+    const canEdit = EDIT_ROLES.includes(currentRole);
+    document.getElementById('roleBannerText').innerHTML =
+        `Connecté en tant que <strong>${labels[currentRole] || currentRole}</strong> (${currentUser.email})
+         &nbsp;·&nbsp; Droits : <strong>${canEdit ? '✓ Création & modification des profils' : 'Lecture seule'}</strong>`;
+    if (!canEdit) {
+        document.getElementById('btnCreate').style.display = 'none';
+        document.getElementById('btnInvite').style.display = 'none';
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CHARGEMENT DES UTILISATEURS
+// ══════════════════════════════════════════════════════════════════
+async function loadUsers() {
+    const container = document.getElementById('usersList');
+    container.innerHTML = '<p style="color:#9ca3af;padding:8px">Chargement…</p>';
+
+    const { data, error } = await sb
+        .from('users')
+        .select('*')
+        .order('email');
+
+    if (error) {
+        container.innerHTML = '<div style="color:#dc2626;padding:12px">Erreur chargement utilisateurs : ' + error.message + '</div>';
+        return;
+    }
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p style="color:#9ca3af;padding:8px">Aucun utilisateur</p>';
+        return;
+    }
+
+    const { data: allRoles } = await sb.from('user_roles').select('user_id, role_id');
+    const rolesMap = {};
+    if (allRoles) allRoles.forEach(r => { rolesMap[r.user_id] = r.role_id; });
+
+    const { data: allCompanies } = await sb.from('companies').select('id, name');
+    const companiesMap = {};
+    if (allCompanies) allCompanies.forEach(c => { companiesMap[c.id] = c.name; });
+
+    const canEdit = EDIT_ROLES.includes(currentRole);
+    const roleBadgeClass = {
+        SUPER_ADMIN:'badge-red', DSI:'badge-blue', RSSI:'badge-purple',
+        SYSTEM_ADMIN:'badge-orange', NETWORK_ADMIN:'badge-orange',
+        CEO:'badge-green', DRH:'badge-blue', SERVICE_MANAGER:'badge-gray'
+    };
+    const roleOptions = ['SERVICE_MANAGER','RSSI','DSI','SYSTEM_ADMIN','NETWORK_ADMIN','SUPER_ADMIN','CEO','DRH'];
+
+    function buildUserRow(u) {
+        var role = rolesMap[u.id] || u.role || '—';
+        var initials = u.email ? u.email.charAt(0).toUpperCase() : '?';
+        var bClass = roleBadgeClass[role] || 'badge-gray';
+        var compName = companiesMap[u.company_id] || '—';
+        var roleCtrl = canEdit
+            ? '<select class="badge ' + bClass + '" style="border:none;cursor:pointer;font-size:11px;padding:4px 8px;border-radius:20px;font-family:inherit" onchange="updateUserRole(\'' + u.id + '\', this.value)">'
+              + roleOptions.map(r => '<option value="' + r + '"' + (role === r ? ' selected' : '') + '>' + r.replace(/_/g,' ') + '</option>').join('')
+              + '</select>'
+            : '<span class="badge ' + bClass + '">' + role.replace(/_/g,' ') + '</span>';
+        var mdpIcon = u.must_change_password
+            ? '<span style="color:#f59e0b;font-size:14px" title="Doit changer son mot de passe">⚠️</span>'
+            : '<span style="color:#10b981;font-size:14px">✓</span>';
+        var statut = u.active === false
+            ? '<span class="badge badge-red">Inactif</span>'
+            : '<span class="badge badge-green">Actif</span>';
+        var actions = canEdit
+            ? '<button class="btn-icon" title="Réinitialiser MDP" onclick="openResetModal(\'' + u.id + '\',\'' + escapeHtml(u.email) + '\')">🔐</button>'
+              + '<button class="btn-icon" title="' + (u.active === false ? 'Activer' : 'Désactiver') + '" onclick="toggleUserActive(\'' + u.id + '\',' + String(u.active !== false) + ')">' + (u.active === false ? '✅' : '⛔') + '</button>'
+              + '<button class="btn-icon" title="Supprimer" onclick="deleteUser(\'' + u.id + '\',\'' + escapeHtml(u.email) + '\')">🗑️</button>'
+            : '<span style="color:#d1d5db;font-size:12px">🔒</span>';
+        return '<tr>'
+            + '<td><div style="display:flex;align-items:center;gap:10px">'
+            + '<div style="width:32px;height:32px;border-radius:8px;background:#1A6CF5;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">' + initials + '</div>'
+            + '<div><div style="font-weight:600;font-size:13px">' + escapeHtml(u.email) + '</div>'
+            + '<div style="font-size:11px;color:#9ca3af">ID: ' + (u.id ? u.id.slice(0,8) : '?') + '…</div></div>'
+            + '</div></td>'
+            + '<td style="font-size:12px;color:#6b7280">' + escapeHtml(compName) + '</td>'
+            + '<td>' + roleCtrl + '</td>'
+            + '<td style="text-align:center">' + mdpIcon + '</td>'
+            + '<td>' + statut + '</td>'
+            + '<td>' + actions + '</td>'
+            + '</tr>';
+    }
+
+    var rows = data.map(buildUserRow).join('');
+    container.innerHTML = '<table class="data-table">'
+        + '<thead><tr><th>Profil</th><th>Entreprise</th><th>Rôle</th><th>MDP forcé</th><th>Statut</th><th>Actions</th></tr></thead>'
+        + '<tbody>' + rows + '</tbody>'
+        + '</table>';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// GÉNÉRATION MOT DE PASSE TEMPORAIRE
+// ══════════════════════════════════════════════════════════════════
+function generateTempPassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const special = '!@#$%';
+    let pwd = '';
+    for (let i = 0; i < 8; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+    pwd += special[Math.floor(Math.random() * special.length)];
+    pwd += Math.floor(Math.random() * 9) + 1;
+    return pwd.split('').sort(() => Math.random() - 0.5).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CRÉER UN PROFIL AD (via API serverless)
+// ══════════════════════════════════════════════════════════════════
+async function createUser() {
+    const email    = document.getElementById('newEmail').value.trim();
+    const prenom   = document.getElementById('newPrenom').value.trim();
+    const nom      = document.getElementById('newNom').value.trim();
+    const role     = document.getElementById('newRole').value;
+    const company  = document.getElementById('newCompany').value;
+    const mustChg  = document.getElementById('newMustChange').checked;
+    const sendMail = document.getElementById('newSendEmail').checked;
+    const resultEl = document.getElementById('createResult');
+
+    if (!email || !prenom || !nom) {
+        showToast('Prénom, nom et email sont obligatoires', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btnDoCreate');
+    btn.textContent = 'Création…';
+    btn.disabled = true;
+    resultEl.style.display = 'none';
+
+    const tempPwd = generateTempPassword();
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+        showToast('Session expirée, reconnectez-vous', 'error');
+        btn.textContent = 'Créer le profil';
+        btn.disabled = false;
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/create-user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + session.access_token
+            },
+            body: JSON.stringify({
+                email,
+                password: tempPwd,
+                prenom,
+                nom,
+                role,
+                company_id: company || null,
+                must_change_password: mustChg,
+                send_email: sendMail
+            })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            showToast('Erreur : ' + (result.error || 'Création échouée'), 'error');
+            btn.textContent = 'Créer le profil';
+            btn.disabled = false;
+            return;
+        }
+
+        resultEl.style.display = 'block';
+        resultEl.innerHTML = `
+            <div class="temp-pwd-box">
+                <div class="label">✓ Profil créé avec succès</div>
+                <div class="temp-pwd-display">
+                    <span class="temp-pwd-value">${tempPwd}</span>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${tempPwd}')">📋 Copier</button>
+                </div>
+                <div style="font-size:11px;margin-top:8px">${mustChg ? '⚠️ Changement obligatoire au premier login' : ''}</div>
+            </div>
+        `;
+        showToast(`✓ ${email} créé avec succès`, 'success');
+        loadUsers();
+        document.getElementById('newPrenom').value = '';
+        document.getElementById('newNom').value = '';
+        document.getElementById('newEmail').value = '';
+    } catch (err) {
+        showToast('Erreur réseau : ' + err.message, 'error');
+    } finally {
+        btn.textContent = 'Créer le profil';
+        btn.disabled = false;
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INVITER PAR EMAIL
+// ══════════════════════════════════════════════════════════════════
+async function inviteUser() {
+    const email = document.getElementById('inviteEmail').value.trim();
+    const role  = document.getElementById('inviteRole').value;
+    if (!email) { showToast('Email requis', 'error'); return; }
+
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/index.html'
+    });
+
+    if (error) {
+        const tempPwd = generateTempPassword();
+        const { data, error: signUpErr } = await sb.auth.signUp({
+            email, password: tempPwd,
+            options: { data: { role, must_change_password: true } }
+        });
+        if (signUpErr) { showToast('Erreur : ' + signUpErr.message, 'error'); return; }
+        const uid = data.user?.id;
+        await sb.from('users').upsert({ id: uid, email, must_change_password: true, active: true }, { onConflict: 'id' });
+        await sb.from('user_roles').upsert({ user_id: uid, role_id: role }, { onConflict: 'user_id' });
+        showToast(`✓ Compte créé et invitation envoyée à ${email}`, 'success');
+    } else {
+        showToast(`✓ Lien d'invitation envoyé à ${email}`, 'success');
+    }
+
+    document.getElementById('inviteEmail').value = '';
+    closeModal('modalInvite');
+    loadUsers();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RESET MOT DE PASSE
+// ══════════════════════════════════════════════════════════════════
+function openResetModal(userId, email) {
+    resetTargetEmail = email;
+    document.getElementById('resetTarget').innerHTML = `<strong>Compte :</strong> ${escapeHtml(email)}`;
+    document.getElementById('resetResult').style.display = 'none';
+    openModal('modalReset');
+}
+
+async function doResetPassword() {
+    if (!resetTargetEmail) return;
+    const sendEmail = document.getElementById('resetSendEmail').checked;
+    const newTempPwd = generateTempPassword();
+
+    await sb.from('users').update({ must_change_password: true }).eq('email', resetTargetEmail);
+
+    if (sendEmail) {
+        const { error } = await sb.auth.resetPasswordForEmail(resetTargetEmail, {
+            redirectTo: window.location.origin + '/index.html'
+        });
+        if (error) { showToast('Erreur envoi email : ' + error.message, 'error'); return; }
+    }
+
+    document.getElementById('resetResult').style.display = 'block';
+    document.getElementById('resetResult').innerHTML = `
+        <div class="temp-pwd-box" style="margin-top:12px">
+            <div class="label">${sendEmail ? '✓ Email de réinitialisation envoyé' : '✓ Nouveau mot de passe temporaire'}</div>
+            ${!sendEmail ? `<div class="temp-pwd-display">
+                <span class="temp-pwd-value">${newTempPwd}</span>
+                <button class="copy-btn" onclick="navigator.clipboard.writeText('${newTempPwd}')">📋 Copier</button>
+            </div>` : ''}
+        </div>
+    `;
+    showToast('Réinitialisation effectuée', 'success');
+    loadUsers();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ACTIONS UTILISATEURS
+// ══════════════════════════════════════════════════════════════════
+async function updateUserRole(userId, roleId) {
+    const { error } = await sb.from('user_roles').upsert(
+        { user_id: userId, role_id: roleId },
+        { onConflict: 'user_id' }
+    );
+    if (error) showToast('Erreur : ' + error.message, 'error');
+    else showToast('Rôle mis à jour', 'success');
+}
+
+async function toggleUserActive(userId, currentlyActive) {
+    const { error } = await sb.from('users').update({ active: !currentlyActive }).eq('id', userId);
+    if (error) showToast('Erreur : ' + error.message, 'error');
+    else { showToast(currentlyActive ? 'Compte désactivé' : 'Compte activé', 'success'); loadUsers(); }
+}
+
+async function deleteUser(userId, email) {
+    if (!confirm(`Supprimer définitivement le profil de ${email} ?\n\nNote : le compte Supabase Auth sera conservé, seul le profil est supprimé.`)) return;
+    await sb.from('user_roles').delete().eq('user_id', userId);
+    const { error } = await sb.from('users').delete().eq('id', userId);
+    if (error) showToast('Erreur : ' + error.message, 'error');
+    else { showToast(`${email} supprimé du répertoire`, 'success'); loadUsers(); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ENTREPRISES
+// ══════════════════════════════════════════════════════════════════
+async function loadCompanies() {
+    const { data } = await sb.from('companies').select('*').order('name');
+    const sel = document.getElementById('newCompany');
+    const container = document.getElementById('companiesList');
+
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p style="color:#9ca3af;padding:8px">Aucune entreprise</p>';
+        sel.innerHTML = '<option value="">— Aucune entreprise —</option>';
+        return;
+    }
+
+    sel.innerHTML = '<option value="">— Choisir —</option>' +
+        data.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+
+    container.innerHTML = `
+        <table class="data-table">
+            <thead><tr><th>Nom</th><th>Actions</th></tr></thead>
+            <tbody>
+                ${data.map(c => `<tr>
+                    <td>${escapeHtml(c.name)}</td>
+                    <td>
+                        <button class="btn-icon" onclick="editCompanyModal('${c.id}','${escapeHtml(c.name)}')">✏️</button>
+                        <button class="btn-icon" onclick="deleteCompany('${c.id}')">🗑️</button>
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
+function editCompanyModal(id, name) {
+    document.getElementById('companyModalTitle').textContent = '🏢 Modifier l\'entreprise';
+    document.getElementById('companyName').value = name;
+    document.getElementById('companyId').value = id;
+    openModal('modalCompany');
+}
+
+async function saveCompany() {
+    const name = document.getElementById('companyName').value.trim();
+    const id   = document.getElementById('companyId').value;
+    if (!name) { showToast('Nom requis', 'error'); return; }
+
+    if (id) {
+        const { error } = await sb.from('companies').update({ name }).eq('id', id);
+        if (error) showToast('Erreur : ' + error.message, 'error');
+        else { showToast('Entreprise modifiée', 'success'); closeModal('modalCompany'); loadCompanies(); loadUsers(); }
+    } else {
+        const { error } = await sb.from('companies').insert({ name });
+        if (error) showToast('Erreur : ' + error.message, 'error');
+        else { showToast('Entreprise ajoutée', 'success'); closeModal('modalCompany'); loadCompanies(); }
+    }
+    document.getElementById('companyId').value = '';
+    document.getElementById('companyName').value = '';
+    document.getElementById('companyModalTitle').textContent = '🏢 Ajouter une entreprise';
+}
+
+async function deleteCompany(id) {
+    if (confirm('Supprimer cette entreprise ?')) {
+        const { error } = await sb.from('companies').delete().eq('id', id);
+        if (error) showToast('Erreur : ' + error.message, 'error');
+        else { showToast('Entreprise supprimée', 'success'); loadCompanies(); loadUsers(); }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RÔLES
+// ══════════════════════════════════════════════════════════════════
+async function loadRoles() {
+    const { data } = await sb.from('roles').select('id').order('id');
+    const container = document.getElementById('rolesList');
+    const roleDesc = {
+        SUPER_ADMIN:'Accès total — propriétaire du système',
+        DSI:'Direction SI — gestion globale',
+        RSSI:'Responsable sécurité SI',
+        SYSTEM_ADMIN:'Administration des serveurs et systèmes',
+        NETWORK_ADMIN:'Administration réseau',
+        CEO:'Direction générale — lecture seule',
+        DRH:'Ressources humaines',
+        SERVICE_MANAGER:'Gestionnaire de services IT'
+    };
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p style="color:#9ca3af">Aucun rôle défini</p>'; return;
+    }
+    container.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">
+            ${data.map(r => `
+                <div style="background:#f8f9fa;border-radius:10px;padding:12px 14px">
+                    <div style="font-weight:600;font-size:13px">${r.id.replace('_',' ')}</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:3px">${roleDesc[r.id]||''}</div>
+                </div>`).join('')}
+        </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    if (id === 'modalCreate') {
+        document.getElementById('createResult').style.display = 'none';
+    }
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+async function logout() {
+    await sb.auth.signOut();
+    localStorage.removeItem('ea_current_role');
+    window.location.href = '/index.html';
+}
+
+function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.className = 'toast' + (type ? ' ' + type : '');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+(async () => {
+    if (await checkAuth()) {
+        await Promise.all([loadCompanies(), loadUsers(), loadRoles()]);
+    }
+})();
+</script>
+</body>
+</html>
