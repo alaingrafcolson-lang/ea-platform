@@ -637,7 +637,6 @@ async function createUser() {
     btn.textContent = 'Création…'; btn.disabled = true;
     resultEl.style.display = 'none';
 
-    // Générer un mot de passe temporaire
     const tempPwd = generateTempPassword();
 
     // Récupérer la session active
@@ -673,6 +672,29 @@ async function createUser() {
             btn.textContent = 'Créer le profil'; btn.disabled = false;
             return;
         }
+
+        resultEl.style.display = 'block';
+        resultEl.innerHTML = `
+            <div class="temp-pwd-box">
+                <div class="label">✓ Profil créé avec succès</div>
+                <div class="temp-pwd-display">
+                    <span class="temp-pwd-value">${tempPwd}</span>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${tempPwd}')">📋 Copier</button>
+                </div>
+                <div style="font-size:11px;margin-top:8px">${mustChg ? '⚠️ Changement obligatoire au premier login' : ''}</div>
+            </div>
+        `;
+        showToast(`✓ ${email} créé avec succès`, 'success');
+        loadUsers();
+        document.getElementById('newPrenom').value = '';
+        document.getElementById('newNom').value = '';
+        document.getElementById('newEmail').value = '';
+    } catch (err) {
+        showToast('Erreur réseau : ' + err.message, 'error');
+    } finally {
+        btn.textContent = 'Créer le profil'; btn.disabled = false;
+    }
+}
 
         // Afficher le mot de passe temporaire
         resultEl.style.display = 'block';
