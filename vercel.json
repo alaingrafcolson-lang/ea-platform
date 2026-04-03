@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/*.js": {
+    "api/create-user.js": {
       "maxDuration": 10
     }
   }
