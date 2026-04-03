@@ -713,7 +713,7 @@ async function createUser() {
         document.getElementById('newPrenom').value = '';
         document.getElementById('newNom').value = '';
         document.getElementById('newEmail').value = '';
-    } catch (err) {
+     catch (err) {
         showToast('Erreur réseau : ' + err.message, 'error');
     } finally {
         btn.textContent = 'Créer le profil'; btn.disabled = false;
