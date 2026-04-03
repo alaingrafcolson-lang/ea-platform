@@ -527,15 +527,17 @@ function afficherBanniereRole() {
 // CHARGEMENT DES UTILISATEURS
 // ══════════════════════════════════════════════════════════════════
 async function loadUsers() {
+    const container = document.getElementById('usersList');
+    container.innerHTML = '<p style="color:#9ca3af;padding:8px">Chargement…</p>';
+
+    // FIX 400: requête simple sur users sans join (la FK companies n'est pas reconnue par PostgREST)
     const { data, error } = await sb
         .from('users')
-        .select('*, companies(name)')
+        .select('*')
         .order('email');
 
-    const container = document.getElementById('usersList');
-
     if (error) {
-        container.innerHTML = `<div style="color:#dc2626;padding:12px">Erreur chargement : ${error.message}</div>`;
+        container.innerHTML = '<div style="color:#dc2626;padding:12px">Erreur chargement utilisateurs : ' + error.message + '</div>';
         return;
     }
     if (!data || data.length === 0) {
@@ -543,10 +545,15 @@ async function loadUsers() {
         return;
     }
 
-    // Charger tous les rôles en une fois
+    // Charger les rôles séparément
     const { data: allRoles } = await sb.from('user_roles').select('user_id, role_id');
     const rolesMap = {};
-    if (allRoles) allRoles.forEach(r => { rolesMap[r.user_id] = r.role_id; });
+    if (allRoles) allRoles.forEach(function(r) { rolesMap[r.user_id] = r.role_id; });
+
+    // Charger les entreprises séparément pour le nom
+    const { data: allCompanies } = await sb.from('companies').select('id, name');
+    const companiesMap = {};
+    if (allCompanies) allCompanies.forEach(function(c) { companiesMap[c.id] = c.name; });
 
     const canEdit = EDIT_ROLES.includes(currentRole);
     const roleBadgeClass = {
@@ -556,25 +563,25 @@ async function loadUsers() {
     };
     const roleOptions = ['SERVICE_MANAGER','RSSI','DSI','SYSTEM_ADMIN','NETWORK_ADMIN','SUPER_ADMIN','CEO','DRH'];
 
-    // FIX Illegal return: construire les lignes AVANT le template literal
     function buildUserRow(u) {
-        const role     = rolesMap[u.id] || u.role || '—';
-        const initials = u.email ? u.email.charAt(0).toUpperCase() : '?';
-        const bClass   = roleBadgeClass[role] || 'badge-gray';
-        const roleCtrl = canEdit
+        var role     = rolesMap[u.id] || u.role || '—';
+        var initials = u.email ? u.email.charAt(0).toUpperCase() : '?';
+        var bClass   = roleBadgeClass[role] || 'badge-gray';
+        var compName = companiesMap[u.company_id] || '—';
+        var roleCtrl = canEdit
             ? '<select class="badge ' + bClass + '" style="border:none;cursor:pointer;font-size:11px;padding:4px 8px;border-radius:20px;font-family:inherit" onchange="updateUserRole(\'' + u.id + '\', this.value)">'
-              + roleOptions.map(function(r) { return '<option value="' + r + '"' + (role === r ? ' selected' : '') + '>' + r.replace('_',' ') + '</option>'; }).join('')
+              + roleOptions.map(function(r) { return '<option value="' + r + '"' + (role === r ? ' selected' : '') + '>' + r.replace(/_/g,' ') + '</option>'; }).join('')
               + '</select>'
-            : '<span class="badge ' + bClass + '">' + role.replace('_',' ') + '</span>';
-        const mdpIcon = u.must_change_password
+            : '<span class="badge ' + bClass + '">' + role.replace(/_/g,' ') + '</span>';
+        var mdpIcon = u.must_change_password
             ? '<span style="color:#f59e0b;font-size:14px" title="Doit changer son mot de passe">⚠️</span>'
             : '<span style="color:#10b981;font-size:14px">✓</span>';
-        const statut = u.active === false
+        var statut = u.active === false
             ? '<span class="badge badge-red">Inactif</span>'
             : '<span class="badge badge-green">Actif</span>';
-        const actions = canEdit
+        var actions = canEdit
             ? '<button class="btn-icon" title="Réinitialiser MDP" onclick="openResetModal(\'' + u.id + '\',\'' + escapeHtml(u.email) + '\')">🔐</button>'
-              + '<button class="btn-icon" title="' + (u.active === false ? 'Activer' : 'Désactiver') + '" onclick="toggleUserActive(\'' + u.id + '\',' + (u.active !== false) + ')">' + (u.active === false ? '✅' : '⛔') + '</button>'
+              + '<button class="btn-icon" title="' + (u.active === false ? 'Activer' : 'Désactiver') + '" onclick="toggleUserActive(\'' + u.id + '\',' + String(u.active !== false) + ')">' + (u.active === false ? '✅' : '⛔') + '</button>'
               + '<button class="btn-icon" title="Supprimer" onclick="deleteUser(\'' + u.id + '\',\'' + escapeHtml(u.email) + '\')">🗑️</button>'
             : '<span style="color:#d1d5db;font-size:12px">🔒</span>';
         return '<tr>'
@@ -583,7 +590,7 @@ async function loadUsers() {
             + '<div><div style="font-weight:600;font-size:13px">' + escapeHtml(u.email) + '</div>'
             + '<div style="font-size:11px;color:#9ca3af">ID: ' + (u.id ? u.id.slice(0,8) : '?') + '…</div></div>'
             + '</div></td>'
-            + '<td style="font-size:12px;color:#6b7280">' + escapeHtml((u.companies && u.companies.name) || '—') + '</td>'
+            + '<td style="font-size:12px;color:#6b7280">' + escapeHtml(compName) + '</td>'
             + '<td>' + roleCtrl + '</td>'
             + '<td style="text-align:center">' + mdpIcon + '</td>'
             + '<td>' + statut + '</td>'
@@ -591,7 +598,7 @@ async function loadUsers() {
             + '</tr>';
     }
 
-    const rows = data.map(buildUserRow).join('');
+    var rows = data.map(buildUserRow).join('');
     container.innerHTML = '<table class="data-table">'
         + '<thead><tr><th>Profil</th><th>Entreprise</th><th>Rôle</th><th>MDP forcé</th><th>Statut</th><th>Actions</th></tr></thead>'
         + '<tbody>' + rows + '</tbody>'
