@@ -1,9 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async (req, res) => {
-  // ============================================================
-  // 1️⃣ VÉRIFIER LA MÉTHODE
-  // ============================================================
   if (req.method !== 'POST') {
     return res.status(405).json({ 
       error: 'Method not allowed',
@@ -14,9 +11,6 @@ export default async (req, res) => {
   try {
     console.log('📋 [API] Reçu requête create-user');
     
-    // ============================================================
-    // 2️⃣ VÉRIFIER LES VARIABLES D'ENVIRONNEMENT
-    // ============================================================
     console.log('🔍 [API] Vérification des variables d\'env:');
     console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ défini' : '❌ MANQUANT');
     console.log('  SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ défini' : '❌ MANQUANT');
@@ -39,9 +33,6 @@ export default async (req, res) => {
       });
     }
 
-    // ============================================================
-    // 3️⃣ INITIALISER CLIENT SUPABASE (Service Role)
-    // ============================================================
     console.log('🔗 [API] Initialisation du client Supabase...');
     
     const supabaseAdmin = createClient(
@@ -57,9 +48,6 @@ export default async (req, res) => {
 
     console.log('✅ [API] Client Supabase initialisé');
 
-    // ============================================================
-    // 4️⃣ RÉCUPÉRER ET VALIDER LES DONNÉES
-    // ============================================================
     const { email, password, full_name, role } = req.body;
 
     console.log('📝 [API] Données reçues:', {
@@ -69,20 +57,15 @@ export default async (req, res) => {
       password: password ? '***' : '❌ manquant'
     });
 
-    // Validation basique
     if (!email || !password || !full_name) {
       console.warn('⚠️  [API] Données manquantes');
       return res.status(400).json({
         error: 'Bad request',
         message: 'Missing required fields',
-        required: ['email', 'password', 'full_name'],
-        received: { email, full_name, password: '***' }
+        required: ['email', 'password', 'full_name']
       });
     }
 
-    // ============================================================
-    // 5️⃣ CRÉER L'UTILISATEUR (Supabase Auth)
-    // ============================================================
     console.log(`🔐 [API] Création de l'utilisateur auth: ${email}`);
     
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -103,9 +86,6 @@ export default async (req, res) => {
     const userId = authData.user.id;
     console.log('✅ [API] Utilisateur auth créé:', userId);
 
-    // ============================================================
-    // 6️⃣ CRÉER LE PROFIL (Table profiles)
-    // ============================================================
     console.log(`📦 [API] Création du profil pour ${userId}`);
 
     const profileData = {
@@ -135,23 +115,18 @@ export default async (req, res) => {
     if (profileError) {
       console.error('❌ [API] Erreur création profil:', profileError.message);
       
-      // Nettoyer: supprimer l'utilisateur auth créé
       console.log('🧹 [API] Nettoyage: suppression de l\'utilisateur auth');
       await supabaseAdmin.auth.admin.deleteUser(userId);
       
       return res.status(400).json({
         error: 'Profile creation failed',
         message: profileError.message,
-        code: profileError.code,
-        details: 'User auth was created but profile creation failed. User has been cleaned up.'
+        code: profileError.code
       });
     }
 
     console.log('✅ [API] Profil créé:', profile[0]?.id);
 
-    // ============================================================
-    // 7️⃣ MARQUER LE PROFIL COMME VALIDÉ
-    // ============================================================
     console.log(`✔️  [API] Marquage du profil comme validé`);
 
     const { data: validated, error: validateError } = await supabaseAdmin
@@ -162,14 +137,10 @@ export default async (req, res) => {
 
     if (validateError) {
       console.warn('⚠️  [API] Avertissement lors de la validation:', validateError.message);
-      // On continue quand même, c'est pas critique
     } else {
       console.log('✅ [API] Profil marqué comme validé');
     }
 
-    // ============================================================
-    // 8️⃣ RÉPONDRE AU CLIENT
-    // ============================================================
     console.log('✅ [API] Succès! Utilisateur créé:', userId);
     
     return res.status(201).json({
