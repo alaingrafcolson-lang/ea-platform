@@ -1,7 +1,15 @@
 {
+  "buildCommand": "npm install",
+  "env": [
+    "SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY"
+  ],
   "functions": {
-    "api/*.js": {
-      "maxDuration": 10
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "runtime": "nodejs18.x"
     }
   }
 }
