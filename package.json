@@ -1,7 +1,16 @@
 {
-  "name": "si-governance",
+  "name": "ea-platform-omega",
   "version": "1.0.0",
+  "description": "SI Governance Enterprise Platform",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "npm install"
+  },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
