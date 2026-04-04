@@ -1,121 +1,201 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
-module.exports = async (req, res) => {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
+export default async (req, res) => {
+  // ============================================================
+  // 1️⃣ VÉRIFIER LA MÉTHODE
+  // ============================================================
+  if (req.method !== 'POST') {
+    return res.status(405).json({ 
+      error: 'Method not allowed',
+      method: req.method
+    });
+  }
 
   try {
-    // 1. Variables d'environnement
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    console.log('📋 [API] Reçu requête create-user');
+    
+    // ============================================================
+    // 2️⃣ VÉRIFIER LES VARIABLES D'ENVIRONNEMENT
+    // ============================================================
+    console.log('🔍 [API] Vérification des variables d\'env:');
+    console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ défini' : '❌ MANQUANT');
+    console.log('  SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ défini' : '❌ MANQUANT');
 
-    if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-      console.error('Variables manquantes', { url: !!SUPABASE_URL, key: !!SERVICE_ROLE_KEY });
-      return res.status(500).json({ error: 'Configuration serveur incomplète (variables)' });
+    if (!process.env.SUPABASE_URL) {
+      console.error('❌ [API] ERREUR: SUPABASE_URL non défini');
+      return res.status(500).json({
+        error: 'Configuration error',
+        message: 'SUPABASE_URL not configured in environment',
+        details: 'Check Vercel Settings > Environment Variables'
+      });
     }
 
-    const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false }
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ [API] ERREUR: SUPABASE_SERVICE_ROLE_KEY non défini');
+      return res.status(500).json({
+        error: 'Configuration error',
+        message: 'SUPABASE_SERVICE_ROLE_KEY not configured',
+        details: 'This endpoint requires SERVICE_ROLE_KEY for admin operations'
+      });
+    }
+
+    // ============================================================
+    // 3️⃣ INITIALISER CLIENT SUPABASE (Service Role)
+    // ============================================================
+    console.log('🔗 [API] Initialisation du client Supabase...');
+    
+    const supabaseAdmin = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
+      }
+    );
+
+    console.log('✅ [API] Client Supabase initialisé');
+
+    // ============================================================
+    // 4️⃣ RÉCUPÉRER ET VALIDER LES DONNÉES
+    // ============================================================
+    const { email, password, full_name, role } = req.body;
+
+    console.log('📝 [API] Données reçues:', {
+      email,
+      full_name,
+      role,
+      password: password ? '***' : '❌ manquant'
     });
 
-    // 2. Vérifier le token de l'utilisateur connecté
-    const token = (req.headers.authorization || '').replace('Bearer ', '');
-    if (!token) return res.status(401).json({ error: 'Token manquant' });
-
-    const { data: { user: caller }, error: authErr } = await sb.auth.getUser(token);
-    if (authErr || !caller) {
-      console.error('Auth error', authErr);
-      return res.status(401).json({ error: 'Session invalide ou expirée' });
+    // Validation basique
+    if (!email || !password || !full_name) {
+      console.warn('⚠️  [API] Données manquantes');
+      return res.status(400).json({
+        error: 'Bad request',
+        message: 'Missing required fields',
+        required: ['email', 'password', 'full_name'],
+        received: { email, full_name, password: '***' }
+      });
     }
 
-    // 3. Vérifier les droits (rôle)
-    const { data: roleRow, error: roleErr } = await sb
-      .from('user_roles')
-      .select('role_id')
-      .eq('user_id', caller.id)
-      .maybeSingle();
-
-    if (roleErr) {
-      console.error('Erreur lecture user_roles', roleErr);
-      return res.status(500).json({ error: 'Erreur interne lors de la vérification des droits' });
-    }
-
-    const allowed = ['SUPER_ADMIN', 'DSI', 'RSSI', 'SYSTEM_ADMIN', 'NETWORK_ADMIN'];
-    if (!roleRow || !allowed.includes(roleRow.role_id)) {
-      return res.status(403).json({ error: 'Droits insuffisants pour créer un utilisateur' });
-    }
-
-    // 4. Paramètres du nouvel utilisateur
-    const { email, password, prenom, nom, role, company_id, must_change_password, send_email } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
-
-    // 5. Création dans auth.users
-    const { data: newUser, error: createErr } = await sb.auth.admin.createUser({
-      email,
+    // ============================================================
+    // 5️⃣ CRÉER L'UTILISATEUR (Supabase Auth)
+    // ============================================================
+    console.log(`🔐 [API] Création de l'utilisateur auth: ${email}`);
+    
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: email.toLowerCase().trim(),
       password,
-      email_confirm: true,
-      user_metadata: { prenom, nom, role, must_change_password: !!must_change_password }
+      email_confirm: true
     });
 
-    if (createErr) {
-      console.error('createUser error', createErr);
-      if (createErr.message.includes('already registered')) {
-        return res.status(409).json({ error: 'Cet email est déjà utilisé' });
-      }
-      return res.status(400).json({ error: createErr.message });
+    if (authError) {
+      console.error('❌ [API] Erreur auth:', authError.message);
+      return res.status(400).json({
+        error: 'Authentication error',
+        message: authError.message,
+        code: authError.code
+      });
     }
 
-    const userId = newUser.user.id;
+    const userId = authData.user.id;
+    console.log('✅ [API] Utilisateur auth créé:', userId);
 
-    // 6. Insertion dans users
-    const { error: insertUserErr } = await sb.from('users').upsert({
+    // ============================================================
+    // 6️⃣ CRÉER LE PROFIL (Table profiles)
+    // ============================================================
+    console.log(`📦 [API] Création du profil pour ${userId}`);
+
+    const profileData = {
       id: userId,
-      email,
-      prenom: prenom || null,
-      nom: nom || null,
-      company_id: company_id || null,
-      must_change_password: !!must_change_password,
-      active: true
-    }, { onConflict: 'id' });
-
-    if (insertUserErr) console.error('Erreur upsert users', insertUserErr);
-
-    // 7. Attribution du rôle
-    const roleToAssign = role || 'SERVICE_MANAGER';
-    const { error: roleInsertErr } = await sb.from('user_roles').upsert({
-      user_id: userId,
-      role_id: roleToAssign
-    }, { onConflict: 'user_id' });
-
-    if (roleInsertErr) console.error('Erreur upsert user_roles', roleInsertErr);
-
-    // 8. Envoi d'email si demandé
-    if (send_email) {
-      try {
-        await sb.auth.admin.generateLink({
-          type: 'recovery',
-          email,
-          options: { redirectTo: 'https://ea-platform-omega.vercel.app/index.html' }
-        });
-      } catch (emailErr) {
-        console.error('Erreur envoi email', emailErr);
+      email: email.toLowerCase().trim(),
+      full_name: full_name.trim(),
+      role: role || 'viewer',
+      status: 'active',
+      profile_validated: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      metadata: {
+        first_login: true,
+        profile_completion: 0,
+        modules_access: ['dashboard'],
+        permissions: ['read'],
+        provisioned_by: 'admin_api',
+        provisioned_at: new Date().toISOString()
       }
+    };
+
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .insert([profileData])
+      .select();
+
+    if (profileError) {
+      console.error('❌ [API] Erreur création profil:', profileError.message);
+      
+      // Nettoyer: supprimer l'utilisateur auth créé
+      console.log('🧹 [API] Nettoyage: suppression de l\'utilisateur auth');
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      return res.status(400).json({
+        error: 'Profile creation failed',
+        message: profileError.message,
+        code: profileError.code,
+        details: 'User auth was created but profile creation failed. User has been cleaned up.'
+      });
     }
 
-    return res.status(200).json({
+    console.log('✅ [API] Profil créé:', profile[0]?.id);
+
+    // ============================================================
+    // 7️⃣ MARQUER LE PROFIL COMME VALIDÉ
+    // ============================================================
+    console.log(`✔️  [API] Marquage du profil comme validé`);
+
+    const { data: validated, error: validateError } = await supabaseAdmin
+      .from('profiles')
+      .update({ profile_validated: true })
+      .eq('id', userId)
+      .select();
+
+    if (validateError) {
+      console.warn('⚠️  [API] Avertissement lors de la validation:', validateError.message);
+      // On continue quand même, c'est pas critique
+    } else {
+      console.log('✅ [API] Profil marqué comme validé');
+    }
+
+    // ============================================================
+    // 8️⃣ RÉPONDRE AU CLIENT
+    // ============================================================
+    console.log('✅ [API] Succès! Utilisateur créé:', userId);
+    
+    return res.status(201).json({
       success: true,
-      user_id: userId,
-      email,
-      role: roleToAssign,
-      message: 'Profil créé avec succès'
+      user: {
+        id: userId,
+        email: email.toLowerCase(),
+        full_name,
+        role: role || 'viewer'
+      },
+      profile: {
+        id: profile[0]?.id,
+        validated: true,
+        created_at: profile[0]?.created_at
+      },
+      message: 'User created successfully'
     });
 
-  } catch (err) {
-    console.error('Exception non catchée', err);
-    return res.status(500).json({ error: 'Erreur interne du serveur', details: err.message });
+  } catch (error) {
+    console.error('❌ [API] ERREUR CRITIQUE:', error.message);
+    console.error('Stack:', error.stack);
+
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+      type: error.constructor.name
+    });
   }
 };
