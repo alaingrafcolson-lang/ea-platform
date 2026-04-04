@@ -510,5 +510,36 @@ function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>
     }
 })();
 </script>
+    <!-- Tout au bas de admin.html, juste avant </body> -->
+<script>
+  // Test des variables d'environnement
+  async function testEnvironmentVariables() {
+    console.log('\n🔍 TEST DES VARIABLES\n');
+    
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const anonKey = process.env.SUPABASE_ANON_KEY;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    console.log('SUPABASE_URL:', supabaseUrl || '❌ UNDEFINED');
+    console.log('SUPABASE_ANON_KEY:', anonKey ? '✅ Définie' : '❌ UNDEFINED');
+    console.log('SUPABASE_SERVICE_ROLE_KEY:', serviceKey ? '✅ Définie' : '❌ UNDEFINED');
+
+    // Test connexion
+    if (supabaseUrl && anonKey) {
+      try {
+        const response = await fetch(supabaseUrl + '/rest/v1/', {
+          headers: { 'apikey': anonKey }
+        });
+        console.log('Connexion Supabase:', response.ok ? '✅ OK' : '❌ ERREUR ' + response.status);
+      } catch (e) {
+        console.error('Connexion échouée:', e.message);
+      }
+    }
+  }
+
+  // Exécuter le test
+  testEnvironmentVariables();
+</script>
+</body>
 </body>
 </html>
