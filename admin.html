@@ -13,7 +13,7 @@
         .topbar-left { display:flex; align-items:center; gap:15px; }
         #uAvatar { width:35px; height:35px; border-radius:10px; background:#1A6CF5; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; }
         .topbar-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-        .btn { padding:10px 20px; border-radius:10px; border:none; cursor:pointer; font-weight:600; background:#1A6CF5; color:#fff; font-family:inherit; font-size:14px; transition:opacity 0.2s; }
+        .btn { padding:10px 20px; border-radius:10px; border:none; cursor:pointer; font-weight:600; background:#1A6CF5; color:#fff; font-family:inherit; font-size:16px; transition:opacity 0.2s; }
         .btn:hover { opacity:0.85; }
         .btn-ghost { background:none; color:#0B1829; }
         .btn-ghost:hover { background:rgba(0,0,0,0.05); }
@@ -75,7 +75,11 @@
     </style>
 </head>
 <body>
-
+// Copie/colle ce bloc dans admin.html
+console.log('🔍 Test variables d\'environnement:');
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
+console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY?.substring(0, 30) + '...');
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 30) + '...');
 <div id="guard">
     <div style="font-size:48px">🔒</div>
     <div style="font-family:'Syne';font-size:22px;font-weight:800;">Vérification en cours…</div>
