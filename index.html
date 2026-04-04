@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SI Governance — Connexion</title>
+    <title>SI Governance Enterprise — Connexion</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -43,7 +43,7 @@
             margin-bottom: 32px;
         }
         .brand-icon {
-            width: 56px; height: 56px; border-radius: 16px;
+            width: 60px; height: 60px; border-radius: 16px;
             background: linear-gradient(135deg, #1A6CF5, #0ea5e9);
             display: flex; align-items: center; justify-content: center;
             font-size: 26px; margin: 0 auto 14px;
@@ -55,7 +55,7 @@
             color: #fff; letter-spacing: -.02em;
         }
         .brand-sub {
-            font-size: 13px; color: #64748b; margin-top: 4px;
+            font-size: 14px; color: #64748b; margin-top: 4px;
         }
 
         /* ── CARD ── */
@@ -220,7 +220,7 @@
         <!-- ════ PANEL : CONNEXION ════ -->
         <div id="loginPanel">
             <div class="card-title">Connexion</div>
-            <div class="card-sub">Accédez à votre espace de gestion</div>
+            <div class="card-sub">Accédez à votre espace de gestion SI Governance</div>
 
             <div class="form-group">
                 <label>Adresse email</label>
@@ -235,7 +235,7 @@
                 <label>Mot de passe</label>
                 <div class="input-wrap">
                     <span class="icon">🔐</span>
-                    <input type="password" id="password" placeholder="••••••••"
+                    <input type="password" id="password" placeholder="********"
                         onkeydown="if(event.key==='Enter')login()">
                     <button class="pwd-toggle" type="button" onclick="togglePwd()" id="pwdToggle" title="Afficher/masquer">👁</button>
                 </div>
