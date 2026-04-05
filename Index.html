@@ -416,17 +416,15 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let supabase;
 
 // Attendre que le script Supabase se charge
-// ✅ Initialization on window load
-   window.addEventListener('load', () => {
-     if (window.supabase && window.supabase.createClient) {
-       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-       console.log('✅ Supabase initialisé');
-     }
-   });
-  if (!supabase) {
-     showMessage('❌ Système non initialisé. Rechargez la page.', 'error');
-     return;
-   }
+window.addEventListener('load', () => {
+  if (window.supabase && window.supabase.createClient) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('✅ Supabase initialisé');
+  } else {
+    console.error('❌ Supabase non disponible');
+    showMessage('❌ Erreur d\'initialisation. Rechargez la page.', 'error');
+  }
+});
 
 // ════════════════════════════════════════════════════════════════
 // THEME MANAGEMENT
