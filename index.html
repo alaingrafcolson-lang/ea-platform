@@ -420,37 +420,7 @@ async function logConnectionAttempt(email, statut, motif = null) {
   }
 }
 </script>
-{
-    // Redirection
-    setTimeout(() => {
-      if (profile.password_change_required) {
-        window.location.href = 'change-password.html';
-      } else {
-        window.location.href = 'dashboard.html';
-      }
-    }, 1000);
-
-  } catch (error) {
-    console.error('Erreur:', error);
-    showMessage('❌ Erreur serveur', 'error');
-    loginBtn.disabled = false;
-    loginBtn.textContent = 'Connexion';
-  }
-});
-
-async function logConnectionAttempt(email, statut, motif = null) {
-  try {
-    if (!supabaseClient) return;
-    
-    await supabaseClient.from('logs_connexion').insert([{
-      email: email,
-      statut: statut,
-      motif_echec: motif,
-      user_agent: navigator.userAgent,
-      timestamp: new Date().toISOString()
-    }]);
-  } catch (error) {
-    console.error('Erreur logging:', error);
+ 
   }
 }
 </script>
