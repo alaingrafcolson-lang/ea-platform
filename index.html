@@ -328,35 +328,36 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   loginBtn.textContent = '⏳ Connexion...';
 
   try {
-    // Récupérer le profil
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('users_professionnels')
-      .select('id, email, nom, prenom, role, statut, password_change_required')
-      .eq('email', email)
-      .eq('statut', 'actif')
-      .single();
+    // 🔐 1. AUTH D'ABORD
+const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+  email: email,
+  password: password
+});
 
-    if (profileError || !profile) {
-      showMessage('❌ Email ou mot de passe incorrect', 'error');
-      await logConnectionAttempt(email, 'echec', 'Email non trouvé ou profil inactif');
-      loginBtn.disabled = false;
-      loginBtn.textContent = 'Connexion';
-      return;
-    }
+if (authError) {
+  showMessage('❌ Email ou mot de passe incorrect', 'error');
+  await logConnectionAttempt(email, 'echec', authError.message);
+  loginBtn.disabled = false;
+  loginBtn.textContent = 'Connexion';
+  return;
+}
 
-    // Auth Supabase
-    const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
+// 👤 2. RÉCUPÉRER PROFIL
+const userId = authData.user.id;
 
-    if (authError) {
-      showMessage('❌ Email ou mot de passe incorrect', 'error');
-      await logConnectionAttempt(email, 'echec', authError.message);
-      loginBtn.disabled = false;
-      loginBtn.textContent = 'Connexion';
-      return;
-    }
+const { data: profile, error: profileError } = await supabaseClient
+  .from('users_professionnels')
+  .select('id, email, nom, prenom, role, status, password_change_required')
+  .eq('auth_user_id', userId)
+  .eq('status', 'actif')
+  .single();
+
+if (profileError || !profile) {
+  showMessage('❌ Profil introuvable', 'error');
+  loginBtn.disabled = false;
+  loginBtn.textContent = 'Connexion';
+  return;
+}
 
     // Succès
     await logConnectionAttempt(email, 'succes');
