@@ -263,20 +263,16 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
+
 <script>
 const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrYXltZGJ5ZmJtZml1dHdianR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzUxMTYsImV4cCI6MjA4OTg1MTExNn0.uwysDdwNR8Mp8OIW10OIy_11JE9myCUw2VSSoDnov5E';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrYXltZGJ5ZmJtZml1dHdianR4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDI3NTExNiwiZXhwIjoyMDg5ODUxMTE2fQ.kRr1GiSwJdzugS4fFYPcf3BNYRKZbHUvv73I8a2FB8w';
 
-let supabaseClient;
+// ✅ INITIALISATION DIRECTE (corrigé)
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-window.addEventListener('DOMContentLoaded', () => {
-  if (window.supabase && window.supabase.createClient) {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('✅ Supabase initialisé');
-    initTheme();
-  }
-});
-
+// ---------------- THEME ----------------
 function initTheme() {
   const theme = localStorage.getItem('theme') || 'dark';
   document.documentElement.setAttribute('data-theme', theme);
@@ -294,6 +290,8 @@ function toggleTheme() {
 function updateThemeIcon(theme) {
   const icon = document.getElementById('theme-icon');
   const label = document.getElementById('theme-label');
+  if (!icon || !label) return;
+
   if (theme === 'dark') {
     icon.textContent = '🌙';
     label.textContent = 'Clair';
@@ -303,77 +301,125 @@ function updateThemeIcon(theme) {
   }
 }
 
+// ---------------- MESSAGE ----------------
 function showMessage(text, type = 'info') {
   const msg = document.getElementById('message');
+  if (!msg) return;
+
   msg.textContent = text;
   msg.className = `message show ${type}`;
+
   if (type !== 'error') {
     setTimeout(() => msg.classList.remove('show'), 5000);
   }
 }
 
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
+// ---------------- LOGIN ----------------
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
 
-  const email = document.getElementById('email').value.trim().toLowerCase();
-  const password = document.getElementById('password').value;
-  const loginBtn = document.getElementById('login-btn');
+  const form = document.getElementById('login-form');
+  if (!form) return;
 
-  if (!email || !password) {
-    showMessage('❌ Email et mot de passe obligatoires', 'error');
-    return;
-  }
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-  loginBtn.disabled = true;
-  loginBtn.textContent = '⏳ Connexion...';
+    const email = document.getElementById('email').value.trim().toLowerCase();
+    const password = document.getElementById('password').value;
+    const loginBtn = document.getElementById('login-btn');
 
-  try {
-    // 🔐 1. AUTH D'ABORD
-const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-  email: email,
-  password: password
+    if (!email || !password) {
+      showMessage('❌ Email et mot de passe obligatoires', 'error');
+      return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = '⏳ Connexion...';
+
+    try {
+      console.log('Client:', supabaseClient);
+
+      // 🔐 1. AUTH D'ABORD (corrigé)
+      const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (authError) {
+        showMessage('❌ Email ou mot de passe incorrect', 'error');
+        await logConnectionAttempt(email, 'echec', authError.message);
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Connexion';
+        return;
+      }
+
+      const userId = authData.user.id;
+
+      // 👤 2. PROFIL (corrigé auth_user_id + status)
+      const { data: profile, error: profileError } = await supabaseClient
+        .from('users_professionnels')
+        .select('id, email, nom, prenom, role, status, password_change_required')
+        .eq('auth_user_id', userId)
+        .eq('status', 'actif')
+        .single();
+
+      console.log('Profil:', profile);
+      console.log('Erreur profil:', profileError);
+
+      if (profileError || !profile) {
+        showMessage('❌ Profil introuvable', 'error');
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Connexion';
+        return;
+      }
+
+      // ✅ SUCCESS
+      await logConnectionAttempt(email, 'succes');
+
+      localStorage.setItem('user_session', JSON.stringify({
+        id: profile.id,
+        email: profile.email,
+        nom: profile.nom,
+        prenom: profile.prenom,
+        role: profile.role,
+        password_change_required: profile.password_change_required,
+        logged_in_at: new Date().toISOString()
+      }));
+
+      showMessage('✅ Connexion réussie!', 'success');
+
+      setTimeout(() => {
+        if (profile.password_change_required) {
+          window.location.href = 'change-password.html';
+        } else {
+          window.location.href = 'dashboard.html';
+        }
+      }, 1000);
+
+    } catch (error) {
+      console.error('Erreur:', error);
+      showMessage('❌ Erreur serveur', 'error');
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Connexion';
+    }
+  });
 });
 
-if (authError) {
-  showMessage('❌ Email ou mot de passe incorrect', 'error');
-  await logConnectionAttempt(email, 'echec', authError.message);
-  loginBtn.disabled = false;
-  loginBtn.textContent = 'Connexion';
-  return;
+// ---------------- LOG ----------------
+async function logConnectionAttempt(email, statut, motif = null) {
+  try {
+    await supabaseClient.from('logs_connexion').insert([{
+      email: email,
+      statut: statut,
+      motif_echec: motif,
+      user_agent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    }]);
+  } catch (error) {
+    console.error('Erreur logging:', error);
+  }
 }
-
-// 👤 2. RÉCUPÉRER PROFIL
-const userId = authData.user.id;
-
-const { data: profile, error: profileError } = await supabaseClient
-  .from('users_professionnels')
-  .select('id, email, nom, prenom, role, status, password_change_required')
-  .eq('auth_user_id', userId)
-  .eq('status', 'actif')
-  .single();
-
-if (profileError || !profile) {
-  showMessage('❌ Profil introuvable', 'error');
-  loginBtn.disabled = false;
-  loginBtn.textContent = 'Connexion';
-  return;
-}
-
-    // Succès
-    await logConnectionAttempt(email, 'succes');
-
-    // Enregistrer session
-    localStorage.setItem('user_session', JSON.stringify({
-      id: profile.id,
-      email: profile.email,
-      nom: profile.nom,
-      prenom: profile.prenom,
-      role: profile.role,
-      password_change_required: profile.password_change_required,
-      logged_in_at: new Date().toISOString()
-    }));
-
-    showMessage('✅ Connexion réussie!', 'success');
+</script>
 
     // Redirection
     setTimeout(() => {
