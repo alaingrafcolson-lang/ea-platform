@@ -1,34 +1,266 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <title>Connexion</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Supabase -->
-  <script src="https://unpkg.com/@supabase/supabase-js"></script>
-
+  <title>SI Governance Enterprise — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
-    body { font-family: Arial; background:#0f172a; color:white; display:flex; align-items:center; justify-content:center; height:100vh; }
-    .box { background:#1e293b; padding:30px; border-radius:10px; width:300px; }
-    input, button { width:100%; padding:10px; margin:10px 0; border:none; border-radius:5px; }
-    button { background:#3b82f6; color:white; cursor:pointer; }
-    .message { margin-top:10px; }
+    :root {
+      --bg-base:    #080b12;
+      --bg-surface: #0f1422;
+      --bg-panel:   #141929;
+      --bg-raised:  #1c2238;
+      --border-mid: rgba(255,255,255,0.09);
+      --text-pri:   #e2e6f3;
+      --text-sec:   #7a84a0;
+      --text-ter:   #424d6a;
+      --portfolio:  #4b8cf5;
+      --ok:         #22c55e;
+      --risk:       #ef4444;
+      --shadow-md:  0 4px 20px rgba(0,0,0,0.45);
+    }
+    [data-theme="light"] {
+      --bg-base:    #f0f2f8;
+      --bg-surface: #ffffff;
+      --bg-raised:  #eef0f8;
+      --border-mid: rgba(0,0,0,0.10);
+      --text-pri:   #111827;
+      --text-sec:   #4b5563;
+      --text-ter:   #9ca3af;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 13px; }
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-pri);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 480px;
+    }
+    .login-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-mid);
+      border-radius: 16px;
+      padding: 48px 40px;
+      box-shadow: var(--shadow-md);
+      animation: slideUp 0.4s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .login-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .logo-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--portfolio);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .login-subtitle {
+      font-size: 10px;
+      color: var(--text-ter);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+    .login-description {
+      font-size: 12px;
+      color: var(--text-sec);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+    .message {
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .message.show { display: block; }
+    .message.success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      color: var(--ok);
+    }
+    .message.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: var(--risk);
+    }
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-ter);
+    }
+    .form-group input {
+      background: var(--bg-raised);
+      border: 1px solid var(--border-mid);
+      border-radius: 8px;
+      color: var(--text-pri);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+      transition: all 0.15s;
+    }
+    .form-group input:focus {
+      border-color: var(--portfolio);
+      box-shadow: 0 0 0 3px rgba(75, 140, 245, 0.1);
+    }
+    .form-group input::placeholder {
+      color: var(--text-ter);
+    }
+    button {
+      padding: 11px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+      outline: none;
+    }
+    .btn-primary {
+      background: var(--portfolio);
+      color: white;
+      width: 100%;
+    }
+    .btn-primary:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-mid);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-sec);
+      transition: all 0.15s;
+    }
+    .theme-toggle:hover {
+      background: var(--bg-raised);
+      color: var(--text-pri);
+    }
+    .login-footer {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-mid);
+      font-size: 10px;
+      color: var(--text-ter);
+      text-align: center;
+      line-height: 1.6;
+    }
+    @media (max-width: 480px) {
+      .login-box { padding: 32px 24px; }
+      .login-header { margin-bottom: 24px; }
+    }
   </style>
 </head>
-
 <body>
 
-<div class="box">
-  <h2>Connexion</h2>
+<button class="theme-toggle" onclick="toggleTheme()" title="Basculer le thème">
+  <span id="theme-icon">🌙</span>
+  <span id="theme-label">Clair</span>
+</button>
 
-  <form id="login-form">
-    <input type="email" id="email" placeholder="Email" required>
-    <input type="password" id="password" placeholder="Mot de passe" required>
-    <button id="login-btn">Connexion</button>
-  </form>
+<div class="login-container">
+  <div class="login-box">
+    <div class="login-header">
+      <div class="login-logo">
+        <div class="logo-dot">🏛️</div>
+        SI Governance
+      </div>
+      <div class="login-subtitle">Enterprise Edition</div>
+      <div class="login-description">Plateforme de gouvernance IT · COMEX/CODIR/COMCYBER</div>
+    </div>
 
-  <div id="message" class="message"></div>
+    <div id="message" class="message"></div>
+
+    <form class="login-form" id="login-form">
+      <div class="form-group">
+        <label for="email">Email professionnel</label>
+        <input
+          type="email"
+          id="email"
+          placeholder="prenom.nom@entreprise.fr"
+          required
+          autocomplete="email"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input
+          type="password"
+          id="password"
+          placeholder="••••••••"
+          required
+          autocomplete="current-password"
+        >
+      </div>
+
+      <button type="submit" class="btn-primary" id="login-btn">
+        Connexion
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <div>🔒 Connexion sécurisée | Supabase Auth</div>
+      <div style="margin-top: 8px;">Accès réservé aux utilisateurs autorisés</div>
+    </div>
+  </div>
 </div>
 
 <script>
