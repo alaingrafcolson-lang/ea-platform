@@ -1,164 +1,99 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SI Governance Enterprise — Login</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
-  <!-- CSS STRICTEMENT IDENTIQUE -->
+  <meta charset="UTF-8" />
+  <title>Connexion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    :root {
-      --bg-base:#080b12;--bg-surface:#0f1422;--bg-panel:#141929;--bg-raised:#1c2238;
-      --border-mid:rgba(255,255,255,0.09);
-      --text-pri:#e2e6f3;--text-sec:#7a84a0;--text-ter:#424d6a;
-      --portfolio:#4b8cf5;--ok:#22c55e;--risk:#ef4444;
-      --shadow-md:0 4px 20px rgba(0,0,0,0.45);
-    }
-    [data-theme="light"] {
-      --bg-base:#f0f2f8;--bg-surface:#ffffff;--bg-raised:#eef0f8;
-      --border-mid:rgba(0,0,0,0.10);
-      --text-pri:#111827;--text-sec:#4b5563;--text-ter:#9ca3af;
-    }
-    * { box-sizing:border-box;margin:0;padding:0 }
-    html { font-size:13px }
     body {
-      font-family:'Instrument Sans',sans-serif;
-      background:var(--bg-base);
-      color:var(--text-pri);
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:20px;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
-    .login-container { width:100%;max-width:480px }
     .login-box {
-      background:var(--bg-surface);
-      border:1px solid var(--border-mid);
-      border-radius:16px;
-      padding:48px 40px;
-      box-shadow:var(--shadow-md);
-      animation:slideUp .4s ease;
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 10px;
+      width: 300px;
+      text-align: center;
     }
-    @keyframes slideUp {
-      from {opacity:0;transform:translateY(20px)}
-      to {opacity:1;transform:translateY(0)}
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: none;
     }
-    .login-header{text-align:center;margin-bottom:32px}
-    .login-logo{font-family:'Syne';font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px}
-    .logo-dot{width:28px;height:28px;border-radius:6px;background:var(--portfolio);display:flex;align-items:center;justify-content:center}
-    .login-subtitle{font-size:10px;color:var(--text-ter);text-transform:uppercase}
-    .login-description{font-size:12px;color:var(--text-sec);margin-top:8px}
-    .message{display:none;padding:10px;border-radius:8px;margin-bottom:16px}
-    .message.show{display:block}
-    .message.success{background:rgba(34,197,94,.1);color:var(--ok)}
-    .message.error{background:rgba(239,68,68,.1);color:var(--risk)}
-    .login-form{display:flex;flex-direction:column;gap:14px}
-    .form-group{display:flex;flex-direction:column;gap:6px}
-    input{background:var(--bg-raised);border:1px solid var(--border-mid);border-radius:8px;color:var(--text-pri);padding:10px}
-    button{background:var(--portfolio);color:white;border:none;border-radius:8px;padding:11px;cursor:pointer}
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #3b82f6;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
   </style>
 </head>
-
 <body>
-
-<div class="login-container">
   <div class="login-box">
-    <div class="login-header">
-      <div class="login-logo"><div class="logo-dot">🏛️</div>SI Governance</div>
-      <div class="login-subtitle">Enterprise Edition</div>
-      <div class="login-description">Plateforme de gouvernance IT</div>
-    </div>
-
-    <div id="message" class="message"></div>
-
-    <form class="login-form" id="login-form">
-      <div class="form-group">
-        <input type="email" id="email" placeholder="Email" required>
-      </div>
-      <div class="form-group">
-        <input type="password" id="password" placeholder="Mot de passe" required>
-      </div>
-      <button type="submit" id="login-btn">Connexion</button>
-    </form>
-
+    <h2>Connexion</h2>
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Mot de passe" />
+    <button onclick="login()">Se connecter</button>
+    <div id="message" class="error"></div>
   </div>
-</div>
 
-<script>
-const SUPABASE_URL = 'https://rkaymdbyfbmfiutwbjtx.supabase.co'; // ✅ corrigé
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrYXltZGJ5ZmJtZml1dHdianR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzUxMTYsImV4cCI6MjA4OTg1MTExNn0.uwysDdwNR8Mp8OIW10OIy_11JE9myCUw2VSSoDnov5E'; // ⚠️ mets la bonne clé
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-let supabaseClient;
+    // ⚠️ Remplace ces valeurs par celles de ton projet Supabase
+    const supabaseUrl     = "https://rkaymdbyfbmfiutwbjtx.supabase.co";
+    const supabaseAnonKey = "sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH";
 
-window.addEventListener('DOMContentLoaded', () => {
-  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-});
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// MESSAGE
-function showMessage(text, type='info'){
-  const msg=document.getElementById('message');
-  msg.textContent=text;
-  msg.className=`message show ${type}`;
-}
+    window.login = async function () {
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const message  = document.getElementById('message');
 
-// LOGIN
-document.getElementById('login-form').addEventListener('submit', async (e)=>{
-  e.preventDefault();
+      message.textContent = "";
 
-  const email=document.getElementById('email').value.trim().toLowerCase();
-  const password=document.getElementById('password').value;
-  const loginBtn=document.getElementById('login-btn');
+      if (!email || !password) {
+        message.textContent = "Email et mot de passe obligatoires.";
+        return;
+      }
 
-  loginBtn.disabled=true;
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  try{
+        if (error) {
+          console.error("Auth error:", error);
+          message.textContent = error.message;
+          return;
+        }
 
-    // 🔐 AUTH D'ABORD
-    const {data:authData,error:authError}=await supabaseClient.auth.signInWithPassword({
-      email,password
-    });
+        console.log("Connecté :", data);
+        window.location.href = "/dashboard.html";
 
-    if(authError){
-      showMessage('❌ Email ou mot de passe incorrect','error');
-      loginBtn.disabled=false;
-      return;
-    }
-
-    const userId=authData.user.id;
-
-    // 👤 PROFIL
-    const {data:profile,error:profileError}=await supabaseClient
-      .from('users_professionnels')
-      .select('*')
-      .eq('auth_user_id',userId)
-      .eq('status','actif')
-      .single();
-
-    if(profileError||!profile){
-      showMessage('❌ Profil introuvable','error');
-      loginBtn.disabled=false;
-      return;
-    }
-
-    localStorage.setItem('user_session',JSON.stringify(profile));
-
-    showMessage('✅ Connexion réussie','success');
-
-    setTimeout(()=>{
-      window.location.href='dashboard.html';
-    },1000);
-
-  }catch(err){
-    console.error(err);
-    showMessage('❌ Erreur serveur','error');
-  }
-
-  loginBtn.disabled=false;
-});
-</script>
-
+      } catch (err) {
+        console.error(err);
+        message.textContent = "Erreur lors de la connexion.";
+      }
+    };
+  </script>
 </body>
 </html>
