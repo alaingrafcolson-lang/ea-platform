@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Connexion</title>
+  <title>SI Governance — Connexion</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
@@ -13,86 +13,104 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
     .login-box {
       background: #1e293b;
-      padding: 30px;
+      padding: 36px 30px;
       border-radius: 10px;
-      width: 300px;
+      width: 320px;
       text-align: center;
     }
+    h2 { margin-bottom: 20px; font-size: 22px; }
     input {
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: none;
+      padding: 10px 12px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: white;
+      font-size: 14px;
+      box-sizing: border-box;
     }
+    input:focus { outline: none; border-color: #3b82f6; }
     button {
       width: 100%;
-      padding: 10px;
+      padding: 11px;
       background: #3b82f6;
       border: none;
       color: white;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
-      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 12px;
+      transition: background 0.2s;
     }
-    button:hover {
-      background: #2563eb;
+    button:hover:not(:disabled) { background: #2563eb; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .message {
+      margin-top: 14px;
+      font-size: 13px;
+      min-height: 20px;
+      padding: 8px;
+      border-radius: 6px;
+      display: none;
     }
-    .error {
-      color: red;
-      margin-top: 10px;
-    }
+    .message.show { display: block; }
+    .message.error   { background: rgba(239,68,68,0.1);  color: #f87171; }
+    .message.success { background: rgba(34,197,94,0.1);  color: #4ade80; }
   </style>
 </head>
 <body>
   <div class="login-box">
-    <h2>Connexion</h2>
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Mot de passe" />
-    <button onclick="login()">Se connecter</button>
-    <div id="message" class="error"></div>
+    <h2>🏛️ SI Governance</h2>
+    <input type="email"    id="email"    placeholder="Email professionnel" autocomplete="email" />
+    <input type="password" id="password" placeholder="Mot de passe"        autocomplete="current-password" />
+    <button id="btn" onclick="login()">Se connecter</button>
+    <div id="message" class="message"></div>
   </div>
 
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    // ⚠️ Remplace ces valeurs par celles de ton projet Supabase
-    const supabaseUrl     = "https://rkaymdbyfbmfiutwbjtx.supabase.co";
-    const supabaseAnonKey = "sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH";
+    const SUPABASE_URL  = "https://rkaymdbyfbmfiutwbjtx.supabase.co";
+    const SUPABASE_KEY  = "sb_publishable_7W-CJaPMGcuVRS5iy0Zx-w_y_KkiGrH";
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function showMessage(text, type) {
+      const el = document.getElementById('message');
+      el.textContent = text;
+      el.className = `message show ${type}`;
+    }
 
     window.login = async function () {
       const email    = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      const message  = document.getElementById('message');
-
-      message.textContent = "";
+      const btn      = document.getElementById('btn');
 
       if (!email || !password) {
-        message.textContent = "Email et mot de passe obligatoires.";
+        showMessage('Veuillez remplir tous les champs.', 'error');
         return;
       }
 
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      btn.disabled    = true;
+      btn.textContent = 'Connexion...';
 
-        if (error) {
-          console.error("Auth error:", error);
-          message.textContent = error.message;
-          return;
-        }
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-        console.log("Connecté :", data);
-        window.location.href = "/dashboard.html";
-
-      } catch (err) {
-        console.error(err);
-        message.textContent = "Erreur lors de la connexion.";
+      if (error) {
+        showMessage('Email ou mot de passe incorrect.', 'error');
+        console.error('Auth error:', error.message);
+        btn.disabled    = false;
+        btn.textContent = 'Se connecter';
+        return;
       }
+
+      showMessage('✅ Connexion réussie, redirection...', 'success');
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
     };
   </script>
 </body>
